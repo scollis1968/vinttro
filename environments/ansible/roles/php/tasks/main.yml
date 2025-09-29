@@ -1,0 +1,65 @@
+---
+- name: Install PHP and necessary extensions
+  ansible.builtin.apt:
+    name:
+      - php8.2-fpm
+      - php8.2-mysql
+      - php8.2-curl
+      - php8.2-gd
+      - php8.2-mbstring
+      - php8.2-zip
+      - php8.2-xml
+      - php8.2-imagick
+    state: present
+    update_cache: yes
+
+- name: Start and enable php-fpm service
+  ansible.builtin.service:
+    name: php8.2-fpm
+    state: started
+    enabled: yes
+
+- name: Set PHP upload and post limits
+  ansible.builtin.lineinfile:
+    path: /etc/php/8.2/fpm/php.ini
+    regexp: '^upload_max_filesize = '
+    line: 'upload_max_filesize = 6M'
+    state: present
+
+-  ansible.builtin.apt:
+    name: php8.2-intl
+    state: present
+    update_cache: yes
+
+- name: Install php-soap extension
+  ansible.builtin.apt:
+    name: php8.2-soap
+    state: present
+    update_cache: yes
+
+- name: Install php-imap extension
+  ansible.builtin.apt:
+    name: php8.2-imap
+    state: present
+    update_cache: yes
+
+- name: Install php-ldap extension
+  ansible.builtin.apt:
+    name: php8.2-ldap
+    state: present
+    update_cache: yes
+
+- name: Install php-fpm
+  ansible.builtin.apt:
+    name: php8.2-fpm
+    state: present
+    update_cache: yes
+  notify: Restart php-fpm
+
+- name: Set PHP memory limit
+  ansible.builtin.lineinfile:
+    path: /etc/php/8.2/fpm/php.ini
+    regexp: '^memory_limit = '
+    line: 'memory_limit = 256M'
+    state: present
+  notify: Restart php-fpm

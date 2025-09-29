@@ -1,0 +1,38 @@
+---
+- name: Remove existing SuiteCRM directory to ensure a clean install
+  ansible.builtin.file:
+    path: "{{ web_root }}/suitecrm"
+    state: absent
+
+- name: Create the new SuiteCRM web root directory
+  ansible.builtin.file:
+    path: "{{ web_root }}/suitecrm"
+    state: directory
+    mode: "0755"
+
+- name: Download SuiteCRM zip file
+  ansible.builtin.get_url:
+    url: "https://sourceforge.net/projects/suitecrm/files/SuiteCRM-8.7.1.zip/download"
+    #url: "https://github.com/salesagility/SuiteCRM-Core/releases/download/v8.9.0/SuiteCRM-8.9.0.zip"
+    dest: "/tmp/SuiteCRM-8.8.1.zip"
+    mode: '0755'
+
+- name: Extract SuiteCRM archive using a compatible unzip command
+  ansible.builtin.shell:
+    cmd: "unzip -q /tmp/SuiteCRM-8.8.1.zip -d {{ web_root }}/suitecrm"
+  args:
+    creates: "{{ web_root }}/suitecrm/SuiteCRM-8.8.1"
+
+- name: Move SuiteCRM files to web root
+  ansible.builtin.shell:
+    cmd: "mv {{ web_root }}/suitecrm/SuiteCRM-8.8.1/* {{ web_root }}/suitecrm/"
+  args:
+    removes: "{{ web_root }}/suitecrm/SuiteCRM-8.8.1"
+
+- name: Set permissions for SuiteCRM files
+  ansible.builtin.file:
+    path: "{{ web_root }}/suitecrm"
+    owner: www-data
+    group: www-data
+    mode: "0755"
+    recurse: yes

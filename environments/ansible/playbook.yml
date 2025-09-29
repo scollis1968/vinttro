@@ -1,0 +1,37 @@
+---
+- name: Configure LAMP stack and deploy applications
+  hosts: uatservers
+  become: yes
+  tasks:
+    - name: Install LAMP stack components
+      ansible.builtin.apt:
+        name:
+          - apache2
+          - mariadb-server
+          - php
+          - php-mysql
+          - php-curl
+          - php-json
+          - php-mbstring
+          - php-xml
+          - php-zip
+          - unzip
+        state: present
+    
+    # ... (Additional tasks for MySQL setup, creating databases, and users)
+    
+    - name: Download and unzip WordPress
+      ansible.builtin.unarchive:
+        src: https://wordpress.org/latest.tar.gz
+        dest: /var/www/html/
+        remote_src: yes
+        creates: /var/www/html/wordpress
+
+    - name: Download and unzip SuiteCRM
+      ansible.builtin.unarchive:
+        src: https://github.com/SuiteCRM/SuiteCRM-Core/releases/download/v8.8.0/SuiteCRM-8.8.0.zip # Use the latest version
+        dest: /var/www/html/
+        remote_src: yes
+        creates: /var/www/html/SuiteCRM
+
+    # ... (Additional tasks for configuring WordPress and SuiteCRM, setting permissions, and creating virtual hosts)

@@ -1,0 +1,8 @@
+mysql_root_password: "Password1$"
+mysql_admin_password: "Password1$"
+wordpress_db_name: "wordpress_db"
+wordpress_db_user: "wpdbadmin"
+wordpress_db_password: "Password1$"
+suitecrm_db_name: "suitecrm_db"
+suitecrm_db_user: "crmdbadmin"
+suitecrm_db_password: "Password1$"

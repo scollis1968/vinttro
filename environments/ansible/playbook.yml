@@ -35,3 +35,4 @@
         creates: /var/www/html/SuiteCRM
 
     # ... (Additional tasks for configuring WordPress and SuiteCRM, setting permissions, and creating virtual hosts)
+    ## some test update for the webhook

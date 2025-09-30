@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       VINTTRO2.0 Custom Functions
  * Description:       A collection of my custom functions.
- * Version:           1.0.1
+ * Version:           1.0.1a
  * Author:            Stephen Collis
  */
 

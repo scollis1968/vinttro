@@ -1,0 +1,26 @@
+---
+- name: Create WordPress web root directory
+  ansible.builtin.file:
+    path: "{{ web_root }}/wordpress"
+    state: directory
+    mode: "0755"
+
+- name: Download and unarchive WordPress
+  ansible.builtin.unarchive:
+    src: "https://wordpress.org/wordpress-{{ wordpress_version }}.tar.gz"
+    dest: "{{ web_root }}/wordpress"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Create wp-config.php from template
+  ansible.builtin.template:
+    src: wp-config.php.j2
+    dest: "{{ web_root }}/wordpress/wp-config.php"
+
+- name: Set permissions for WordPress files
+  ansible.builtin.file:
+    path: "{{ web_root }}/wordpress"
+    owner: www-data
+    group: www-data
+    mode: "0755"
+    recurse: yes

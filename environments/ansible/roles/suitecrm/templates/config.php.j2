@@ -1,0 +1,11 @@
+<?php
+$sugar_config = array (
+  'db_config' => 
+  array (
+    'db_host_name' => 'localhost',
+    'db_user_name' => '{{ suitecrm_db_user }}',
+    'db_password' => '{{ suitecrm_db_password }}',
+    'db_name' => '{{ suitecrm_db_name }}',
+  ),
+  'site_url' => 'http://suitecrm.{{ ansible_hostname }}',
+);

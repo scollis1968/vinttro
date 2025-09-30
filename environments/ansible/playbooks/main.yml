@@ -1,0 +1,23 @@
+---
+- name: Deploy Web Stack and Applications
+  hosts: all
+  become: yes
+  gather_facts: true
+  vars:
+    web_root: /var/www
+    wordpress_version: "6.5.3"
+    suitecrm_version: "8.6.0"
+
+  pre_tasks:
+    - name: Ensure python3-pymysql is installed
+      ansible.builtin.apt:
+        name: python3-pymysql
+        state: present
+        update_cache: yes
+
+  roles:
+    - common
+    - nginx
+    - php
+    - wordpress
+    - suitecrm

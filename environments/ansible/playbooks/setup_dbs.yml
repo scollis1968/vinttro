@@ -1,0 +1,84 @@
+---
+- name: Setup MySQL databases for WordPress and SuiteCRM
+  hosts: all
+  become: yes
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Ensure python3-pymysql is installed
+      ansible.builtin.apt:
+        name: python3-pymysql
+        state: present
+        update_cache: yes
+
+    - name: Set a password for the MySQL root user
+      community.mysql.mysql_user:
+        name: root
+        password: "{{ mysql_root_password }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        update_password: on_create
+
+    - name: Create a dedicated Ansible admin user for MySQL
+      community.mysql.mysql_user:
+        name: ansible_admin
+        password: "{{ mysql_admin_password }}"
+        host: localhost
+        priv: "*.*:ALL,GRANT"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Grant privileges to the WordPress user
+      community.mysql.mysql_user:
+        name: wpdbadmin
+        password: "{{ mysql_admin_password }}"
+        host: "localhost"
+        priv: "wordpress_db.*:ALL"
+        state: present
+        login_user: ansible_admin
+        login_password: "{{ mysql_admin_password }}"
+
+    - name: Grant privileges to the SuiteCRM user
+      community.mysql.mysql_user:
+        name: crmdbadmin
+        password: "{{ mysql_admin_password }}"
+        host: "localhost"
+        priv: "suitecrm_db.*:ALL"
+        state: present
+        login_user: ansible_admin
+        login_password: "{{ mysql_admin_password }}"
+
+    - name: Create WordPress database
+      community.mysql.mysql_db:
+        name: "{{ wordpress_db_name }}"
+        state: present
+        login_user: ansible_admin
+        login_password: "{{ mysql_admin_password }}"
+
+    - name: Create WordPress user and grant permissions
+      community.mysql.mysql_user:
+        name: "{{ wordpress_db_user }}"
+        password: "{{ wordpress_db_password }}"
+        host: "%"
+        priv: "{{ wordpress_db_name }}.*:ALL"
+        state: present
+        login_user: ansible_admin
+        login_password: "{{ mysql_admin_password }}"
+
+    - name: Create SuiteCRM database
+      community.mysql.mysql_db:
+        name: "{{ suitecrm_db_name }}"
+        state: present
+        login_user: ansible_admin
+        login_password: "{{ mysql_admin_password }}"
+
+    - name: Create SuiteCRM user and grant permissions
+      community.mysql.mysql_user:
+        name: "{{ suitecrm_db_user }}"
+        password: "{{ suitecrm_db_password }}"
+        host: "%"
+        priv: "{{ suitecrm_db_name }}.*:ALL"
+        state: present
+        login_user: ansible_admin
+        login_password: "{{ mysql_admin_password }}"

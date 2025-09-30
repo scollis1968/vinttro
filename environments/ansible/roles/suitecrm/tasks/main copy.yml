@@ -1,0 +1,31 @@
+---
+- name: Create SuiteCRM web root directory
+  ansible.builtin.file:
+    path: "{{ web_root }}/suitecrm"
+    state: directory
+    mode: "0755"
+
+- name: Download SuiteCRM zip file
+  ansible.builtin.get_url:
+    url: "https://suitecrm.com/download/165/suite88/565368/suitecrm-{{ suitecrm_version }}.zip"
+    dest: "/tmp/SuiteCRM-{{ suitecrm_version }}.zip"
+    mode: '0755'
+
+- name: Extract SuiteCRM archive
+  ansible.builtin.shell:
+    cmd: "unzip -o /tmp/SuiteCRM-{{ suitecrm_version }}.zip -d {{ web_root }}/suitecrm"
+  args:
+    creates: "{{ web_root }}/suitecrm/SuiteCRM-{{ suitecrm_version }}"
+
+- name: Create config.php from template
+  ansible.builtin.template:
+    src: config.php.j2
+    dest: "{{ web_root }}/suitecrm/config.php"
+
+- name: Set permissions for SuiteCRM files
+  ansible.builtin.file:
+    path: "{{ web_root }}/suitecrm"
+    owner: www-data
+    group: www-data
+    mode: "0755"
+    recurse: yes

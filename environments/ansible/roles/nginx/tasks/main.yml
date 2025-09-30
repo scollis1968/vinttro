@@ -1,0 +1,23 @@
+---
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Copy Nginx virtual host configurations
+  ansible.builtin.template:
+    src: vhosts.conf.j2
+    dest: /etc/nginx/sites-available/vhosts.conf
+
+- name: Enable Nginx virtual hosts
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/vhosts.conf
+    dest: /etc/nginx/sites-enabled/vhosts.conf
+    state: link
+
+- name: Start and enable Nginx service
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: yes

@@ -1,0 +1,35 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name:
+      - git
+      - curl
+      - unzip
+      - ufw
+    state: present
+
+- name: Allow incoming connections on port 22 (SSH)
+  ansible.builtin.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Allow incoming connections on port 80 (HTTP)
+  ansible.builtin.ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+
+- name: Allow incoming connections on port 443 (HTTPS)
+  ansible.builtin.ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+
+- name: Enable the firewall
+  ansible.builtin.ufw:
+    state: enabled

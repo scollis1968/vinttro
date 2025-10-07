@@ -58,12 +58,28 @@ if [ $? -ne 0 ]; then
 fi
 
 log "Deploying Vinttro Theme..."
-# Source: /tmp/vinttro-repo/wp-content/themes/vinttro2.0/
-# Destination: /var/www/wordpress/wp-content/themes/vinttro2.0/
-sudo rsync -a $STAGING_DIR/wp-content/themes/vinttro2.0/ $LIVE_DIR/wp-content/themes/vinttro2.0/
+SOURCE_DIR="/tmp/vinttro-repo/wp-content/themes/vinttro2.0/"
+DESTINATION_DIR="/var/www/wordpress/wp-content/themes/vinttro2.0/"
+sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
 
 if [ $? -ne 0 ]; then
     log "ERROR: Theme rsync failed."
+    exit 1
+fi
+
+log "Deploying SuiteCrm/VINTTRO customisation ..."
+SOURCE_DIR="/tmp/vinttro-repo/suitecrm/vinttro2.0/"
+DESTINATION_DIR="/var/www/suitecrm/vinttro2.0/"
+sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
+if [ $? -ne 0 ]; then
+    log "ERROR: Deploying SuiteCrm/VINTTRO customisation failed."
+    exit 1
+fi
+
+log "Setting permissions on /var/www/suitecrm/vinttro2.0"
+sudo chown -R www-data:www-data /var/www/suitecrm/vinttro2.0
+if [ $? -ne 0 ]; then
+    log "Error - Setting permissions on /var/www/suitecrm/vinttro2.0"
     exit 1
 fi
 

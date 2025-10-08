@@ -2,13 +2,14 @@
 - name: Create GCS bucket
   google.cloud.gcp_storage_bucket:
     name: "vinttro-data-import"
-    project: "your-gcp-project-id"
+    project: "reliable-brace-471109-c4"
     location: "us-central1"
     storage_class: "STANDARD"
     auth_kind: "serviceaccount"
-    service_account_file: "/path/to/your-service-account.json"
+    service_account_file: "~/.keys/uat1-ansible-service-account.json"
     state: present
   delegate_to: localhost
+  become: no
   
 - name: Add Cloud Storage FUSE repository
   ansible.builtin.shell: |

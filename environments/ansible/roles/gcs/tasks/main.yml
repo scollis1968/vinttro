@@ -1,0 +1,41 @@
+
+- name: Create GCS bucket
+  google.cloud.gcp_storage_bucket:
+    name: "vinttro-data-import"
+    project: "reliable-brace-471109-c4"
+    location: "us-central1"
+    storage_class: "STANDARD"
+    auth_kind: "serviceaccount"
+    service_account_file: "~/.keys/uat1-ansible-service-account.json"
+    state: present
+  delegate_to: localhost
+  become: no
+  
+- name: Add Cloud Storage FUSE repository
+  ansible.builtin.shell: |
+    export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
+    echo "deb https://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+  args:
+    creates: /etc/apt/sources.list.d/gcsfuse.list
+
+- name: Install gcsfuse package
+  ansible.builtin.apt:
+    name: gcsfuse
+    update_cache: yes
+  
+- name: Create mount directory
+  ansible.builtin.file:
+    path: "/mnt/gcs_data"
+    state: directory
+    mode: '0755'
+    owner: your_vm_user
+    group: your_vm_user
+
+- name: Mount GCS bucket
+  ansible.posix.mount:
+    src: "your-unique-bucket-name"
+    path: "/mnt/gcs_data"
+    fstype: gcsfuse
+    opts: "_netdev,allow_other"
+    state: mounted

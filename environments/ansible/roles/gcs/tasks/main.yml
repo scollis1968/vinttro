@@ -26,16 +26,16 @@
   
 - name: Create mount directory
   ansible.builtin.file:
-    path: "/mnt/gcs_data"
+    path: "/mnt/vinttro_data_import"
     state: directory
     mode: '0755'
-    owner: your_vm_user
-    group: your_vm_user
+    owner: www-data
+    group: www-data
 
 - name: Mount GCS bucket
   ansible.posix.mount:
-    src: "your-unique-bucket-name"
-    path: "/mnt/gcs_data"
+    src: "vinttro-data-import"
+    path: "/mnt/vinttro_data_import"
     fstype: gcsfuse
     opts: "_netdev,allow_other"
     state: mounted

@@ -187,3 +187,56 @@ function sync_new_user_to_suitecrm($user_id, $old_user_data) {
       //  error_log('SuiteCRM Lead Creation Response: ' . $response_body);
     }
 }
+
+function suitecrm_conditional_menu_stub( $items, $args ) {
+/**
+ * Custom function to modify menu items based on complex user data (e.g., SuiteCRM).
+ * * @param string $items The HTML list items of the current menu.
+ * @param object $args  The arguments of the current menu.
+ * @return string The modified HTML list items.
+ */
+
+    // --- 1. TARGET THE RIGHT MENU (Crucial Step) ---
+    // Change 'primary' to the slug of the menu location you are modifying.
+    // If you're unsure, you can remove this check to test all menus, 
+    // but it's best practice to target one.
+    if ( $args->theme_location == 'primary' ) {
+        
+        // --- 2. CHECK LOGIN STATUS ---
+        if ( is_user_logged_in() ) {
+            
+            // Get the current user ID
+            $user_id = get_current_user_id();
+
+            // --- 3. CUSTOM LOGIC STUB (Replace this with SuiteCRM API Call) ---
+            
+            // *** DEMO CONDITION STUB ***
+            // Replace this block with your SuiteCRM API calls to check subscription status.
+            // For the demo, we'll check if the User ID is an even number.
+            
+            $is_subscribed_to_premium = ( $user_id % 2 == 0 );
+            // --- END DEMO CONDITION STUB ---
+
+
+            // --- 4. INSERT MENU ITEM HTML ---
+            if ( $is_subscribed_to_premium ) {
+                // If the user meets the condition (e.g., subscribed via SuiteCRM data)
+                
+                // Note: The HTML must be a standard <li> element.
+                $custom_item_html = '<li class="menu-item menu-item-suitecrm-special">';
+                $custom_item_html .= '<a href="/premium-dashboard/">🔥 Premium Dashboard</a>';
+                $custom_item_html .= '</li>';
+
+                // Append the custom item to the existing menu items
+                $items .= $custom_item_html;
+            }
+            
+        } else {
+            // Optional: You could add a specific "Log In" link here if one doesn't exist.
+            // But often, this is better handled by adding it directly in the WP Menu Editor.
+        }
+    }
+
+    return $items;
+}
+add_filter( 'wp_nav_menu_items', 'suitecrm_conditional_menu_stub', 10, 2 );

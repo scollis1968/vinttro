@@ -1,4 +1,4 @@
-#Enviroments
+# VINTTRO Enviroments
 
 Vittro technology is deployed into the follwing enviroments :-
 1. dev
@@ -11,3 +11,7 @@ Dev is a local setup using WSL/ubuntu.
 If more developers are emploed then a collabrative solution will be adopted. 
 
 ## uat
+
+
+## prod
+Build the VM using the the terraform script. 

@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "google" {
-  project      = "prod-vinttro2"
+  project      = "suitecrm-wordpress"
   region       = "your-preferred-region"
   credentials  = file("path/to/your/service-account-key.json")
 }

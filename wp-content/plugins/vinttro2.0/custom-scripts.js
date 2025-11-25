@@ -1,9 +1,12 @@
-document.addEventListener('DOMContentLoaded', function() {
+
+// custom-scripts.js (Updated Wrapper)
+jQuery(document).ready(function($) {
+
     // 1. Get references to the file input and the preview container
     const fileInput = document.querySelector('input[type="file"][name="quote-image"]');
     const previewContainer = document.getElementById('quote-image-preview-container');
 
-    if (fileInput && previewContainer) {
+if (fileInput && previewContainer) {
         fileInput.addEventListener('change', function(event) {
             const file = event.target.files[0];
 

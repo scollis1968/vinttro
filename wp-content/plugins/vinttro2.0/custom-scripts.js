@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // 1. Get references to the file input and the preview container
-    const fileInput = document.querySelector('input[type="file"][name="your-image"]');
-    const previewContainer = document.getElementById('image-preview-container');
+    const fileInput = document.querySelector('input[type="file"][name="quote-image"]');
+    const previewContainer = document.getElementById('quote-image-preview-container');
 
     if (fileInput && previewContainer) {
         fileInput.addEventListener('change', function(event) {

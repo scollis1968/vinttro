@@ -1,0 +1,5 @@
+/* my-custom-styles.css */
+input[type="text"],
+textarea {
+    border-radius: 8px; 
+}

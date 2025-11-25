@@ -9,14 +9,12 @@
 
 
 // Start of custom code
+// ---------------------------------------------------
 
 function my_plugin_load_styles() {
-    wp_enqueue_style( 'my-custom-form-styles', plugins_url( 'my-custom-styles.css', __FILE__ ) );
+    wp_enqueue_style( 'my-custom-form-styles', plugins_url( 'custom-styles.css', __FILE__ ) );
 }
 add_action( 'wp_enqueue_scripts', 'my_plugin_load_styles' );
-
-
-// ---------------------------------------------------
 
 add_filter( 'wpcf7_special_mail_tags', 'my_custom_email_tags', 10, 2 );
 

@@ -1,4 +1,6 @@
 /* my-custom-styles.css */
+
+/* 1. Styling for Text-based Input Fields and Textareas */
 input[type="text"],
 input[type="email"],
 input[type="url"],
@@ -6,5 +8,24 @@ input[type="tel"],
 input[type="password"],
 textarea {
     border-radius: 8px;
-    border: 2px solid; 
+    /* Added a color to the border rule for visual consistency */
+    border: 2px solid #ccc; 
+}
+
+/* 2. Wrapper for Margin and Padding Control */
+.form-padding-wrapper {
+    /* 20px of space inside the wrapper */
+    padding: 20px; 
+    /* 10px of space outside the wrapper */
+    margin: 10px; 
+    
+    /* Optional: helps visualize the area (corrected comment syntax) */
+    border: 1px solid #ccc;
+}
+
+/* 3. Contact Form 7 Label Styling */
+.wpcf7 label {
+    /* Adjusted font size to a relative unit for better scaling/accessibility */
+    font-size: 0.8rem !important; 
+    font-weight: normal; 
 }

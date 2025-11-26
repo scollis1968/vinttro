@@ -6,11 +6,14 @@ input[type="email"],
 input[type="url"],
 input[type="tel"],
 input[type="password"],
-select
+select,
 textarea {
     border-radius: 5px;
     /* Added a color to the border rule for visual consistency */
-    border: 1px solid #999; 
+    border: 1px solid #999;
+    padding: 10px; 
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* 2. Wrapper for Margin and Padding Control */

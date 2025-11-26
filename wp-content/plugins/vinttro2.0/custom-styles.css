@@ -6,10 +6,11 @@ input[type="email"],
 input[type="url"],
 input[type="tel"],
 input[type="password"],
+select
 textarea {
-    border-radius: 8px;
+    border-radius: 5px;
     /* Added a color to the border rule for visual consistency */
-    border: 2px solid #ccc; 
+    border: 1px solid #999; 
 }
 
 /* 2. Wrapper for Margin and Padding Control */
@@ -26,6 +27,6 @@ textarea {
 /* 3. Contact Form 7 Label Styling */
 .wpcf7 label {
     /* Adjusted font size to a relative unit for better scaling/accessibility */
-    font-size: 0.8rem !important; 
+    font-size: 0.5rem !important; 
     font-weight: normal; 
 }

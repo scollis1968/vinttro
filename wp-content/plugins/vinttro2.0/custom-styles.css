@@ -15,6 +15,9 @@ textarea {
     padding: 10px; 
     width: 100%;
     box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
 /* 2. Wrapper for Margin and Padding Control */

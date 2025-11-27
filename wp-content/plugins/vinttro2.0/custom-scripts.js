@@ -38,12 +38,8 @@ if (fileInput && previewContainer) {
             }
         });
     }
-});
 
-// Wait for the document to be fully loaded
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // Get the hidden input field using the ID we added in CF7
+        // Get the hidden input field using the ID we added in CF7
     const hiddenField = document.getElementById('cf7-page-url');
 
     // Check if the element exists on the page
@@ -51,4 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set the value of the hidden field to the current page's URL
         hiddenField.value = window.location.href;
     }
+
 });
+

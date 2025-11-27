@@ -37,3 +37,107 @@ textarea {
     font-size: 0.5rem !important; 
     font-weight: normal; 
 }
+
+/* Change the mobile header bar background color */
+.mob-menu-header-holder.mobmenu {
+    background-color: #FFFFFF !important;
+}
+
+.mobmenur-container{
+	  padding-right : 12px;
+}
+.menu-main_menu-container {
+    fill: #999999 !important;	
+}
+.wp-block-search {
+    padding-left: 55px; 
+}
+.wp-block-search__input{
+    border-radius: 4px;	
+}
+.wp-block-search__button {
+    background-color: #B28324;
+    color: #FFFFFF;
+	height:40px;
+    border-radius: 20px;
+    padding: 0px 20px;
+	 margin-top: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+/* Change the color of the hamburger menu icon (the SVG fill) */
+.mobmenur-container .menu path {
+    fill: #AA8800 !important;
+}
+.mob-cancel-button path{
+	 fill: #AA8800 !important;
+}
+/* Change the color of the close icon when the menu is open (if needed) */
+.mobmenur-container .cancel-1 path {
+    fill: #000000 !important;
+	  padding-top : 60px;
+}
+
+
+/* 1. Target the main mobile header bar */
+.mob-menu-header-holder.mobmenu {
+    display: flex;
+    align-items: center; 
+}
+
+.mob-menu-logo-holder{ padding-top: 20px}
+
+
+/*--------------------------*/
+/* --- MOBILE MENU CONTENT STYLING --- */
+
+/* 1. Default Menu Item Text Color */
+/* Changes the color of the text for all menu links */
+.mobmenu-content .wp-mobile-menu a {
+    color: #999999!important; 
+	/* Example: Gold text */
+}
+
+/* 2. Default Menu Item Background Color */
+/* Changes the background of the menu rows */
+.mobmenu-content .wp-mobile-menu li {
+    background-color: #FFFFFF !important; /* Example: White background */
+    border-bottom: 1px solid #EEEEEE; /* Optional: Adds a subtle divider line */
+}
+
+/* 3. HOVER / TAP Text Color */
+/* Changes the text color when the user hovers/taps the menu item */
+.mobmenu-content .wp-mobile-menu a:hover,
+.mobmenu-content .wp-mobile-menu li:hover > a {
+    color: #B28324 !important; /* Example: Red text on hover */
+}
+
+/* 4. HOVER / TAP Background Color */
+/* Changes the background color when the user hovers/taps the menu item */
+.mobmenu-content .wp-mobile-menu li:hover {
+    background-color: #FFFFFF !important; /* Example: Light Gray background on hover */
+}
+
+/* 5. Sub-Menu Styling (Optional but recommended for consistency) */
+/* Targets nested sub-menus (like VinttroCover) to ensure they match */
+.mobmenu-content .wp-mobile-menu ul.sub-menu {
+    background-color: #FFFFFF !important; /* Slightly different background for sub-menu */
+}
+
+.metaslider {
+    /* Rounded Corners */
+    border-radius: 15px; 
+    
+    /* Border Style */
+    border: 3px solid #ffffff; 
+    
+    /* Optional: Ensure the images themselves respect the rounded corners */
+    overflow: hidden; 
+}
+
+/*.mobmenu-content .wp-mobile-menu ul.sub-menu li {
+    background-color: #AA8800 !important;
+	 color : #000000;
+	border-radius: 15px;
+}
+*/

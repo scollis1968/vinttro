@@ -40,13 +40,26 @@ if (fileInput && previewContainer) {
     }
 
         // Get the hidden input field using the ID we added in CF7
-    const hiddenField = document.getElementById('cf7-page-url');
+    const pageURLField = document.getElementById('cf7-page-url');
+    const pageNameField = document.getElementById('cf7-page-name');
 
     // Check if the element exists on the page
-    if (hiddenField) {
-        // Set the value of the hidden field to the current page's URL
-        hiddenField.value = window.location.href;
+    if (pageURLField) {
+        pageURLField.value = window.location.href;
+    }
+    if (pageNameField) {
+        pageNameField.value = extractLastUrlSegment(window.location.href);
     }
 
 });
 
+function extractLastUrlSegment(urlString) {
+  // 1. Clean the string: Remove any trailing forward slash (/)
+  const cleanedUrl = urlString.endsWith('/') ? urlString.slice(0, -1) : urlString;
+
+  // 2. Split the cleaned string by the forward slash (/)
+  const segments = cleanedUrl.split('/');
+
+  // 3. Pop the last element off the array (which is the segment we want)
+  return segments.pop();
+}

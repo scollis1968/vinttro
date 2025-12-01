@@ -78,7 +78,7 @@ document.addEventListener('wpcf7mailsent', function(event) {
     if (typeof SGPBPopup !== 'undefined') {
 
         // 1. Close the main form popup (Confirmed function)
-        SGPBPopup.ClosePopupById(formModalId);
+        SGPBPopup.closePopupById(formModalId);
         
         // 2. Open the new confirmation message popup by finding and clicking its trigger
         setTimeout(function() {

@@ -41,6 +41,15 @@ textarea {
 /* Hides the programmatic trigger button for the confirmation popup */
 .confirmation-popup-trigger-button {
     display: none !important;
+    position: absolute !important;
+    left: -9999px !important; /* Move it far off-screen */
+    width: 1px !important;    /* Reduce its size */
+    height: 1px !important;
+    overflow: hidden !important; /* Hide any overflow */
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    opacity: 0 !important;
 }
 
 /* Change the mobile header bar background color */

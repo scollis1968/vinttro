@@ -65,51 +65,41 @@ function extractLastUrlSegment(urlString) {
 }
 
 document.addEventListener('wpcf7mailsent', function(event) {
-    // 1. Get the ID of the form that was successfully submitted
-    const formId = event.detail.contactFormId;
-
-    // --- Configuration: UPDATE THESE SELECTORS ---
-    // Replace 'YOUR_MODAL_POPUP_SELECTOR' with the actual CSS selector (ID or Class)
-    // of your main modal container (the one containing the form).
-    const mainModalSelector = '#sg-popup-content-wrapper-1726'; // Example: Use an ID
-
-    // Replace 'YOUR_CONFIRMATION_POPUP_SELECTOR' with the actual selector (ID or Class)
-    // of the separate confirmation modal you want to show.
-    const confirmationModalSelector = '#sg-popup-content-wrapper-1863'; // Example: Use an ID
+    
+    // --- Configuration: UPDATE THESE IDs ---
+    const formModalId = 1726; 
+    const confirmationModalId = 1863; 
+    
+    // The class the confirmation popup's trigger button MUST have.
+    const confirmationTriggerClass = `sg-popup-id-${confirmationModalId}`; 
+    // This resolves to 'sg-popup-id-1863'
     // ---------------------------------------------
+    
+    if (typeof SGPBPopup !== 'undefined') {
 
-    // 2. Locate the main form modal and the confirmation modal
-    const mainModal = document.querySelector(mainModalSelector);
-    //const mainModal = document.querySelector('.modal-quote-request');
-    const confirmationModal = document.querySelector(confirmationModalSelector);
-    //const confirmationModal = document.querySelector('.modal-confirmation-message');
+        // 1. Close the main form popup (Confirmed function)
+        SGPBPopup.ClosePopupById(formModalId);
+        
+        // 2. Open the new confirmation message popup by finding and clicking its trigger
+        setTimeout(function() {
+            
+            // Search the entire document for an element with the confirmation popup's trigger class
+            const confirmationTrigger = document.querySelector(`.${confirmationTriggerClass}`);
 
-    // Check if both elements are found
-    if (mainModal && confirmationModal) {
-        // 3. Close the main modal popup (containing the form)
-        // This is where you call the specific function or change the class/style
-        // that hides your specific modal.
-        
-        // --- Option A: If your modal uses a "hidden" class (COMMON) ---
-        //mainModal.classList.remove('is-active'); 
-        // OR
-        mainModal.style.display = 'none'; // Option B: If it uses inline styles
+            if (confirmationTrigger) {
+                // Manually trigger a click event on the hidden/existing trigger element
+                confirmationTrigger.click(); 
+                
+                console.log(`Successfully closed form ${formModalId} and triggered confirmation ${confirmationModalId} via click.`);
 
-        // 4. Open the new confirmation message popup
-        // This is where you call the specific function or change the class/style
-        // that shows your specific confirmation modal.
-        
-        // --- Option A: If your modal uses an "active" class (COMMON) ---
-        //confirmationModal.classList.add('is-active');
-        // OR
-        confirmationModal.style.display = 'block'; // Option B: If it uses inline styles
-        
-        // You may need to use a function provided by your modal plugin/theme, e.g.:
-        // myModalPlugin.close(mainModalSelector);
-        // myModalPlugin.open(confirmationModalSelector);
+            } else {
+                console.error(`Confirmation popup trigger element (Class: ${confirmationTriggerClass}) not found on the page.`);
+            }
+
+        }, 200); 
 
     } else {
-        console.error('One or both modal selectors were not found on the page.');
+        console.error('Popup Builder API (SGPBPopup) not found.');
     }
 
 }, false);

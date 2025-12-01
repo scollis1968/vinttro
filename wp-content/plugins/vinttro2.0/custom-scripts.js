@@ -91,18 +91,18 @@ document.addEventListener('wpcf7mailsent', function(event) {
         // that hides your specific modal.
         
         // --- Option A: If your modal uses a "hidden" class (COMMON) ---
-        mainModal.classList.remove('is-active'); 
+        //mainModal.classList.remove('is-active'); 
         // OR
-        // mainModal.style.display = 'none'; // Option B: If it uses inline styles
+        mainModal.style.display = 'none'; // Option B: If it uses inline styles
 
         // 4. Open the new confirmation message popup
         // This is where you call the specific function or change the class/style
         // that shows your specific confirmation modal.
         
         // --- Option A: If your modal uses an "active" class (COMMON) ---
-        confirmationModal.classList.add('is-active');
+        //confirmationModal.classList.add('is-active');
         // OR
-        // confirmationModal.style.display = 'block'; // Option B: If it uses inline styles
+        confirmationModal.style.display = 'block'; // Option B: If it uses inline styles
         
         // You may need to use a function provided by your modal plugin/theme, e.g.:
         // myModalPlugin.close(mainModalSelector);

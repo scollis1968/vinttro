@@ -63,3 +63,53 @@ function extractLastUrlSegment(urlString) {
   // 3. Pop the last element off the array (which is the segment we want)
   return segments.pop();
 }
+
+document.addEventListener('wpcf7mailsent', function(event) {
+    // 1. Get the ID of the form that was successfully submitted
+    const formId = event.detail.contactFormId;
+
+    // --- Configuration: UPDATE THESE SELECTORS ---
+    // Replace 'YOUR_MODAL_POPUP_SELECTOR' with the actual CSS selector (ID or Class)
+    // of your main modal container (the one containing the form).
+    const mainModalSelector = '#sg-popup-content-wrapper-1726'; // Example: Use an ID
+
+    // Replace 'YOUR_CONFIRMATION_POPUP_SELECTOR' with the actual selector (ID or Class)
+    // of the separate confirmation modal you want to show.
+    const confirmationModalSelector = '#sg-popup-content-wrapper-1862'; // Example: Use an ID
+    // ---------------------------------------------
+
+    // 2. Locate the main form modal and the confirmation modal
+    const mainModal = document.querySelector(mainModalSelector);
+    //const mainModal = document.querySelector('.modal-quote-request');
+    const confirmationModal = document.querySelector(confirmationModalSelector);
+    //const confirmationModal = document.querySelector('.modal-confirmation-message');
+
+    // Check if both elements are found
+    if (mainModal && confirmationModal) {
+        // 3. Close the main modal popup (containing the form)
+        // This is where you call the specific function or change the class/style
+        // that hides your specific modal.
+        
+        // --- Option A: If your modal uses a "hidden" class (COMMON) ---
+        mainModal.classList.remove('is-active'); 
+        // OR
+        // mainModal.style.display = 'none'; // Option B: If it uses inline styles
+
+        // 4. Open the new confirmation message popup
+        // This is where you call the specific function or change the class/style
+        // that shows your specific confirmation modal.
+        
+        // --- Option A: If your modal uses an "active" class (COMMON) ---
+        confirmationModal.classList.add('is-active');
+        // OR
+        // confirmationModal.style.display = 'block'; // Option B: If it uses inline styles
+        
+        // You may need to use a function provided by your modal plugin/theme, e.g.:
+        // myModalPlugin.close(mainModalSelector);
+        // myModalPlugin.open(confirmationModalSelector);
+
+    } else {
+        console.error('One or both modal selectors were not found on the page.');
+    }
+
+}, false);

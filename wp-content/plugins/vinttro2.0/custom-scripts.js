@@ -75,7 +75,7 @@ document.addEventListener('wpcf7mailsent', function(event) {
 
     // Replace 'YOUR_CONFIRMATION_POPUP_SELECTOR' with the actual selector (ID or Class)
     // of the separate confirmation modal you want to show.
-    const confirmationModalSelector = '#sg-popup-content-wrapper-1862'; // Example: Use an ID
+    const confirmationModalSelector = '#sg-popup-content-wrapper-1863'; // Example: Use an ID
     // ---------------------------------------------
 
     // 2. Locate the main form modal and the confirmation modal

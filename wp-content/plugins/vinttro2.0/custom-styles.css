@@ -38,6 +38,11 @@ textarea {
     font-weight: normal; 
 }
 
+/* Hides the programmatic trigger button for the confirmation popup */
+.confirmation-popup-trigger-button {
+    display: none !important;
+}
+
 /* Change the mobile header bar background color */
 .mob-menu-header-holder.mobmenu {
     background-color: #FFFFFF !important;

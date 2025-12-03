@@ -103,3 +103,52 @@ document.addEventListener('wpcf7mailsent', function(event) {
     }
 
 }, false);
+
+document.addEventListener('DOMContentLoaded', function() {
+    const customArea = document.querySelector('.custom-upload-area');
+    const hiddenInput = document.querySelector('.custom-file-upload-input');
+    const placeholderImage = document.querySelector('.upload-placeholder-image');
+    const instructions = customArea.querySelector('p');
+
+    // 1. Link the click on the custom area to the hidden input
+    if (customArea && hiddenInput) {
+        customArea.addEventListener('click', function(e) {
+            // Prevent the click event if it originated from the input itself
+            if (e.target !== hiddenInput) {
+                hiddenInput.click();
+            }
+        });
+    }
+
+    // 2. Handle image preview when a file is selected
+    if (hiddenInput) {
+        hiddenInput.addEventListener('change', function() {
+            const file = this.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    // Create a new image element for the preview
+                    const previewImage = document.createElement('img');
+                    previewImage.src = e.target.result;
+                    previewImage.classList.add('uploaded-preview-image');
+                    
+                    // Remove old placeholder/instructions and insert the new image
+                    if (placeholderImage) placeholderImage.style.display = 'none';
+                    if (instructions) instructions.style.display = 'none';
+                    
+                    // Check if an existing preview is there and replace it
+                    const existingPreview = customArea.querySelector('.uploaded-preview-image');
+                    if (existingPreview) {
+                        customArea.replaceChild(previewImage, existingPreview);
+                    } else {
+                        customArea.appendChild(previewImage);
+                    }
+                };
+
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});

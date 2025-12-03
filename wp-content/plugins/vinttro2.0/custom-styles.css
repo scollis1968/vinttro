@@ -1,5 +1,46 @@
 /* my-custom-styles.css */
 
+/* 1. Hide the default input visually, but keep it functional */
+.custom-file-upload-input {
+    /* Make the input invisible */
+    opacity: 0; 
+    /* Make sure it sits on top of the custom area for accessibility/clicking */
+    position: absolute; 
+    /* Set its size to cover the custom area */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Ensure the browser only shows the default element if JS fails */
+    cursor: pointer; 
+}
+
+/* 2. Style your custom clickable area */
+.custom-upload-area {
+    /* Crucial: required for the absolute positioning of the input field */
+    position: relative; 
+    
+    /* Custom styling */
+    border: 2px dashed #ccc;
+    text-align: center;
+    padding: 30px;
+    cursor: pointer;
+    min-height: 200px; /* Give it space for the message and preview */
+    display: flex; /* Helps center content */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Optional: Style the placeholder image */
+.upload-placeholder-image {
+    max-width: 100px;
+    margin-bottom: 10px;
+}
+
+
+
+
 /* 1. Styling for Text-based Input Fields and Textareas */
 input[type="text"],
 input[type="email"],

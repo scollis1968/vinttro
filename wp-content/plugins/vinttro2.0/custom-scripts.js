@@ -92,22 +92,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 const reader = new FileReader();
 
                 reader.onload = function(e) {
-                    // Create a new image element for the preview
+                    // Clear ALL contents of the custom upload area before adding the new image
+                    customArea.innerHTML = ''; 
+                    
                     const previewImage = document.createElement('img');
                     previewImage.src = e.target.result;
-                    previewImage.classList.add('uploaded-preview-image');
-
-                    // Remove old placeholder/instructions and insert the new image
-                    if (placeholderImage) placeholderImage.style.display = 'none';
-                    if (instructions) instructions.style.display = 'none';
                     
-                    // Check if an existing preview is there and replace it
-                    const existingPreview = customArea.querySelector('.uploaded-preview-image');
-                    if (existingPreview) {
-                        customArea.replaceChild(previewImage, existingPreview);
-                    } else {
-                        customArea.appendChild(previewImage);
-                    }
+                    // Add the necessary classes for styling (we'll define these next)
+                    previewImage.classList.add('uploaded-preview-image');
+                    previewImage.classList.add('fill-dropzone-image'); // <--- NEW CLASS for sizing
+                    
+                    // We no longer need to check for/remove old placeholder/instructions 
+                    // because we used customArea.innerHTML = '';
+                    
+                    customArea.appendChild(previewImage);
                 };
 
                 reader.readAsDataURL(file);

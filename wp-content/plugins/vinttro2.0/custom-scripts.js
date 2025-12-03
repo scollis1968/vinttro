@@ -96,13 +96,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const previewImage = document.createElement('img');
                     previewImage.src = e.target.result;
                     previewImage.classList.add('uploaded-preview-image');
-                    
-                    // 🌟 ADD YOUR SIZING CSS HERE 🌟
-                    previewImage.style.maxWidth = '100%'; 
-                    previewImage.style.maxHeight = '200px'; 
-                    previewImage.style.height = 'auto';
-                    previewImage.style.borderRadius = '5px';
-                    previewImage.style.border = '1px solid #ccc'; 
 
                     // Remove old placeholder/instructions and insert the new image
                     if (placeholderImage) placeholderImage.style.display = 'none';

@@ -46,36 +46,48 @@ add_filter( 'wp_nav_menu_args', 'custom_swap_mobile_menu_on_b2b' );
 
 
 
+<?php
+
 // --- Configuration ---
-// Get the Post ID of your main B2B parent page (must match the ID used for menu swapping).
+// Define these constants outside the function for clean access.
 define( 'B2B_PARENT_ID', 1825 ); // *** REPLACE with your actual B2B parent ID ***
-// Get the full URL for the B2B Home page.
 define( 'B2B_HOME_URL', 'https://wordpress.uat.vinttro.co.uk/b2b/' ); // *** REPLACE with your actual B2B home URL ***
+
 /**
  * Passes the current menu type to JavaScript.
  */
 function custom_set_mobile_menu_state() {
-    // Check if the current page is a child of the B2B parent page
+    
+    // Check if we are on an admin page or not on the front-end.
+    if ( is_admin() ) {
+        return;
+    }
+    
+    // 1. Determine the B2B state
     $ancestors = get_post_ancestors( get_the_ID() );
     $is_b2b_page = is_page( B2B_PARENT_ID ) || in_array( B2B_PARENT_ID, $ancestors );
 
-    // Get the Home URL for B2C (the site's main URL)
-    $b2c_home_url = home_url( '/' );
-
-    // Prepare data to pass to JS
+    // 2. Prepare data for JavaScript
     $menu_data = array(
         'isB2B'         => $is_b2b_page,
-        'b2cHomeUrl'    => esc_url( $b2c_home_url ),
+        'b2cHomeUrl'    => esc_url( home_url( '/' ) ),
         'b2bHomeUrl'    => esc_url( B2B_HOME_URL ),
     );
 
-    // Enqueue a script to hold the data
-    wp_register_script( 'custom-menu-state', '', array(), '1.0', true );
-    wp_localize_script( 'custom-menu-state', 'MenuState', $menu_data );
-    wp_enqueue_script( 'custom-menu-state' );
+    // 3. Localize the script data
+    // We attach the MenuState object to the standard 'jquery' script handle.
+    // This ensures MenuState is available as soon as jQuery loads.
+    wp_localize_script( 
+        'jquery',                 // Handle of the script to attach data to
+        'MenuState',              // Name of the JavaScript object (this is what you console.log)
+        $menu_data                // The PHP array data
+    );
+    
+    // NOTE: You must also ensure your injection script is loaded after this. 
+    // If your injection script is in the wp_footer hook (Step 2 in previous response), 
+    // it will run after this data is created.
 }
 add_action( 'wp_enqueue_scripts', 'custom_set_mobile_menu_state' );
-
 
 /**
  * Injects JavaScript to add B2B/B2C switch links to the mobile menu.

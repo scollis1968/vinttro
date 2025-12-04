@@ -94,59 +94,54 @@ function custom_inject_mobile_menu_links() {
     ?>
     <script type="text/javascript">
     (function($) {
-        // Ensure the MenuState data is available
-        // Check for MenuState is correct here
-        if (typeof MenuState === 'undefined') {
-            return;
-        }
-        
-        // *** DEBUGGING STEP 1: Check if the function starts ***
-        console.log('JS Injection function started.'); 
+        if (typeof MenuState === 'undefined') { return; }
 
-        var $targetContainer = $('.mobmenu-content'); 
-        
-        // *** DEBUGGING STEP 2: Check if the main container is found ***
-        if ($targetContainer.length === 0) {
-            console.error('.mobmenu-content container not found!');
-            return;
-        } else {
-            console.log('.mobmenu-content found!'); 
-        }
-        // The target element: the container where the links should go
-        // Based on your HTML, the best spot is just inside the mobmenu-content div,
-        // right before the search form in the .rightmtop ul.
-        var $targetContainer = $('.mobmenu-content'); 
+        var attempts = 0;
+        var maxAttempts = 40; // Increased attempts to 40 (20 seconds) just in case
+        var checkIntervalTime = 500; // Check every 0.5 seconds
 
-        // Check if the mobile menu content exists
-        if ($targetContainer.length === 0) {
-            return;
-        }
+        var checkInterval = setInterval(function() {
+            attempts++;
+            var $targetContainer = $('.mobmenu-content'); 
+            var $searchContainer = $targetContainer.find('.rightmtop');
+            
+            // Log for debugging timing (optional, can be removed later)
+            console.log('Attempt ' + attempts + ': checking for menu...');
 
-        // 1. Define the HTML for the links
-        var b2cLink = '<a href="' + MenuState.b2cHomeUrl + '" class="menu-switch-link menu-switch-b2c">B2C Home</a>';
-        var b2bLink = '<a href="' + MenuState.b2bHomeUrl + '" class="menu-switch-link menu-switch-b2b">B2B Home</a>';
-        
-        var $linkContainer = $('<div class="menu-switch-container"></div>');
+            // If found OR if we hit the max attempts
+            if ($searchContainer.length > 0 || attempts >= maxAttempts) {
+                clearInterval(checkInterval); // Stop trying
 
-        if (MenuState.isB2B) {
-            // Currently viewing B2B menu: show B2B label (not clickable) and B2C link (clickable)
-            $linkContainer.append('<span class="menu-label menu-label-b2b">B2B Area</span>');
-            $linkContainer.append(b2cLink);
-        } else {
-            // Currently viewing B2C menu: show B2C label (not clickable) and B2B link (clickable)
-            $linkContainer.append('<span class="menu-label menu-label-b2c">B2C Area</span>');
-            $linkContainer.append(b2bLink);
-        }
-        
-        // 2. Inject the links just above the search form
-        // We target the immediate child of .mobmenu-content which is the .rightmtop ul.
-        var $searchContainer = $targetContainer.find('.rightmtop');
-        if ($searchContainer.length > 0) {
-             $linkContainer.insertBefore($searchContainer);
-        } else {
-             // Fallback insertion point if the search container isn't found
-             $targetContainer.prepend($linkContainer);
-        }
+                if ($searchContainer.length > 0) {
+                    // --- START OF FINAL INJECTION CODE ---
+
+                    console.log('Mobile menu ready. Injecting links.');
+                    
+                    var b2cLink = '<a href="' + MenuState.b2cHomeUrl + '" class="menu-switch-link menu-switch-b2c">B2C Home</a>';
+                    var b2bLink = '<a href="' + MenuState.b2bHomeUrl + '" class="menu-switch-link menu-switch-b2b">B2B Home</a>';
+                    
+                    var $linkContainer = $('<div class="menu-switch-container"></div>');
+
+                    if (MenuState.isB2B) {
+                        // Currently B2B: Show B2B label, link to B2C
+                        $linkContainer.append('<span class="menu-label menu-label-b2b">B2B Area</span>');
+                        $linkContainer.append(b2cLink);
+                    } else {
+                        // Currently B2C: Show B2C label, link to B2B
+                        $linkContainer.append('<span class="menu-label menu-label-b2c">B2C Area</span>');
+                        $linkContainer.append(b2bLink);
+                    }
+                    
+                    // Inject the container just before the search form
+                    $linkContainer.insertBefore($searchContainer);
+                    
+                    // --- END OF FINAL INJECTION CODE ---
+                    
+                } else {
+                    console.error('Failed to find mobile menu elements after ' + (maxAttempts * checkIntervalTime / 1000) + ' seconds.');
+                }
+            }
+        }, checkIntervalTime); 
 
     })(jQuery);
     </script>

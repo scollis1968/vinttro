@@ -1,18 +1,37 @@
 <?php
-function custom_menu_swap_by_url( $args ) {
-    // 1. Check if the menu location is the one used by your main site navigation.
-    // If your theme uses 'main-menu' or 'header-menu', replace 'primary' below.
-    if ( 'mobmenuright' === $args['theme_location'] ) {
+/**
+ * Function to conditionally swap the primary menu.
+ * @param array $args The arguments for the menu.
+ * @return array The filtered arguments.
+ */
+function custom_swap_mobile_menu_on_b2b( $args ) {
 
-        // 2. Check if the current URL contains the /b2b/ slug.
-        if ( false !== strpos( $_SERVER['REQUEST_URI'], '/b2b/' ) ) {
-            // If B2B slug found: Use the B2B menu.
-            $args['menu'] = 'b2b'; // **Use the EXACT name of your B2B menu**
-        } else {
-            // If B2B slug NOT found: Use the B2C menu.
-            $args['menu'] = 'main_menu'; // **Use the EXACT name of your B2C menu**
+    // IMPORTANT: Replace 'primary' with the theme location used by your Mobile Menu plugin.
+    // If your Mobile Menu plugin uses the theme's default location, 'primary' is often correct.
+    $target_theme_location = 'primary'; 
+
+    // --- Conditional Check ---
+    
+    // Check 1: Ensure we are targeting the correct menu location.
+    // This prevents affecting other menus (like a footer menu).
+    if ( $args['theme_location'] == $target_theme_location ) {
+
+        // Check 2: Define your B2B condition.
+        // Option A: Check if the current page is a child of the B2B Parent Page (ID: 123)
+        // You MUST replace 123 with the actual ID of your B2B Parent Page.
+        $b2b_parent_id = 1825; 
+
+        // is_page() also works for child pages.
+        if ( is_page( $b2b_parent_id ) || is_page( get_post_ancestors( get_the_ID() ) ) ) {
+            
+            // Check 3: If the condition is met, swap the menu.
+            // Replace 'B2B Menu' with the EXACT NAME of your B2B menu in Appearance -> Menus.
+            $args['menu'] = 'B2B Menu';
         }
     }
+
     return $args;
 }
-add_filter( 'wp_nav_menu_args', 'custom_menu_swap_by_url' );
+
+// Hook the function into the menu arguments filter.
+add_filter( 'wp_nav_menu_args', 'custom_swap_mobile_menu_on_b2b' );

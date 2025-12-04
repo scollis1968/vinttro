@@ -95,10 +95,23 @@ function custom_inject_mobile_menu_links() {
     <script type="text/javascript">
     (function($) {
         // Ensure the MenuState data is available
+        // Check for MenuState is correct here
         if (typeof MenuState === 'undefined') {
             return;
         }
+        
+        // *** DEBUGGING STEP 1: Check if the function starts ***
+        console.log('JS Injection function started.'); 
 
+        var $targetContainer = $('.mobmenu-content'); 
+        
+        // *** DEBUGGING STEP 2: Check if the main container is found ***
+        if ($targetContainer.length === 0) {
+            console.error('.mobmenu-content container not found!');
+            return;
+        } else {
+            console.log('.mobmenu-content found!'); 
+        }
         // The target element: the container where the links should go
         // Based on your HTML, the best spot is just inside the mobmenu-content div,
         // right before the search form in the .rightmtop ul.

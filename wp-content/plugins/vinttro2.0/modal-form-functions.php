@@ -1,5 +1,15 @@
 
 <?php
+
+// 1. Define the function to output the meta tag
+function my_custom_viewport_meta_tag() {
+    // The meta tag to prevent zooming and fix fixed-position element centering
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">';
+}
+
+// 2. Hook the function into the <head> section of your site
+add_action( 'wp_head', 'my_custom_viewport_meta_tag' );
+
 /**
  * Retrieves the numerical ID of a Contact Form 7 form whose title contains a string.
  *

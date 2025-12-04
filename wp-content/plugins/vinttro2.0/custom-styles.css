@@ -241,8 +241,8 @@ textarea {
     /* Tweak: H2 Styling */
     font-size: 1.5em; /* Simulates H2 size */
     font-weight: 700; /* Extra bold */
-    color: #FFD700; /* ✨ Gold Color */
-    text-transform: uppercase;
+    color: #B28324; /* ✨ Gold Color */
+
     
     /* Ensure the close button doesn't affect the line height */
     line-height: 1.2;

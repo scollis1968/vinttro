@@ -117,23 +117,27 @@ function custom_inject_mobile_menu_links() {
 
                     console.log('Mobile menu ready. Injecting links.');
                     
-                    var b2cLink = '<a href="' + MenuState.b2cHomeUrl + '" class="menu-switch-link menu-switch-b2c">LifeStyle</a>';
-                    var b2bLink = '<a href="' + MenuState.b2bHomeUrl + '" class="menu-switch-link menu-switch-b2b">B2B</a>';
-                    
-                    var $linkContainer = $('<div class="menu-switch-container"></div>');
+                    var b2cLink = '<a href="' + MenuState.b2cHomeUrl + '" class="menu-switch-link menu-switch-b2c">LifeStyle Home</a>'; // Renamed B2C to LifeStyle
+                    var b2bLink = '<a href="' + MenuState.b2bHomeUrl + '" class="menu-switch-link menu-switch-b2b">B2B Home</a>';
+                    var currentLabel;
+                    var switchLink;
 
                     if (MenuState.isB2B) {
-                        // Currently B2B: Show B2B label, link to B2C
-                        $linkContainer.append('<span class="menu-label menu-label-b2b">B2B</span>');
-                        //$linkContainer.append(b2cLink);
+                        currentLabel = '<span class="menu-label menu-label-b2b">B2B Area</span>';
+                        switchLink = b2cLink;
                     } else {
-                        // Currently B2C: Show B2C label, link to B2B
-                        $linkContainer.append('<span class="menu-label menu-label-b2c">LifeStyle</span>');
-                        //$linkContainer.append(b2bLink);
+                        currentLabel = '<span class="menu-label menu-label-b2c">LifeStyle Area</span>'; // Use LifeStyle for B2C label
+                        switchLink = b2bLink;
                     }
-                    
-                    // Inject the container just before the search form
-                    $linkContainer.insertBefore($searchContainer);
+
+                    // 2. Inject Label at the TOP (Aligned with Close Button)
+                    var $topPanel = $('.mobmenu-right-alignment'); // Target the highest parent container
+                    var $closeButton = $topPanel.find('.mobmenu-right-bt'); // Target the close button anchor
+
+                    if ($closeButton.length > 0) {
+                        // Inject the label *after* the close button, within the top panel
+                        $closeButton.after(currentLabel); 
+                    }
                     
                     // --- END OF FINAL INJECTION CODE ---
                     

@@ -222,6 +222,33 @@ textarea {
     background-color: rgba(0, 0, 0, 0.1); /* Subtle background */
 }
 
+.mobmenu-right-alignment {
+    position: relative; 
+}
+
+/* Position the label absolutely and style it as an H2 */
+.mobmenu-right-alignment .menu-label {
+    /* Position */
+    position: absolute; 
+    top: 0; 
+    left: 15px; 
+    z-index: 1000000; 
+    
+    /* Tweak: Add padding to the top for vertical centering */
+    padding: 10px 0; 
+    margin: 0;
+    
+    /* Tweak: H2 Styling */
+    font-size: 1.5em; /* Simulates H2 size */
+    font-weight: 700; /* Extra bold */
+    color: #FFD700; /* ✨ Gold Color */
+    text-transform: uppercase;
+    
+    /* Ensure the close button doesn't affect the line height */
+    line-height: 1.2;
+    background: none; 
+}
+
 .mobmenu-content .menu-label {
     font-weight: bold;
     color: #fff; /* Match your menu text color */

@@ -125,11 +125,11 @@ function custom_inject_mobile_menu_links() {
                     if (MenuState.isB2B) {
                         // Currently B2B: Show B2B label, link to B2C
                         $linkContainer.append('<span class="menu-label menu-label-b2b">B2B</span>');
-                        $linkContainer.append(b2cLink);
+                        //$linkContainer.append(b2cLink);
                     } else {
                         // Currently B2C: Show B2C label, link to B2B
                         $linkContainer.append('<span class="menu-label menu-label-b2c">LifeStyle</span>');
-                        $linkContainer.append(b2bLink);
+                        //$linkContainer.append(b2bLink);
                     }
                     
                     // Inject the container just before the search form

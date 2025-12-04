@@ -117,18 +117,18 @@ function custom_inject_mobile_menu_links() {
 
                     console.log('Mobile menu ready. Injecting links.');
                     
-                    var b2cLink = '<a href="' + MenuState.b2cHomeUrl + '" class="menu-switch-link menu-switch-b2c">B2C Home</a>';
-                    var b2bLink = '<a href="' + MenuState.b2bHomeUrl + '" class="menu-switch-link menu-switch-b2b">B2B Home</a>';
+                    var b2cLink = '<a href="' + MenuState.b2cHomeUrl + '" class="menu-switch-link menu-switch-b2c">LifeStyle</a>';
+                    var b2bLink = '<a href="' + MenuState.b2bHomeUrl + '" class="menu-switch-link menu-switch-b2b">B2B</a>';
                     
                     var $linkContainer = $('<div class="menu-switch-container"></div>');
 
                     if (MenuState.isB2B) {
                         // Currently B2B: Show B2B label, link to B2C
-                        $linkContainer.append('<span class="menu-label menu-label-b2b">B2B Area</span>');
+                        $linkContainer.append('<span class="menu-label menu-label-b2b">B2B</span>');
                         $linkContainer.append(b2cLink);
                     } else {
                         // Currently B2C: Show B2C label, link to B2B
-                        $linkContainer.append('<span class="menu-label menu-label-b2c">B2C Area</span>');
+                        $linkContainer.append('<span class="menu-label menu-label-b2c">LifeStyle</span>');
                         $linkContainer.append(b2bLink);
                     }
                     

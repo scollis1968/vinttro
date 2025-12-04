@@ -12,6 +12,8 @@
 // ---------------------------------------------------
 
 require_once 'modal-form-functions.php';
+require_once 'conditional-menus.php';
+
 
 function my_plugin_load_styles() {
     wp_enqueue_style( 'my-custom-form-styles', plugins_url( 'custom-styles.css', __FILE__ ) );

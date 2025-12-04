@@ -1,20 +1,17 @@
-function custom_conditional_menu_items( $items, $args ) {
-    // Target only the main menu location we are using (replace 'primary' with your slug)
-    if ( 'main_menu' === $args->theme_location ) { 
-        
-        $my_account_link = '<li><a href="/my-account/">My Account</a></li>';
-        $login_link = '<li><a href="/login/">Login</a></li>';
+function custom_menu_swap_by_url( $args ) {
+    // 1. Check if the menu location is the one used by your main site navigation.
+    // If your theme uses 'main-menu' or 'header-menu', replace 'primary' below.
+    if ( 'primary' === $args['theme_location'] ) {
 
-        if ( is_user_logged_in() ) {
-            // User is logged in: Remove the Login link, Add the My Account link
-            $items = str_replace( $login_link, '', $items );
-            $items .= $my_account_link; 
+        // 2. Check if the current URL contains the /b2b/ slug.
+        if ( false !== strpos( $_SERVER['REQUEST_URI'], '/b2b/' ) ) {
+            // If B2B slug found: Use the B2B menu.
+            $args['menu'] = 'b2b'; // **Use the EXACT name of your B2B menu**
         } else {
-            // User is logged out: Remove the My Account link, Add the Login link
-            $items = str_replace( $my_account_link, '', $items );
-            $items .= $login_link;
+            // If B2B slug NOT found: Use the B2C menu.
+            $args['menu'] = 'main_menu'; // **Use the EXACT name of your B2C menu**
         }
     }
-    return $items;
+    return $args;
 }
-add_filter( 'wp_nav_menu_items', 'custom_conditional_menu_items', 10, 2 );
+add_filter( 'wp_nav_menu_args', 'custom_menu_swap_by_url' );

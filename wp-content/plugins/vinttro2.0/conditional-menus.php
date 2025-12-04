@@ -1,32 +1,41 @@
 <?php
+
+// ... other functions (like the meta tag function) ...
+
 /**
- * Function to conditionally swap the primary menu.
+ * Function to conditionally swap the primary menu to the B2B menu.
  * @param array $args The arguments for the menu.
  * @return array The filtered arguments.
  */
 function custom_swap_mobile_menu_on_b2b( $args ) {
 
-    // IMPORTANT: Replace 'primary' with the theme location used by your Mobile Menu plugin.
-    // If your Mobile Menu plugin uses the theme's default location, 'primary' is often correct.
-    $target_theme_location = 'primary'; 
-
-    // --- Conditional Check ---
+    // --- Configuration ---
     
-    // Check 1: Ensure we are targeting the correct menu location.
-    // This prevents affecting other menus (like a footer menu).
-    if ( $args['theme_location'] == $target_theme_location ) {
+    // 1. Enter the EXACT name of your current Default Menu here (e.g., 'Main Menu', 'Primary Nav').
+    $default_menu_name = 'main_menu'; 
+    
+    // 2. Enter the EXACT name of the B2B Menu you created.
+    $b2b_menu_name = 'b2b';
+    
+    // 3. Enter the Post ID of your main B2B parent page (e.g., the page with the slug /b2b/).
+    $b2b_parent_id = 1829; // *** REPLACE with your actual B2B parent ID ***
+    
+    // ---------------------
 
-        // Check 2: Define your B2B condition.
-        // Option A: Check if the current page is a child of the B2B Parent Page (ID: 123)
-        // You MUST replace 123 with the actual ID of your B2B Parent Page.
-        $b2b_parent_id = 1825; 
+    // Check if the current menu being processed is our default menu (by name).
+    if ( $args['menu'] === $default_menu_name || ( isset( $args['menu'] ) && $args['menu'] === $default_menu_name ) ) {
+        
+        // --- B2B Conditional Logic ---
+        
+        // is_page() with an array of IDs checks if the current page is one of those IDs.
+        // We use get_post_ancestors to check if the current page is a child of the B2B page.
+        $ancestors = get_post_ancestors( get_the_ID() );
+        $is_b2b_page = is_page( $b2b_parent_id ) || in_array( $b2b_parent_id, $ancestors );
 
-        // is_page() also works for child pages.
-        if ( is_page( $b2b_parent_id ) || is_page( get_post_ancestors( get_the_ID() ) ) ) {
+        if ( $is_b2b_page ) {
             
-            // Check 3: If the condition is met, swap the menu.
-            // Replace 'B2B Menu' with the EXACT NAME of your B2B menu in Appearance -> Menus.
-            $args['menu'] = 'B2B Menu';
+            // Swap the menu to the B2B version
+            $args['menu'] = $b2b_menu_name;
         }
     }
 

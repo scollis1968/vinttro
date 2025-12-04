@@ -18,7 +18,7 @@ function custom_swap_mobile_menu_on_b2b( $args ) {
     $b2b_menu_name = 'b2b';
     
     // 3. Enter the Post ID of your main B2B parent page (e.g., the page with the slug /b2b/).
-    $b2b_parent_id = 1829; // *** REPLACE with your actual B2B parent ID ***
+    $b2b_parent_id = 1825; // *** REPLACE with your actual B2B parent ID ***
     
     // ---------------------
 

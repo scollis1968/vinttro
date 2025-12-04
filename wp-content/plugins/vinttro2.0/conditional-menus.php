@@ -123,10 +123,10 @@ function custom_inject_mobile_menu_links() {
                     var switchLink;
 
                     if (MenuState.isB2B) {
-                        currentLabel = '<span class="menu-label menu-label-b2b">B2B Area</span>';
+                        currentLabel = '<span class="menu-label menu-label-b2b">Business to Business</span>';
                         switchLink = b2cLink;
                     } else {
-                        currentLabel = '<span class="menu-label menu-label-b2c">LifeStyle Area</span>'; // Use LifeStyle for B2C label
+                        currentLabel = '<span class="menu-label menu-label-b2c">LifeStyle</span>'; // Use LifeStyle for B2C label
                         switchLink = b2bLink;
                     }
 

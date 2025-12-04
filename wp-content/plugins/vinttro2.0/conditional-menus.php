@@ -1,3 +1,4 @@
+<?php
 function custom_menu_swap_by_url( $args ) {
     // 1. Check if the menu location is the one used by your main site navigation.
     // If your theme uses 'main-menu' or 'header-menu', replace 'primary' below.

@@ -154,7 +154,7 @@ textarea {
 /* Change the color of the close icon when the menu is open (if needed) */
 .mobmenur-container .cancel-1 path {
     fill: #000000 !important;
-	  padding-top : 60px;
+	  padding-top : 5px;
 }
 
 

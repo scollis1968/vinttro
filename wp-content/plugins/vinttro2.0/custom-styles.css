@@ -123,6 +123,7 @@ textarea {
 
 .mobmenur-container{
 	  padding-right : 12px;
+      padding-top:20px;
 }
 .menu-main_menu-container {
     fill: #999999 !important;	
@@ -163,7 +164,7 @@ textarea {
     align-items: center; 
 }
 
-.mob-menu-logo-holder{ padding-top: 20px}
+.mob-menu-logo-holder{ padding-top: 50px}
 
 
 /*--------------------------*/

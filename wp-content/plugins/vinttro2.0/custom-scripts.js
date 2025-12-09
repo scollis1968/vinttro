@@ -1,19 +1,23 @@
 
 // custom-scripts.js (Updated Wrapper)
 jQuery(document).ready(function($) {
- 
-        // Get the hidden input field using the ID we added in CF7
-    const pageURLField = document.getElementById('cf7-page-url');
-    const pageNameField = document.getElementById('cf7-page-name');
 
-    // Check if the element exists on the page
-    if (pageURLField) {
-        pageURLField.value = window.location.href;
-    }
-    if (pageNameField) {
-        pageNameField.value = extractLastUrlSegment(window.location.href);
-    }
+    // Get all hidden input fields using the CLASS (Note the dot prefix: .cf7-page-url)
+    const pageURLFields = document.querySelectorAll('.cf7-page-url');
+    const pageNameFields = document.querySelectorAll('.cf7-page-name');
 
+    const currentURL = window.location.href;
+    const lastSegment = extractLastUrlSegment(currentURL);
+
+    // Populate all URL fields found on the page
+    pageURLFields.forEach(field => {
+        field.value = currentURL;
+    });
+
+    // Populate all Name/Segment fields found on the page
+    pageNameFields.forEach(field => {
+        field.value = lastSegment;
+    });
 });
 
 function extractLastUrlSegment(urlString) {

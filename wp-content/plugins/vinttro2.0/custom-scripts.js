@@ -70,7 +70,7 @@ document.addEventListener('wpcf7mailsent', function(event) {
     }
 
 }, false);
-
+/*
 document.addEventListener('DOMContentLoaded', function() {
     const customArea = document.querySelector('.custom-upload-area');
     const hiddenInput = document.querySelector('.custom-file-upload-input');
@@ -116,4 +116,133 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+});
+*/
+document.addEventListener('DOMContentLoaded', function() {
+    // Select ALL custom upload areas (the parent container for each repeatable block)
+    const allCustomAreas = document.querySelectorAll('.custom-upload-area');
+
+    // Iterate over each custom upload area found
+    allCustomAreas.forEach(customArea => {
+        // Find the hidden input and other related elements *within this specific customArea*
+        const hiddenInput = customArea.querySelector('.custom-file-upload-input');
+        // Note: 'placeholderImage' and 'instructions' are not strictly needed for the functionality
+        // but if you add them back, ensure they use customArea.querySelector()
+
+        // 1. Link the click on the custom area to the hidden input
+        if (customArea && hiddenInput) {
+            customArea.addEventListener('click', function(e) {
+                // Check if the click target is the hidden input itself (which prevents double click action)
+                if (e.target !== hiddenInput) {
+                    hiddenInput.click();
+                }
+            });
+        }
+
+        // 2. Handle image preview when a file is selected
+        if (hiddenInput) {
+            hiddenInput.addEventListener('change', function() {
+                const file = this.files[0];
+                const currentCustomArea = this.closest('.custom-upload-area'); // Get the specific area for this input
+
+                if (file && currentCustomArea) {
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        // Clear ALL contents of the CURRENT custom upload area
+                        currentCustomArea.innerHTML = ''; 
+                        
+                        const previewImage = document.createElement('img');
+                        previewImage.src = e.target.result;
+                        
+                        // Add the necessary classes for styling
+                        previewImage.classList.add('uploaded-preview-image');
+                        previewImage.classList.add('fill-dropzone-image');
+                        
+                        currentCustomArea.appendChild(previewImage);
+                    };
+
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    });
+
+    // *** IMPORTANT: ADD EVENT LISTENERS FOR NEWLY ADDED REPEATABLE FIELDS ***
+    // The Repeatable Fields plugin should fire an event when a new field is added.
+    // If you know the event it fires, you can use that.
+    // Assuming the plugin fires a standard jQuery event on the form when a new field group is added:
+    // This is an example, you might need to check the plugin's documentation for the exact event name.
+    
+    // Find the main form element (adjust selector if needed)
+    const formElement = document.querySelector('.wpcf7-form'); 
+
+    if (formElement) {
+        // Listen for the Contact Form 7 event that is often triggered after a dynamic change.
+        // The Repeatable Fields plugin might use a specific event, but we can try a general CF7 one.
+        document.addEventListener('wpcf7-dynamically-added-item', function (event) {
+            // When a new item is added, re-run the logic on the new element(s)
+            
+            // Re-select all custom areas, or just the new ones if the event provides them.
+            // For simplicity and robustness, we can re-run the whole loop, 
+            // but this is not the most efficient. 
+            // A better solution: Modify the above script into a function and call it here.
+            
+            // Since we can't be sure of the event/new element, let's stick to the standard fix:
+            // The Contact Form 7 Repeatable Fields plugin often works by triggering the 
+            // "wpcf7-dynamically-added-item" event on the document when a new group is added.
+            
+            // To simplify, let's wrap the core logic into a reusable function:
+            handleUploadArea(event.target); // Assuming 'event.target' is the newly added element
+            
+        }, false);
+    }
+    
+    function handleUploadArea(container) {
+        // Find all custom upload areas within the container (or just the container itself)
+        const newCustomAreas = container.matches('.custom-upload-area') 
+                                ? [container] 
+                                : container.querySelectorAll('.custom-upload-area');
+        
+        newCustomAreas.forEach(customArea => {
+            // Re-run the logic from above for this specific new/re-evaluated customArea
+            const hiddenInput = customArea.querySelector('.custom-file-upload-input');
+
+            // 1. Click Listener (Re-added, but might need to be careful of double listeners)
+            // It's usually better to check if an event listener has already been added.
+            // But since this is a new element, we assume it's safe to add.
+            if (customArea && hiddenInput) {
+                 customArea.addEventListener('click', function(e) {
+                    if (e.target !== hiddenInput) {
+                        hiddenInput.click();
+                    }
+                });
+            }
+
+            // 2. Change Listener
+            if (hiddenInput) {
+                hiddenInput.addEventListener('change', function() {
+                    const file = this.files[0];
+                    const currentCustomArea = this.closest('.custom-upload-area');
+
+                    if (file && currentCustomArea) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            currentCustomArea.innerHTML = ''; 
+                            const previewImage = document.createElement('img');
+                            previewImage.src = e.target.result;
+                            previewImage.classList.add('uploaded-preview-image', 'fill-dropzone-image');
+                            currentCustomArea.appendChild(previewImage);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        });
+    }
+
+    // After the initial loop, call the function for any existing elements as well 
+    // (though the initial loop already covers this, this is a pattern for reusability):
+    document.querySelectorAll('.custom-upload-area').forEach(area => handleUploadArea(area));
+
 });

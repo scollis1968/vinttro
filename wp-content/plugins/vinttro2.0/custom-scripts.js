@@ -8,6 +8,23 @@ jQuery(document).ready(function($) {
 
     // Target the field with class 'cf7-page-name'
     $('.cf7-page-name').val(lastSegment);
+
+    $('form.wpcf7-form').on('change', 'input.custom-file-upload-input', function() {
+        
+        // This function will fire when the 'change' event occurs 
+        // on *any* element matching 'input.custom-file-upload-input' 
+        // that is *inside* the 'form.wpcf7-form' element.
+
+        // The 'this' keyword inside here refers to the specific input that was changed 
+        // (whether it's the first or the tenth cloned instance).
+
+        // --- Insert your custom logic here ---
+        console.log("Change event fired on vehicle input: ", $(this).attr('name'));
+
+        // Example: If you need to populate a hidden field based on this click, 
+        // the logic should be here.
+        
+    });
 });
 
 function extractLastUrlSegment(urlString) {

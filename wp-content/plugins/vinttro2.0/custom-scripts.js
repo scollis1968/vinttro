@@ -42,7 +42,8 @@ jQuery(document).ready(function($) {
             console.log("Associated Input Name: ", $associatedInput.attr('name'));
 
             // 3. Trigger the click on the hidden input to open the file selection dialog.
-            $associatedInput[0].trigger('click');
+            // $associatedInput.trigger('click');
+            $associatedInput[0].click();
         } else {
             console.error("ERROR: Could not find the associated file input within the clicked upload area.");
         }

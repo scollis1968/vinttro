@@ -125,6 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 */
+/*-- debug -this is woking for 1st box only!
 document.addEventListener('DOMContentLoaded', function() {
     // Select ALL custom upload areas (the parent container for each repeatable block)
     const allCustomAreas = document.querySelectorAll('.custom-upload-area');
@@ -253,3 +254,4 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.custom-upload-area').forEach(area => handleUploadArea(area));
 
 });
+*/

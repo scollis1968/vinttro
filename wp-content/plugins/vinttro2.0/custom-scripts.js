@@ -29,21 +29,23 @@ jQuery(document).ready(function($) {
     // This fires when the user clicks the visual element that should open the file selector.
     // **You must replace '.vehicle-upload-trigger' with the actual class/ID of your visual button/dropzone area.**
     $('form.wpcf7-form').on('click', '.custom-upload-area', function(e) {
-        // Prevent the default action if it's a link or button
-        // e.preventDefault();
 
         console.log("Visual custom-upload-area Clicked.");
 
-        // If you need to *programmatically* click the hidden file input:
-        // 1. Find the associated hidden input for this specific vehicle instance.
-        const $associatedInput = $(this).closest('.vehicle-container').find('input.custom-file-upload-input');
-        console.log("associatedInput = ", $associatedInput.attr('name'));
-        // 2. Trigger the click on the hidden input to open the file selection dialog.
-        // NOTE: Some browsers restrict this for security, but it often works when clicking a label/button
-        // that is explicitly linked to the input.
-        // $associatedInput.trigger('click');
+        // 1. Find the associated hidden input by searching DOWN from the clicked element (this).
+        // The input is a child of the clicked .custom-upload-area.
+        const $associatedInput = $(this).find('input.custom-file-upload-input');
 
-        // Logic to run WHEN the user attempts to upload (e.g., check if max vehicles reached)
+        // 2. IMPORTANT: Check if the element was actually found
+        if ($associatedInput.length) {
+            // Now you can safely display the name
+            console.log("Associated Input Name: ", $associatedInput.attr('name'));
+
+            // 3. Trigger the click on the hidden input to open the file selection dialog.
+            $associatedInput.trigger('click');
+        } else {
+            console.error("ERROR: Could not find the associated file input within the clicked upload area.");
+        }
     });
 });
 

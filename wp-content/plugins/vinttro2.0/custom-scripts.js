@@ -37,7 +37,7 @@ jQuery(document).ready(function($) {
         // If you need to *programmatically* click the hidden file input:
         // 1. Find the associated hidden input for this specific vehicle instance.
         const $associatedInput = $(this).closest('.vehicle-container').find('input.custom-file-upload-input');
-
+        console.log("associatedInput = ", $associatedInput.attr('name'));
         // 2. Trigger the click on the hidden input to open the file selection dialog.
         // NOTE: Some browsers restrict this for security, but it often works when clicking a label/button
         // that is explicitly linked to the input.

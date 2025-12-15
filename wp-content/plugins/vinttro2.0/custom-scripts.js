@@ -1,63 +1,97 @@
 
-// custom-scripts.js (Updated Wrapper)
 jQuery(document).ready(function($) {
     const currentURL = window.location.href;
     const lastSegment = extractLastUrlSegment(currentURL);
 
     $('.cf7-page-url').val(currentURL); 
-
-    // Target the field with class 'cf7-page-name'
     $('.cf7-page-name').val(lastSegment);
 
+    // ==========================================================
+    // 💡 UPDATE: CHANGE LISTENER (Handles file selection)
+    // ==========================================================
     $('form.wpcf7-form').on('change', 'input.custom-file-upload-input', function() {
         
-        // This function will fire when the 'change' event occurs 
-        // on *any* element matching 'input.custom-file-upload-input' 
-        // that is *inside* the 'form.wpcf7-form' element.
-
-        // The 'this' keyword inside here refers to the specific input that was changed 
-        // (whether it's the first or the tenth cloned instance).
-
-        // --- Insert your custom logic here ---
         console.log("Change event fired on vehicle input: ", $(this).attr('name'));
 
-        // Example: If you need to populate a hidden field based on this click, 
-        // the logic should be here.
+        // 1. Get the files array from the input element
+        const input = this;
+        const file = input.files[0];
+
+        // 2. Locate the parent custom-upload-area
+        const $uploadArea = $(input).closest('.custom-upload-area');
         
+        // 3. Find or create the image element for preview
+        let $previewImage = $uploadArea.find('img.preview-image');
+
+        if (file) {
+            const reader = new FileReader();
+
+            // Check if the selected file is an image
+            if (!file.type.match('image.*')) {
+                console.error("Selected file is not an image.");
+                // Optionally add code here to clear the input or show an error message
+                return;
+            }
+
+            // Set up the reader to execute when the file is loaded
+            reader.onload = function(e) {
+                // If the image element doesn't exist, create it
+                if ($previewImage.length === 0) {
+                    $previewImage = $('<img>')
+                        .addClass('preview-image')
+                        .css({
+                            'max-width': '100%',
+                            'height': 'auto',
+                            'display': 'block',
+                            'margin-bottom': '10px'
+                        });
+                    // Insert the new image element right after the input's paragraph wrapper
+                    $uploadArea.prepend($previewImage);
+                }
+                
+                // 4. Update the source of the preview image
+                $previewImage.attr('src', e.target.result);
+                
+                // OPTIONAL: Hide the descriptive text after image is uploaded
+                $uploadArea.find('p:not(:has(span))').hide(); 
+            };
+
+            // Read the file content as a Data URL (Base64)
+            reader.readAsDataURL(file);
+
+        } else {
+            // Handle clearing the preview if the file selection is cancelled/cleared
+            if ($previewImage.length > 0) {
+                $previewImage.remove();
+                // OPTIONAL: Show the descriptive text again
+                $uploadArea.find('p:not(:has(span))').show();
+            }
+        }
     });
-    // --- ADDED: CLICK LISTENER FOR THE VISUAL UPLOAD TRIGGER ---
-    // This fires when the user clicks the visual element that should open the file selector.
-    // **You must replace '.vehicle-upload-trigger' with the actual class/ID of your visual button/dropzone area.**
+    // ==========================================================
+    // (CLICK LISTENER code remains unchanged and is placed here)
+    // ==========================================================
     $('form.wpcf7-form').on('click', '.custom-upload-area', function(e) {
         e.stopPropagation();
         console.log("Visual custom-upload-area Clicked.");
 
-        // 1. Find the associated hidden input by searching DOWN from the clicked element (this).
-        // The input is a child of the clicked .custom-upload-area.
         const $associatedInput = $(this).find('input.custom-file-upload-input');
 
-        // 2. IMPORTANT: Check if the element was actually found
         if ($associatedInput.length) {
-            // Now you can safely display the name
             console.log("Associated Input Name: ", $associatedInput.attr('name'));
-
-            // 3. Trigger the click on the hidden input to open the file selection dialog.
-            // $associatedInput.trigger('click');
             $associatedInput[0].click();
         } else {
             console.error("ERROR: Could not find the associated file input within the clicked upload area.");
         }
     });
+
+    // (extractLastUrlSegment function is fine and should be placed after document.ready)
 });
 
 function extractLastUrlSegment(urlString) {
-  // 1. Clean the string: Remove any trailing forward slash (/)
+  // ... (Your original function code) ...
   const cleanedUrl = urlString.endsWith('/') ? urlString.slice(0, -1) : urlString;
-
-  // 2. Split the cleaned string by the forward slash (/)
   const segments = cleanedUrl.split('/');
-
-  // 3. Pop the last element off the array (which is the segment we want)
   return segments.pop();
 }
 

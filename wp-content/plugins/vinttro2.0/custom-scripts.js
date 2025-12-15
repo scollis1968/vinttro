@@ -29,7 +29,7 @@ jQuery(document).ready(function($) {
     // This fires when the user clicks the visual element that should open the file selector.
     // **You must replace '.vehicle-upload-trigger' with the actual class/ID of your visual button/dropzone area.**
     $('form.wpcf7-form').on('click', '.custom-upload-area', function(e) {
-
+        e.stopPropagation();
         console.log("Visual custom-upload-area Clicked.");
 
         // 1. Find the associated hidden input by searching DOWN from the clicked element (this).
@@ -42,7 +42,7 @@ jQuery(document).ready(function($) {
             console.log("Associated Input Name: ", $associatedInput.attr('name'));
 
             // 3. Trigger the click on the hidden input to open the file selection dialog.
-            $associatedInput.trigger('click');
+            $associatedInput[0].trigger('click');
         } else {
             console.error("ERROR: Could not find the associated file input within the clicked upload area.");
         }

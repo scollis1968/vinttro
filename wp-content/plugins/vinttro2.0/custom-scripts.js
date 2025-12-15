@@ -25,6 +25,26 @@ jQuery(document).ready(function($) {
         // the logic should be here.
         
     });
+    // --- ADDED: CLICK LISTENER FOR THE VISUAL UPLOAD TRIGGER ---
+    // This fires when the user clicks the visual element that should open the file selector.
+    // **You must replace '.vehicle-upload-trigger' with the actual class/ID of your visual button/dropzone area.**
+    $('form.wpcf7-form').on('click', '.custom-upload-area', function(e) {
+        // Prevent the default action if it's a link or button
+        // e.preventDefault();
+
+        console.log("Visual custom-upload-area Clicked.");
+
+        // If you need to *programmatically* click the hidden file input:
+        // 1. Find the associated hidden input for this specific vehicle instance.
+        const $associatedInput = $(this).closest('.vehicle-container').find('input.custom-file-upload-input');
+
+        // 2. Trigger the click on the hidden input to open the file selection dialog.
+        // NOTE: Some browsers restrict this for security, but it often works when clicking a label/button
+        // that is explicitly linked to the input.
+        // $associatedInput.trigger('click');
+
+        // Logic to run WHEN the user attempts to upload (e.g., check if max vehicles reached)
+    });
 });
 
 function extractLastUrlSegment(urlString) {

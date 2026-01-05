@@ -13,6 +13,7 @@
 
 require_once 'modal-form-functions.php';
 require_once 'conditional-menus.php';
+require_once 'suitecrm-integration.php';
 
 
 function my_plugin_load_styles() {

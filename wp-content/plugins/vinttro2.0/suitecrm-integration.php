@@ -10,6 +10,7 @@ function suitecrm_quote_request($contact_form) {
     // 1. Check for the class 'suitecrm-sync'
     $form_class = (string) $contact_form->prop('html_class');
     if (strpos($form_class, 'suitecrm-quote-request') === false) {
+        error_log("suitecrm-integration $form_class=" . $form_class );
         return; 
     }
 

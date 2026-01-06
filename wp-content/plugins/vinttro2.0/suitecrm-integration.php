@@ -35,6 +35,8 @@ function sync_cf7_to_suitecrm($contact_form) {
 }
 
 function get_token($url, $username, $password, $client_id, $client_secret) {
+
+
     $ch = curl_init();
     
     // SuiteCRM V8 uses /Api/access_token
@@ -81,9 +83,9 @@ function create_suitecrm_record($token, $form_data) {
         'data' => [
             'type' => 'Leads',
             'attributes' => [
-                'last_name'   => $form_data['your-name'],
-                'email1'      => $form_data['your-email'],
-                'description' => $form_data['your-message'],
+                'last_name'   => $form_data['last-name'],
+                'email'      => $form_data['email'],
+                'description' => $form_data['additional-information'],
             ]
         ]
     ];

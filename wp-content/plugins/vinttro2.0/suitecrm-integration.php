@@ -85,7 +85,7 @@ function create_suitecrm_record($token, $form_data) {
             'attributes' => [
                 'last_name'   => $form_data['last-name'],
                 'email'      => $form_data['email'],
-                'description' => $form_data['additional-information'],
+                'description' => $form_data['additional-info'],
             ]
         ]
     ];

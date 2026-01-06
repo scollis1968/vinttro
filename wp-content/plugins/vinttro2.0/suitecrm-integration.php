@@ -9,6 +9,8 @@ $client_secret = SUITECRM_CLIENT_SECRET;
 add_action('wpcf7_before_send_mail', 'sync_cf7_to_suitecrm');
 
 function sync_cf7_to_suitecrm($contact_form) {
+    error_log("suitecrm-integration wpcf7_before_send_mail triggered.");
+
     // Get the submission instance
     $submission = WPCF7_Submission::get_instance();
     if (!$submission) return;
@@ -17,6 +19,7 @@ function sync_cf7_to_suitecrm($contact_form) {
     $data = $submission->get_posted_data();
 
     // Only run for a specific form (replace 123 with your Form ID)
+    error_log("suitecrm-integration - Contact_form.id = " . $contact_form->id());
     if ($contact_form->id() != 123) return;
 
     // 1. Get Access Token from SuiteCRM

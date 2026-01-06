@@ -7,29 +7,17 @@ add_action('wpcf7_before_send_mail', 'suitecrm_quote_request');
 
 function suitecrm_quote_request($contact_form) {
     error_log("suitecrm-integration wpcf7_before_send_mail triggered.");
-    // 1. Try to get the class from the attributes array
-    $shortcode_atts = $contact_form->shortcode_attributes();
-    $form_class = isset($shortcode_atts['html_class']) ? $shortcode_atts['html_class'] : '';
-    error_log("suitecrm-integration - 1 form_class: " . $form_class);
-    // 2. If that's still empty, check the unit_tag (some plugins use this for classes)
-    if (empty($form_class)) {
-        $form_class = (string) $contact_form->prop('html_class');
-    }
-    error_log("suitecrm-integration - 2form_class: " . $form_class);
-    // 3. Perform the check
-    if (strpos($form_class, 'suitecrm-quote-request') === false) {
-        // Final fallback: Check the Title if the class isn't being captured
-        if ($contact_form->title() !== 'Quote Request Form') {
-            error_log("suitecrm-integration - title: " . ($contact_form->title()));
-            return; 
-        }
-    }
-    error_log("suitecrm-integration - 3 form_class: " . $form_class);
-    
     $submission = WPCF7_Submission::get_instance();
     if (!$submission) return;
-
     $data = $submission->get_posted_data();
+
+    // Now we just check if this field exists and equals 'create_lead'
+    if (!isset($data['suitecrm_action']) || $data['suitecrm_action'] !== 'create_lead') {
+        error_log("suitecrm-integration no action or not create_lead.");
+        return; 
+    }
+
+    error_log("SuiteCRM action detected: " . $data['suitecrm_action']);
 
     // Check Form ID
     if ($contact_form->id() != 2303) return;

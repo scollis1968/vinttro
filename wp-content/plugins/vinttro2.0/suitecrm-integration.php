@@ -8,9 +8,9 @@ add_action('wpcf7_before_send_mail', 'suitecrm_quote_request');
 function suitecrm_quote_request($contact_form) {
     error_log("suitecrm-integration wpcf7_before_send_mail triggered.");
     // 1. Check for the class 'suitecrm-sync'
-    $form_class = (string) $contact_form->prop('html_class');
+    $form_class = (string) $contact_form->prop('class');
     if (strpos($form_class, 'suitecrm-quote-request') === false) {
-        error_log("suitecrm-integration $form_class=" . $form_class );
+        error_log("suitecrm-integration form_class=" . $form_class );
         return; 
     }
 

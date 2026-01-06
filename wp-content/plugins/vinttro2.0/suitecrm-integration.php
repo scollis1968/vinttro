@@ -17,6 +17,7 @@ function sync_cf7_to_suitecrm($contact_form) {
     $data = $submission->get_posted_data();
 
     // Only run for a specific form (replace 123 with your Form ID)
+    error_log("SuiteCRM Integration - Contact_form.id = " . $$contact_form->id());
     if ($contact_form->id() != 123) return;
 
     // 1. Get Access Token from SuiteCRM

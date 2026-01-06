@@ -1,10 +1,10 @@
 <?php
 
-$suitecrm_url = $_ENV['SUITECRM_URL'];
-$username = $_ENV['USERNAME'];
-$password = $_ENV['PASSWORD'];
-$client_id = $_ENV['CLIENT_ID'];
-$client_secret = $_ENV['CLIENT_SECRET'];
+$suitecrm_url = SUITECRM_URL;
+$username = SUITECRM_USERNAME;
+$password = SUITECRM_PASSWORD;
+$client_id = SUITECRM_CLIENT_ID;
+$client_secret = SUITECRM_CLIENT_SECRET;
 
 add_action('wpcf7_before_send_mail', 'sync_cf7_to_suitecrm');
 

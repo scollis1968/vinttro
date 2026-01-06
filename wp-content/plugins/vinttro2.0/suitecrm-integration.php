@@ -3,11 +3,15 @@
  * Plugin Name: SuiteCRM Integration for CF7
  */
 
-add_action('wpcf7_before_send_mail', 'sync_cf7_to_suitecrm');
+add_action('wpcf7_before_send_mail', 'suitecrm-quote-request');
 
-function sync_cf7_to_suitecrm($contact_form) {
+function suitecrm-quote-request($contact_form) {
     error_log("suitecrm-integration wpcf7_before_send_mail triggered.");
-
+    // 1. Check for the class 'suitecrm-sync'
+    $form_class = $contact_form->prop('html_class');
+    if (strpos($form_class, 'suitecrm-quote-request') === false) {
+        return; 
+    }
     $submission = WPCF7_Submission::get_instance();
     if (!$submission) return;
 
@@ -78,15 +82,26 @@ function get_token($url, $username, $password, $client_id, $client_secret) {
 function create_suitecrm_record($token, $form_data) {
     // Again, use the Constant for the base URL
     $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
+    // Add optional fields only if they exist in this specific form
     
+// Build attributes dynamically based on what is in the form
+    $attributes = [
+        'last_name'   => isset($form_data['last-name']) ? $form_data['last-name'] : 'Web Lead',
+        'email1'      => isset($form_data['email']) ? $form_data['email'] : '',
+        'description' => isset($form_data['dditional-info']) ? $form_data['dditional-info'] : 'Submission from website',
+    ];
+
+    if (isset($form_data['phone-number'])) {
+        $attributes['phone_work'] = $form_data['phone-number'];
+    }
+    
+    if (isset($form_data['company-name'])) {
+        $attributes['account_name'] = $form_data['company-name'];
+    }
     $payload = [
         'data' => [
             'type' => 'Leads',
-            'attributes' => [
-                'last_name'   => $form_data['last-name'],
-                'email'      => $form_data['email'],
-                'description' => $form_data['additional-info'],
-            ]
+            'attributes' => $attributes
         ]
     ];
 

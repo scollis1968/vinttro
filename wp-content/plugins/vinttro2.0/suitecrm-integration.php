@@ -3,9 +3,9 @@
  * Plugin Name: SuiteCRM Integration for CF7
  */
 
-add_action('wpcf7_before_send_mail', 'suitecrm-quote-request');
+add_action('wpcf7_before_send_mail', 'suitecrm_quote_request');
 
-function suitecrm-quote-request($contact_form) {
+function suitecrm_quote_request($contact_form) {
     error_log("suitecrm-integration wpcf7_before_send_mail triggered.");
     // 1. Check for the class 'suitecrm-sync'
     $form_class = $contact_form->prop('html_class');

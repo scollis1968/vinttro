@@ -20,15 +20,18 @@ function sync_cf7_to_suitecrm($contact_form) {
 
     // Only run for a specific form (replace 123 with your Form ID)
     error_log("suitecrm-integration - Contact_form.id = " . $contact_form->id());
-    if ($contact_form->id() != 123) return;
+    if ($contact_form->id() != 2303) return;
 
     // 1. Get Access Token from SuiteCRM
     $token = get_token($suitecrm_url, $username, $password,$client_id,$client_secret);
     echo "Successfully authenticated. Starting import...\n";
+    error_log("suitecrm-integration after get_token");
+
 
     // 2. Send Data to SuiteCRM
     if ($token) {
         create_suitecrm_record($token, $data);
+        error_log("suitecrm-integration after create_suitecrm_record");
     }
 }
 function get_token($url, $username, $password, $client_id, $client_secret ) {

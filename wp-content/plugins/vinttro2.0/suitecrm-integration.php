@@ -11,10 +11,15 @@ function suitecrm_quote_request($contact_form) {
     if (!$submission) return;
     $data = $submission->get_posted_data();
 
-    // Now we just check if this field exists and equals 'create_lead'
-    if (!isset($data['suitecrm_action']) || $data['suitecrm_action'] !== 'create_lead') {
-        error_log("suitecrm-integration no action or not create_lead.");
+  // Check for our new field
+    if (empty($data['suitecrm_action'])) {
+        error_log("CRITICAL: suitecrm_action is missing or empty.");
         return; 
+    }
+
+    if ($data['suitecrm_action'] != 'create_lead') {
+        error_log("Success: suitecrm_action does not match 'create_lead'. Proceeding...");
+        return;
     }
 
     error_log("SuiteCRM action detected: " . $data['suitecrm_action']);

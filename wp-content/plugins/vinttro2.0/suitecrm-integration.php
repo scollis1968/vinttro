@@ -95,7 +95,7 @@ function create_suitecrm_record($token, $form_data) {
     $attributes = [
         'last_name'   => isset($form_data['last-name']) ? $form_data['last-name'] : 'Web Lead',
         'email1'      => isset($form_data['email']) ? $form_data['email'] : '',
-        'description' => isset($form_data['dditional-info']) ? $form_data['dditional-info'] : 'Submission from website',
+        'description' => isset($form_data['additional-info']) ? $form_data['additional-info'] : 'Submission from website',
     ];
 
     if (isset($form_data['phone-number'])) {
@@ -112,7 +112,7 @@ function create_suitecrm_record($token, $form_data) {
         ]
     ];
 
-    wp_remote_post($url, [
+    $lead_response = wp_remote_post($url, [
         'headers' => [
             'Authorization' => 'Bearer ' . $token,
             'Content-Type'  => 'application/vnd.api+json',
@@ -120,4 +120,66 @@ function create_suitecrm_record($token, $form_data) {
         ],
         'body' => json_encode($payload)
     ]);
+
+    $body = json_decode(wp_remote_retrieve_body($lead_response), true);
+    $lead_id = $body['data']['id'] ?? null;
+    // This could be improved by loop 1 to 10 and exit on first missing registration.
+    foreach ($form_data as $key => $value) {
+        if (strpos($key, 'vehicle-reg__') !== false) {
+            $index = str_replace('vehicle-reg__', '', $key);
+            
+            $vehicle_data = [
+                'reg'   => $value,
+                'make'  => $form_data["vehicle-make__$index"] ?? '',
+                'model' => $form_data["vehicle-model__$index"] ?? '',
+            ];
+
+            create_vehicle_and_link($token, $lead_id, $vehicle_data);
+        }
+    }
+
+}
+
+function create_vehicle_and_link($token, $lead_id, $vehicle_data) {
+    $base_url = rtrim(SUITECRM_URL, '/');
+    
+    // 1. Create the Vehicle Record
+    $vehicle_url = $base_url . '/Api/V8/module';
+    $vehicle_payload = [
+        'data' => [
+            'type' => 'FNOI_Vehicle', // Your custom module name
+            'attributes' => [
+                'name' => $vehicle_data['reg'],
+                'registation_number' => $vehicle_data['reg'],
+                'make' => $vehicle_data['make'],
+                'model' => $vehicle_data['model'],
+            ]
+        ]
+    ];
+
+    $response = wp_remote_post($vehicle_url, [
+        'headers' => ['Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/vnd.api+json'],
+        'body' => json_encode($vehicle_payload)
+    ]);
+    
+    $res_body = json_decode(wp_remote_retrieve_body($response), true);
+    $vehicle_id = $res_body['data']['id'] ?? null;
+
+    // 2. Link Vehicle to Lead
+    if ($vehicle_id && $lead_id) {
+        // The {LinkName} is usually something like 'leads_vint_vehicles_1'
+        $rel_url = $base_url . "/Api/V8/module/Leads/$lead_id/relationships/leads_vint_vehicles_1";
+        
+        $rel_payload = [
+            'data' => [
+                'type' => 'vint_Vehicles',
+                'id' => $vehicle_id
+            ]
+        ];
+
+        wp_remote_post($rel_url, [
+            'headers' => ['Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/vnd.api+json'],
+            'body' => json_encode($rel_payload)
+        ]);
+    }
 }

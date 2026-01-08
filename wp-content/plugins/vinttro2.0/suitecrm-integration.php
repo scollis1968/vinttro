@@ -151,7 +151,7 @@ function create_vehicle_and_link($token, $lead_id, $vehicle_data) {
             'type' => 'FNOI_Vehicle', // Your custom module name
             'attributes' => [
                 'name' => $vehicle_data['reg'],
-                'registation_number' => $vehicle_data['reg'],
+                'registration_number' => $vehicle_data['reg'],
                 'make' => $vehicle_data['make'],
                 'model' => $vehicle_data['model'],
             ]

@@ -171,11 +171,12 @@ function create_vehicle_and_link($token, $lead_id, $vehicle_data) {
     // 2. Link Vehicle to Lead
     if ($vehicle_id && $lead_id) {
         // The {LinkName} is usually something like 'leads_vint_vehicles_1'
-        $rel_url =  rtrim(SUITECRM_URL, '/') . "/V8/module/Leads/$lead_id/relationships/leads_vint_vehicles_1";
-        
+        $rel_url =  rtrim(SUITECRM_URL, '/') . "/V8/module/Leads/$lead_id/relationships/leads_fnoi_vehicle_1";
+
+        error_log("suitecrm-integration link vehicle_id=$vehicle_id lead_id=$lead_id ");
         $rel_payload = [
             'data' => [
-                'type' => 'vint_Vehicles',
+                'type' => 'FNOI_Vehicle',
                 'id' => $vehicle_id
             ]
         ];

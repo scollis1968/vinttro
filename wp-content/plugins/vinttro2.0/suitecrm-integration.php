@@ -142,12 +142,12 @@ function create_suitecrm_record($token, $form_data) {
 }
 
 function create_vehicle_and_link($token, $lead_id, $vehicle_data) {
-    $base_url = rtrim(SUITECRM_URL, '/');
     
-    error_log("suitecrm-integration create_vehicle_and_link reg= ". $vehicle_data['reg'] );    
+    error_log("suitecrm-integration create_vehicle_and_link reg=== ". $vehicle_data['reg'] );    
 
     // 1. Create the Vehicle Record
-    $vehicle_url = $base_url . '/Api/V8/module';
+
+    $vehicle_url  = rtrim(SUITECRM_URL, '/') . '/V8/module';
     $vehicle_payload = [
         'data' => [
             'type' => 'FNOI_Vehicle', // Your custom module name
@@ -171,7 +171,7 @@ function create_vehicle_and_link($token, $lead_id, $vehicle_data) {
     // 2. Link Vehicle to Lead
     if ($vehicle_id && $lead_id) {
         // The {LinkName} is usually something like 'leads_vint_vehicles_1'
-        $rel_url = $base_url . "/Api/V8/module/Leads/$lead_id/relationships/leads_vint_vehicles_1";
+        $rel_url =  rtrim(SUITECRM_URL, '/') . "/V8/module/Leads/$lead_id/relationships/leads_vint_vehicles_1";
         
         $rel_payload = [
             'data' => [

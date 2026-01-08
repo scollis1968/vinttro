@@ -128,7 +128,7 @@ function create_suitecrm_record($token, $form_data) {
         error_log("suitecrm-integration form_data loop key= $key ");
         if (strpos($key, 'vehicle-reg__') !== false) {
             $index = str_replace('vehicle-reg__', '', $key);
-            
+            error_log("suitecrm-integration vehicle index = $index  reg= $value ");        
             $vehicle_data = [
                 'reg'   => $value,
                 'make'  => $form_data["vehicle-make__$index"] ?? '',
@@ -144,6 +144,8 @@ function create_suitecrm_record($token, $form_data) {
 function create_vehicle_and_link($token, $lead_id, $vehicle_data) {
     $base_url = rtrim(SUITECRM_URL, '/');
     
+    error_log("suitecrm-integration create_vehicle_and_link reg= ". $vehicle_data['reg'] );    
+
     // 1. Create the Vehicle Record
     $vehicle_url = $base_url . '/Api/V8/module';
     $vehicle_payload = [

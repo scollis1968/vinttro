@@ -125,6 +125,7 @@ function create_suitecrm_record($token, $form_data) {
     $lead_id = $body['data']['id'] ?? null;
     // This could be improved by loop 1 to 10 and exit on first missing registration.
     foreach ($form_data as $key => $value) {
+        error_log("suitecrm-integration form_data loop key= $key ");
         if (strpos($key, 'vehicle-reg__') !== false) {
             $index = str_replace('vehicle-reg__', '', $key);
             

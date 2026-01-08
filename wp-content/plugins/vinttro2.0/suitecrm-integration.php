@@ -144,7 +144,7 @@ function create_suitecrm_record($token, $form_data) {
 function create_vehicle_and_link($token, $lead_id, $vehicle_data) {
     $base_url = rtrim(SUITECRM_URL, '/');
     
-    error_log("suitecrm-integrationcreate_vehicle_and_link  reg= $$vehicle_data['reg'] ");        
+    error_log("suitecrm-integrationcreate_vehicle_and_link  reg= $vehicle_data['reg'] ");        
 
     // 1. Create the Vehicle Record
     $vehicle_url = $base_url . '/Api/V8/module';

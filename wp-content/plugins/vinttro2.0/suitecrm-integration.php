@@ -40,10 +40,11 @@ function suitecrm_quote_request($contact_form) {
 
     // 2. Send Data to SuiteCRM
     if ($token) {
-        create_suitecrm_record($token, $data);
-        error_log("suitecrm-integration after create_suitecrm_record");
+        create_lead($token, $data);
+        error_log("suitecrm-integration after create_lead");
     }
 }
+
 
 function get_token($url, $username, $password, $client_id, $client_secret) {
 
@@ -86,12 +87,144 @@ function get_token($url, $username, $password, $client_id, $client_secret) {
     }
 }
 
+function create_lead($token, $form_data) {
+    // This function is now integrated into create_suitecrm_record
+    $contact = get_contact_by_email($token, $form_data['email']);
+    if (!$contact) {
+        error_log("Contact already exists with email: " . $form_data['email']);
+        $contact = create_contact($token, $form_data);
+        if (!$contact) {
+            error_log("Failed to create contact for email: " . $form_data['email']);
+            return null;
+        }
+    }
+
+    $accountId  = $contact['attributes'].['account_id'] ?? null;    
+    
+    if ($accountId) {
+        $account = get_account($token, $accountId);    
+    } else {
+        $account = create_account($token, $form_data);    
+    }
+    if (!$account) {
+        error_log("Failed to create account for email: " . $form_data['email']);
+        return null;
+    }
+
+    // Now we have both contact and account, proceed to create lead
+    $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
+    $payload = [
+        'data' => [
+            'type' => 'Leads',
+            'attributes' => [
+                'last_name'   => isset($form_data['last-name']) ? $form_data['last-name'] : 'Web Lead',
+                'email1'      => isset($form_data['email']) ? $form_data['email'] : '',
+                'phone_work'  => isset($form_data['phone-number']) ? $form_data['phone-number'] : '',
+                'account_name' => isset($form_data['company-name']) ? $form_data['company-name'] : '',
+                'description' => isset($form_data['additional-info']) ? $form_data['additional-info'] : 'Submission from website',
+            ]
+        ]   
+    ];
+    $response = wp_remote_post($url, [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/vnd.api+json',
+            'Accept'        => 'application/vnd.api+json'
+        ],
+        'body' => json_encode($payload)
+    ]); 
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    $lead = $body['data'] ?? null;
+    if (!$lead) {
+        error_log("Failed to create lead: " . wp_remote_retrieve_body($response));
+        return null;
+    };
+
+    return $lead;   
+}
+
+function get_contact_by_email($token, $email) {
+    $ch = curl_init();
+    $search_url = rtrim(SUITECRM_URL, '/') . '/V8/module/Contacts?filter[0][email1][eq]=' . urlencode($email);
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => $search_url,
+        CURLOPT_CUSTOMREQUEST  => 'GET',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/vnd.api+json',
+            'Accept: application/vnd.api+json'
+        ],
+        CURLOPT_SSL_VERIFYPEER => false, // Only for debugging
+    ]);
+
+    $response = curl_exec($ch);
+    $data = json_decode($response, true);
+    curl_close($ch);
+
+    if (!empty($data['data'])) {
+        return $data['data'][0]; // Return the first matching contact
+    } else {
+        return null;
+    }
+}
+
+function create_contact($token, $form_data) {
+    $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
+    $payload = [
+        'data' => [
+            'type' => 'Contacts',
+            'attributes' => [
+                'first_name' => isset($form_data['first-name']) ? $form_data['first-name'] : '',
+                'last_name'  => isset($form_data['last-name']) ? $form_data['last-name'] : 'Web Lead',
+                'email1'     => isset($form_data['email']) ? $form_data['email'] : '',
+            ]
+        ]
+    ];
+
+    $response = wp_remote_post($url, [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/vnd.api+json',
+            'Accept'        => 'application/vnd.api+json'
+        ],
+        'body' => json_encode($payload)
+    ]);
+
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    return $body['data'] ?? null;
+}
+
+function create_account($token, $form_data) {
+    $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
+    $payload = [
+        'data' => [
+            'type' => 'Accounts',
+            'attributes' => [
+                'name' => isset($form_data['company-name']) ? $form_data['company-name'] : 'Web Company',
+            ]
+        ]
+    ];
+
+    $response = wp_remote_post($url, [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/vnd.api+json',
+            'Accept'        => 'application/vnd.api+json'
+        ],
+        'body' => json_encode($payload)
+    ]);
+
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    return $body['data'] ?? null;
+}   
+
 function create_suitecrm_record($token, $form_data) {
     // Again, use the Constant for the base URL
     $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
     // Add optional fields only if they exist in this specific form
     
-// Build attributes dynamically based on what is in the form
+    // Build attributes dynamically based on what is in the form
     $attributes = [
         'last_name'   => isset($form_data['last-name']) ? $form_data['last-name'] : 'Web Lead',
         'email1'      => isset($form_data['email']) ? $form_data['email'] : '',

@@ -5,20 +5,18 @@
 
 add_action('wpcf7_before_send_mail', 'suitecrm_quote_request');
 class SuiteCrmContact {
+    public string $type = 'Contacts';
     public string $name;
     public string $salutation;
     public string $first_name;
     public string $last_name;
-    public string $type = 'Contacts';
 
     // The constructor allows us to translate form data immediately
     public function __construct(array $formData) {
-        $this->name = $formData['title'] . " " . $formData['first-name'] . " " . $formData['last-name'] ?? 'Web Company';
         $this->salutation = $formData['title'] ?? '';
         $this->first_name = $formData['first-name'] ?? '';
-        $this->last_name = $formData['last-name'] ?? '';
-        // You can add more mappings here:
-        // $this->email = $formData['email-address'] ?? '';
+        $this->last_name  = $formData['last-name'] ?? 'Web Company';
+        $this->name = trim($this->salutation . " " . $this->first_name . " " . $this->last_name);
     }
 
     /**
@@ -39,14 +37,18 @@ class SuiteCrmContact {
     }
 }
 class SuiteCrmAccount {
-    public string $name;
     public string $type = 'Accounts';
+    public string $name;
+    public string $salutation;
+    public string $first_name;
+    public string $last_name;
 
     // The constructor allows us to translate form data immediately
     public function __construct(array $formData) {
-        $this->name = $formData['first-name'] . " " . $formData['last-name'] ?? 'Web Company';
-        // You can add more mappings here:
-        // $this->email = $formData['email-address'] ?? '';
+        $this->salutation = $formData['title'] ?? '';
+        $this->first_name = $formData['first-name'] ?? '';
+        $this->last_name  = $formData['last-name'] ?? 'Web Company';
+        $this->name = trim($this->salutation . " " . $this->first_name . " " . $this->last_name);
     }
 
     /**

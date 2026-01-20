@@ -4,7 +4,16 @@
  */
 
 add_action('wpcf7_before_send_mail', 'suitecrm_quote_request');
-class SuiteCrmContact {
+class SuiteCrmBase {
+    protected function flatten($value): string {
+        if (is_array($value)) {
+            return !empty($value) ? (string) $value[0] : '';
+        }
+        return (string) $value;
+    }
+}
+
+class SuiteCrmContact extends SuiteCrmBase {
     public string $type = 'Contacts';
     public $name = '';
     public $salutation = '';
@@ -13,9 +22,9 @@ class SuiteCrmContact {
 
     // The constructor allows us to translate form data immediately
     public function __construct(array $formData) {
-        $this->salutation = $formData['title'] ?? '';
-        $this->first_name = $formData['first-name'] ?? '';
-        $this->last_name  = $formData['last-name'] ?? 'Web Company';
+        $this->salutation = $this->flatten($formData['title'] ?? '');
+        $this->first_name = $this->flatten($formData['first-name'] ?? '');
+        $this->last_name  = $this->flatten($formData['last-name'] ?? 'Web Company');
         $this->name = trim($this->salutation . " " . $this->first_name . " " . $this->last_name);
     }
 
@@ -36,7 +45,7 @@ class SuiteCrmContact {
         ];
     }
 }
-class SuiteCrmAccount {
+class SuiteCrmAccount extends SuiteCrmBase {
     public $type = 'Accounts';
     public $name = '';
     public $salutation = '';
@@ -45,9 +54,9 @@ class SuiteCrmAccount {
 
     // The constructor allows us to translate form data immediately
     public function __construct(array $formData) {
-        $this->salutation = $formData['title'] ?? '';
-        $this->first_name = $formData['first-name'] ?? '';
-        $this->last_name  = $formData['last-name'] ?? 'Web Company';
+        $this->salutation = $this->flatten($formData['title'] ?? '');
+        $this->first_name = $this->flatten($formData['first-name'] ?? '');
+        $this->last_name  = $this->flatten($formData['last-name'] ?? 'Web Company');
         $this->name = trim($this->salutation . " " . $this->first_name . " " . $this->last_name);
     }
 
@@ -66,13 +75,14 @@ class SuiteCrmAccount {
     }
 }
 
+
 function suitecrm_quote_request($contact_form) {
     error_log("suitecrm-integration wpcf7_before_send_mail triggered.");
     $submission = WPCF7_Submission::get_instance();
     if (!$submission) return;
     $data = $submission->get_posted_data();
 
-  // Check for our new field
+    // Check for our new field
     if (empty($data['suitecrm_action'])) {
         error_log("CRITICAL: suitecrm_action is missing or empty.");
         return; 
@@ -105,7 +115,6 @@ function suitecrm_quote_request($contact_form) {
         error_log("suitecrm-integration after create_lead");
     }
 }
-
 
 function get_token($url, $username, $password, $client_id, $client_secret) {
 

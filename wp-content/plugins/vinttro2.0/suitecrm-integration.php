@@ -4,6 +4,40 @@
  */
 
 add_action('wpcf7_before_send_mail', 'suitecrm_quote_request');
+class SuiteCrmContact {
+    public string $name;
+    public string $salutation;
+    public string $first_name;
+    public string $last_name;
+    public string $type = 'Contacts';
+
+    // The constructor allows us to translate form data immediately
+    public function __construct(array $formData) {
+        $this->name = $formData['title'] . " " . $formData['first-name'] . " " . $formData['last-name'] ?? 'Web Company';
+        $this->salutation = $formData['title'] ?? '';
+        $this->first_name = $formData['first-name'] ?? '';
+        $this->last_name = $formData['last-name'] ?? '';
+        // You can add more mappings here:
+        // $this->email = $formData['email-address'] ?? '';
+    }
+
+    /**
+     * Formats the data specifically for the SuiteCRM V8 API structure
+     */
+    public function toApiPayload(): array {
+        return [
+            'data' => [
+                'type' => $this->type,
+                'attributes' => [
+                    'name' => $this->name,
+                    'salutation' => $this->salutation,
+                    'first_name' => $this->first_name,
+                    'last_name' => $this->last_name    
+                ]
+            ]
+        ];
+    }
+}
 class SuiteCrmAccount {
     public string $name;
     public string $type = 'Accounts';
@@ -117,7 +151,8 @@ function create_lead($token, $form_data) {
     $contact = get_contact_by_email($token, $form_data['email']);
     if (!$contact) {
         error_log("Contact doesn't exist, create_contact with email: " . $form_data['email']);
-        $contact = create_contact($token, $form_data);
+        $contact = new SuiteCrmContact($form_data);
+        $contact = create_contact($token, $contact);
         if (!$contact) {
             error_log("Failed to create contact for email: " . $form_data['email']);
             return null;
@@ -195,7 +230,7 @@ function get_contact_by_email($token, $email) {
     }
 }
 
-function create_contact($token, $form_data) {
+function create_contact_old($token, $form_data) {
     $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
     $payload = [
         'data' => [
@@ -220,6 +255,22 @@ function create_contact($token, $form_data) {
     $body = json_decode(wp_remote_retrieve_body($response), true);
     return $body['data'] ?? null;
 }
+function create_contact(string $token, SuiteCrmContact $contact) {
+    $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
+
+    $response = wp_remote_post($url, [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/vnd.api+json',
+            'Accept'        => 'application/vnd.api+json'
+        ],
+        'body' => json_encode($contact->toApiPayload()) // Use the class method
+    ]);
+
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    return $body['data'] ?? null;
+}
+
 function create_account(string $token, SuiteCrmAccount $account) {
     $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
 
@@ -235,30 +286,7 @@ function create_account(string $token, SuiteCrmAccount $account) {
     $body = json_decode(wp_remote_retrieve_body($response), true);
     return $body['data'] ?? null;
 }
-function create_account_old($token, $form_data) {
-    $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
-    $payload = [
-        'data' => [
-            'type' => 'Accounts',
-            'attributes' => [
-                'name' => isset($form_data['company-name']) ? $form_data['company-name'] : 'Web Company',
-            ]
-        ]
-    ];
-
-    $response = wp_remote_post($url, [
-        'headers' => [
-            'Authorization' => 'Bearer ' . $token,
-            'Content-Type'  => 'application/vnd.api+json',
-            'Accept'        => 'application/vnd.api+json'
-        ],
-        'body' => json_encode($payload)
-    ]);
-
-    $body = json_decode(wp_remote_retrieve_body($response), true);
-    return $body['data'] ?? null;
-}   
-
+ 
 function create_suitecrm_record($token, $form_data) {
     // Again, use the Constant for the base URL
     $url = rtrim(SUITECRM_URL, '/') . '/V8/module';

@@ -6,10 +6,10 @@
 add_action('wpcf7_before_send_mail', 'suitecrm_quote_request');
 class SuiteCrmContact {
     public string $type = 'Contacts';
-    public string $name;
-    public string $salutation;
-    public string $first_name;
-    public string $last_name;
+    public string $name = '';
+    public string $salutation = '';
+    public string $first_name = '';
+    public string $last_name = '';
 
     // The constructor allows us to translate form data immediately
     public function __construct(array $formData) {
@@ -38,10 +38,10 @@ class SuiteCrmContact {
 }
 class SuiteCrmAccount {
     public string $type = 'Accounts';
-    public string $name;
-    public string $salutation;
-    public string $first_name;
-    public string $last_name;
+    public string $name = '';
+    public string $salutation = '';
+    public string $first_name = '';
+    public string $last_name = '';
 
     // The constructor allows us to translate form data immediately
     public function __construct(array $formData) {

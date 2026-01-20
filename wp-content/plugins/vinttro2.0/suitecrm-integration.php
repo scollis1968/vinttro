@@ -4,6 +4,31 @@
  */
 
 add_action('wpcf7_before_send_mail', 'suitecrm_quote_request');
+class SuiteCrmAccount {
+    public string $name;
+    public string $type = 'Accounts';
+
+    // The constructor allows us to translate form data immediately
+    public function __construct(array $formData) {
+        $this->name = $formData['first-name'] . " " . $formData['last-name'] ?? 'Web Company';
+        // You can add more mappings here:
+        // $this->email = $formData['email-address'] ?? '';
+    }
+
+    /**
+     * Formats the data specifically for the SuiteCRM V8 API structure
+     */
+    public function toApiPayload(): array {
+        return [
+            'data' => [
+                'type' => $this->type,
+                'attributes' => [
+                    'name' => $this->name,
+                ]
+            ]
+        ];
+    }
+}
 
 function suitecrm_quote_request($contact_form) {
     error_log("suitecrm-integration wpcf7_before_send_mail triggered.");
@@ -104,7 +129,8 @@ function create_lead($token, $form_data) {
     if ($accountId) {
         $account = get_account($token, $accountId);    
     } else {
-        $account = create_account($token, $form_data);    
+        $account = new SuiteCrmAccount($form_data);
+        $account = create_account($token, $account);    
     }
     if (!$account) {
         error_log("Failed to create account for email: " . $form_data['email']);
@@ -194,8 +220,22 @@ function create_contact($token, $form_data) {
     $body = json_decode(wp_remote_retrieve_body($response), true);
     return $body['data'] ?? null;
 }
+function create_account(string $token, SuiteCrmAccount $account) {
+    $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
 
-function create_account($token, $form_data) {
+    $response = wp_remote_post($url, [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/vnd.api+json',
+            'Accept'        => 'application/vnd.api+json'
+        ],
+        'body' => json_encode($account->toApiPayload()) // Use the class method
+    ]);
+
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    return $body['data'] ?? null;
+}
+function create_account_old($token, $form_data) {
     $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
     $payload = [
         'data' => [

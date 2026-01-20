@@ -91,7 +91,7 @@ function create_lead($token, $form_data) {
     // This function is now integrated into create_suitecrm_record
     $contact = get_contact_by_email($token, $form_data['email']);
     if (!$contact) {
-        error_log("Contact already exists with email: " . $form_data['email']);
+        error_log("Contact doesn't exist, create_contact with email: " . $form_data['email']);
         $contact = create_contact($token, $form_data);
         if (!$contact) {
             error_log("Failed to create contact for email: " . $form_data['email']);
@@ -99,7 +99,7 @@ function create_lead($token, $form_data) {
         }
     }
 
-    $accountId  = $contact['attributes'].['account_id'] ?? null;    
+    $accountId  = $contact['attributes']['account_id'] ?? null;    
     
     if ($accountId) {
         $account = get_account($token, $accountId);    

@@ -75,7 +75,6 @@ class SuiteCrmAccount extends SuiteCrmBase {
     }
 }
 
-
 function suitecrm_quote_request($contact_form) {
     error_log("suitecrm-integration wpcf7_before_send_mail triggered.");
     $submission = WPCF7_Submission::get_instance();
@@ -194,6 +193,8 @@ function create_lead($token, $form_data) {
                 'phone_work'  => isset($form_data['phone-number']) ? $form_data['phone-number'] : '',
                 'account_name' => isset($form_data['company-name']) ? $form_data['company-name'] : '',
                 'description' => isset($form_data['additional-info']) ? $form_data['additional-info'] : 'Submission from website',
+                'contact_id'=> isset($contact['id']) ? $contact['id'] : '',
+                'account_id'=> isset($account['id']) ? $account['id'] : '',
             ]
         ]   
     ];
@@ -241,31 +242,6 @@ function get_contact_by_email($token, $email) {
     }
 }
 
-function create_contact_old($token, $form_data) {
-    $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
-    $payload = [
-        'data' => [
-            'type' => 'Contacts',
-            'attributes' => [
-                'first_name' => isset($form_data['first-name']) ? $form_data['first-name'] : '',
-                'last_name'  => isset($form_data['last-name']) ? $form_data['last-name'] : 'Web Lead',
-                'email1'     => isset($form_data['email']) ? $form_data['email'] : '',
-            ]
-        ]
-    ];
-
-    $response = wp_remote_post($url, [
-        'headers' => [
-            'Authorization' => 'Bearer ' . $token,
-            'Content-Type'  => 'application/vnd.api+json',
-            'Accept'        => 'application/vnd.api+json'
-        ],
-        'body' => json_encode($payload)
-    ]);
-
-    $body = json_decode(wp_remote_retrieve_body($response), true);
-    return $body['data'] ?? null;
-}
 function create_contact(string $token, SuiteCrmContact $contact) {
     $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
 

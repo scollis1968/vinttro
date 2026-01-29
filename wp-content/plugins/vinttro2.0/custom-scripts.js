@@ -16,8 +16,8 @@ jQuery(document).ready(function($) {
         const pageKey = sourcePage ? sourcePage.toLowerCase().replace(/-/g, ' ').trim() : "";
 
         switch (pageKey) {
-            case "classic car insurance":
-                message = "🚗 Protect Your Pride and Joy – Get a Classic Quote";
+            case "Specialist-car-insurance":
+                message = "🚗 At VINTTRO we understand what car specialist insurance means";
                 break;
             case "fleet insurance":
                 message = "🚛 Streamline Your Business – Multi-Vehicle Fleet Rates";

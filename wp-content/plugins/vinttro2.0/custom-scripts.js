@@ -1,10 +1,30 @@
 
 jQuery(document).ready(function($) {
     const currentURL = window.location.href;
-    const lastSegment = extractLastUrlSegment(currentURL);
+    const sourcePage = extractLastUrlSegment(currentURL);
 
     $('.cf7-page-url').val(currentURL); 
-    $('.cf7-page-name').val(lastSegment);
+    $('.cf7-page-name').val(sourcePage);
+
+    var headerElement = $('#dynamic-message-header');
+        var message = "";
+        switch (sourcePage) {
+            case "classic car insurance":
+                message = "🚗 Protect Your Pride and Joy – Get a Classic Quote";
+                break;
+            case "fleet insurance":
+                message = "🚛 Streamline Your Business – Multi-Vehicle Fleet Rates";
+                break;
+            case "prestige car insurance":
+                message = "✨ Tailored Cover for Your High-Performance Vehicle";
+                break;
+            case "motor trade":
+                message = "🛠️ Professional Cover for Your Motor Trade Business";
+                break;
+            default:
+                // Fallback for any page not specifically listed above
+                message = "Custom Quote for " + sourcePage;
+        }
 
     // ==========================================================
     // 💡 UPDATE: CHANGE LISTENER (Handles file selection)

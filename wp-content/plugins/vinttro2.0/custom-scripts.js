@@ -12,10 +12,7 @@ jQuery(document).ready(function($) {
         const headerElement = $('#dynamic-message-header');
         let message = "";
         
-        // Normalize for matching
-        const pageKey = sourcePage ? sourcePage.toLowerCase().replace(/-/g, ' ').trim() : "";
-
-        switch (pageKey) {
+        switch (sourcePage) {
             case "Specialist-car-insurance":
                 message = "🚗 At VINTTRO we understand what car specialist insurance means";
                 break;

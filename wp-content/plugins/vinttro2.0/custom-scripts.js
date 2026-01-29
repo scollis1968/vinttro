@@ -1,14 +1,21 @@
 
 jQuery(document).ready(function($) {
-    const currentURL = window.location.href;
-    const sourcePage = extractLastUrlSegment(currentURL);
+ function updatePageContext() {
+        const currentURL = window.location.href;
+        const sourcePage = extractLastUrlSegment(currentURL);
+        
+        // Use .val() and then trigger 'change' so CF7 knows it happened
+        $('.cf7-page-url').val(currentURL).trigger('change');
+        $('.cf7-page-name').val(sourcePage).trigger('change');
 
-    $('.cf7-page-url').val(currentURL); 
-    $('.cf7-page-name').val(sourcePage);
+        // Update the Header Message
+        const headerElement = $('#dynamic-message-header');
+        let message = "";
+        
+        // Normalize for matching
+        const pageKey = sourcePage ? sourcePage.toLowerCase().replace(/-/g, ' ').trim() : "";
 
-    var headerElement = $('#dynamic-message-header');
-        var message = "";
-        switch (sourcePage) {
+        switch (pageKey) {
             case "classic car insurance":
                 message = "🚗 Protect Your Pride and Joy – Get a Classic Quote";
                 break;
@@ -22,9 +29,16 @@ jQuery(document).ready(function($) {
                 message = "🛠️ Professional Cover for Your Motor Trade Business";
                 break;
             default:
-                // Fallback for any page not specifically listed above
-                message = "Custom Quote for " + sourcePage;
+                message = "Custom Quote for " + sourcePage.charAt(0).toUpperCase() + sourcePage.slice(1);
         }
+        headerElement.html(message);
+    }
+
+    // Run context update immediately AND when popup opens (Popup Builder event)
+    updatePageContext();
+    $(document).on('sgpbDidOpen', function() {
+        updatePageContext();
+    })
 
     // ==========================================================
     // 💡 UPDATE: CHANGE LISTENER (Handles file selection)

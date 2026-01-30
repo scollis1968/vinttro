@@ -15,9 +15,10 @@ jQuery(document).ready(function($) {
         // Normalize for matching
         const pageKey = sourcePage ? sourcePage.toLowerCase().replace(/-/g, ' ').trim() : "";
 
-        switch (pageKey) {
-            case "specialist car insurance":
-                message = "🚗 At VINTTRO we understand what car specialist insurance means";
+        switch (sourcePage.toLowerCase()) {
+            case "specialist-car-insurance":
+                //message = "🚗 At VINTTRO we understand what specialist car insurance means";
+                message = "VINTTRO we understand what specialist car insurance means";
                 break;
             case "fleet insurance":
                 message = "🚛 Streamline Your Business – Multi-Vehicle Fleet Rates";
@@ -29,7 +30,7 @@ jQuery(document).ready(function($) {
                 message = "🛠️ Professional Cover for Your Motor Trade Business";
                 break;
             default:
-                message = "Custom Quote for " + sourcePage.charAt(0).toUpperCase() + sourcePage.slice(1);
+                message = "Custom Quote for " + sourcePage.charAt(0).toUpperCase() + sourcePage.slice(1).toLowerCase().replace(/-/g, ' ').trim();
         }
         headerElement.html(message);
     }

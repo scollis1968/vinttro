@@ -18,7 +18,7 @@ jQuery(document).ready(function($) {
         switch (sourcePage.toLowerCase()) {
             case "specialist-car-insurance":
                 //message = "🚗 At VINTTRO we understand what specialist car insurance means";
-                message = "At VINTTRO we understand what specialist car insurance means";
+                message = "Here at VINTTRO we understand what specialist car insurance means";
                 break;
             case "fleet insurance":
                 message = "🚛 Streamline Your Business – Multi-Vehicle Fleet Rates";

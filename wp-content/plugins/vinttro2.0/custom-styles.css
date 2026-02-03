@@ -267,6 +267,7 @@ textarea {
     background-color: #ffd700;
     color: #333;
 }
-.tribe-events-calendar-list__event-featured-image {
-    border-radius: 20px;
+.tribe-events-calendar-list__event-featured-image img, 
+.tribe-events-event-image img {
+    border-radius: 20px !important;
 }

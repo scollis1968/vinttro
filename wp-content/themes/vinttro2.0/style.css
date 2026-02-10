@@ -13,23 +13,26 @@ Text Domain: my-custom-theme
 
 /* Your actual CSS starts here... */
 
-/* 1. Fix the width and center the popup */
+/* 1. Prevent the background page from scrolling while popup is open */
+/* (The plugin usually adds a class to the body, often 'sgpb-subs-open-body') */
+body.sgpb-subs-open-body {
+    overflow: hidden !important;
+}
+
+/* 2. Force the popup container to allow scrolling */
 #sgpb-popup-dialog-main-div {
-    width: 95% !important;
-    max-width: 540px !important; /* Forces it back to your intended size */
-    margin: 0 auto !important;
+    max-height: 90vh !important; /* Limit height to 90% of screen */
+    overflow-y: auto !important; /* Force the vertical scrollbar */
 }
 
-/* 2. Break the 'Overflow Trap' on the inner divs */
-#sgpb-popup-dialog-main-div, 
-#sgpb-popup-dialog-main-div > div {
-    overflow-y: auto !important; /* Force vertical scrollbar */
-    overflow-x: hidden !important; /* Prevent horizontal wobbling */
-    max-height: 85vh !important; /* Don't let it get taller than 85% of the screen */
-}
-
-/* 3. Ensure the form wrapper doesn't stay 'hidden' if it's trapped */
-.sgpb-main-html-content-wrapper {
+/* 3. Kill the 'Overflow Trap' on ALL inner wrappers */
+#sgpb-popup-dialog-main-div div {
+    overflow: visible !important; 
     height: auto !important;
-    display: block !important;
+}
+
+/* 4. Ensure the content wrapper is scrollable if the above fails */
+.sg-popup-content, .sgpb-content {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch; /* Smooth scroll for mobile */
 }

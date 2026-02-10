@@ -13,25 +13,23 @@ Text Domain: my-custom-theme
 
 /* Your actual CSS starts here... */
 
-/* 1. Force the width to be sane and responsive */
+/* 1. Fix the width and center the popup */
 #sgpb-popup-dialog-main-div {
-    width: 95% !important; /* Overrides that crazy 1682px */
-    max-width: 550px !important; /* Keeps it looking like a popup on desktop */
-    left: 50% !important;
-    transform: translateX(-50%); /* Centers it horizontally */
+    width: 95% !important;
+    max-width: 540px !important; /* Forces it back to your intended size */
+    margin: 0 auto !important;
 }
 
-/* 2. Bring back the vertical scrollbar */
+/* 2. Break the 'Overflow Trap' on the inner divs */
 #sgpb-popup-dialog-main-div, 
 #sgpb-popup-dialog-main-div > div {
-    overflow-y: auto !important; /* Force vertical scroll if content is long */
-    max-height: 80vh !important; /* Ensure it doesn't taller than the screen */
+    overflow-y: auto !important; /* Force vertical scrollbar */
+    overflow-x: hidden !important; /* Prevent horizontal wobbling */
+    max-height: 85vh !important; /* Don't let it get taller than 85% of the screen */
 }
 
-/* 3. Fix the position to prevent it being stuck at 'left: 17px' */
-.sgpb-popup-dialog-main-div-theme-wrapper-3 {
-    left: 0 !important;
-    right: 0 !important;
-    display: flex !important;
-    justify-content: center !important;
+/* 3. Ensure the form wrapper doesn't stay 'hidden' if it's trapped */
+.sgpb-main-html-content-wrapper {
+    height: auto !important;
+    display: block !important;
 }

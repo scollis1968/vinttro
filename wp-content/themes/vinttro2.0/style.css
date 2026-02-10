@@ -13,26 +13,41 @@ Text Domain: my-custom-theme
 
 /* Your actual CSS starts here... */
 
-/* 1. Prevent the background page from scrolling while popup is open */
-/* (The plugin usually adds a class to the body, often 'sgpb-subs-open-body') */
-body.sgpb-subs-open-body {
-    overflow: hidden !important;
-}
+/* ============================================================
+   FINAL FIX FOR POPUP BUILDER SCROLL & WIDTH
+   ============================================================ */
 
-/* 2. Force the popup container to allow scrolling */
-#sgpb-popup-dialog-main-div {
-    max-height: 90vh !important; /* Limit height to 90% of screen */
-    overflow-y: auto !important; /* Force the vertical scrollbar */
-}
-
-/* 3. Kill the 'Overflow Trap' on ALL inner wrappers */
-#sgpb-popup-dialog-main-div div {
-    overflow: visible !important; 
+/* 1. Target the 'Trap' Div specifically using an attribute selector */
+/* This finds the div with the height:100% and kills the overflow:hidden */
+#sgpb-popup-dialog-main-div > div[style*="overflow:hidden"] {
     height: auto !important;
+    overflow: visible !important;
 }
 
-/* 4. Ensure the content wrapper is scrollable if the above fails */
-.sg-popup-content, .sgpb-content {
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch; /* Smooth scroll for mobile */
+/* 2. Fix the Main Container: Force width and enable scroll */
+#sgpb-popup-dialog-main-div {
+    width: 95% !important;
+    max-width: 550px !important; 
+    max-height: 85vh !important;  /* Limits popup height to 85% of viewport */
+    overflow-y: auto !important;   /* This enables the vertical scrollbar */
+    overflow-x: hidden !important; /* Prevents horizontal shaking */
+    display: block !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+}
+
+/* 3. Center the entire popup wrapper on the screen */
+.sgpb-popup-dialog-main-div-theme-wrapper-3 {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: fit-content !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+/* 4. Fix the Close Button (X) so it stays pinned to the top right */
+.sgpb-popup-close-button-3 {
+    right: 15px !important;
+    top: 15px !important;
+    position: absolute !important;
 }

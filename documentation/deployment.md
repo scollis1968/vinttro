@@ -74,3 +74,63 @@ As you can see if the hook satisfies all it's rules then it will execuute the de
 
 ## N.B. If you add additional instructions dont forget to add then to /etc/sudoers
 ## N.B. In /var/www/suitecrm edit compser.json and set "vlucas/phpdotenv": "^5.0", and run  sudo -u www-data composer install
+
+
+##
+
+# setup the wp cli on both machines
+    ```
+    curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    php wp-cli.phar --info
+    chmod +x wp-cli.phar
+    sudo mv wp-cli.phar /usr/local/bin/wp
+    ```
+
+# Setting up ssh permissions from Prod to UAT
+
+
+The v-sysnc.sh script will be executed as the webhook user and will beed to have ssh access to the UAT VM to grab the latest images and sql
+
+1. Make sure the webhoot home directory exists
+
+    ```
+    eval echo "~webhook"
+    ```
+
+1. Create the home directory and set the permission
+    ```
+    # Create the home and .ssh directory
+    sudo mkdir -p /home/webhook/.ssh
+
+    # Set the webhook user as the owner
+    sudo chown -R webhook:webhook /home/webhook
+
+    # Set the strict permissions SSH requires
+    sudo chmod 700 /home/webhook/.ssh
+    ```
+1. Create the ssh key
+    ```
+    sudo -u webhook ssh-keygen -t ed25519 -N "" -f /home/webhook/.ssh/id_ed25519
+    ```
+1. Copy the contents from  /home/webhook/.ssh/id_ed25519.pub to the UAT box and give the webhook user bash so it can run commands.
+    ```
+    sudo nano /nano /home/webhook/.ssh/authorized_keys
+    sudo chsh -s /bin/bash webhook
+    ``` 
+1. Test the ssh Connection 
+    ```
+ sudo -u webhook ssh -i /home/webhook/.ssh/id_ed25519 -o StrictHostKeyChecking=no webhook@10.154.0.3 'echo Connection Successful'
+    ```
+    
+Step 1: Give the Webhook user "Group Write" power
+On your Production VM, run these commands:
+
+Bash
+# 1. Add webhook user to the web server group
+sudo usermod -aG www-data webhook
+
+# 2. Make the uploads folder group-writable so webhook can update them
+sudo chmod -R g+w /var/www/wordpress/wp-content/uploads/
+
+# 3. Ensure the folder has the "SetGID" bit (new files will keep the correct group)
+sudo chmod g+s /var/www/wordpress/wp-content/uploads/

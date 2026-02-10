@@ -12,3 +12,26 @@ Text Domain: my-custom-theme
 */
 
 /* Your actual CSS starts here... */
+
+/* 1. Force the width to be sane and responsive */
+#sgpb-popup-dialog-main-div {
+    width: 95% !important; /* Overrides that crazy 1682px */
+    max-width: 550px !important; /* Keeps it looking like a popup on desktop */
+    left: 50% !important;
+    transform: translateX(-50%); /* Centers it horizontally */
+}
+
+/* 2. Bring back the vertical scrollbar */
+#sgpb-popup-dialog-main-div, 
+#sgpb-popup-dialog-main-div > div {
+    overflow-y: auto !important; /* Force vertical scroll if content is long */
+    max-height: 80vh !important; /* Ensure it doesn't taller than the screen */
+}
+
+/* 3. Fix the position to prevent it being stuck at 'left: 17px' */
+.sgpb-popup-dialog-main-div-theme-wrapper-3 {
+    left: 0 !important;
+    right: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+}

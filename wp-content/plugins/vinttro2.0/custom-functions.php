@@ -109,41 +109,46 @@ function suitecrm_store_user_id_after_registration($user_id) {
 add_action('profile_update', 'sync_new_user_to_suitecrm', 10, 2);
 
 function suitecrm_get_access_token() {
-    if ( ! defined('CRM_CLIENT_ID') ) { 
-        error_log(__FUNCTION__ . ': No CRM_CLIENT_ID defined! ( Check your wp-config.php ).' );
-        return null;
+    // 1. Check if we already have a valid token in the cache
+    $cached_token = get_transient('suitecrm_api_token');
+    if ( $cached_token ) {
+        return $cached_token;
     }
-    $client_id = CRM_CLIENT_ID;
 
-    if ( ! defined('CRM_CLIENT_SECRET') ) { 
-        error_log(__FUNCTION__ . ': No CRM_CLIENT_SECRET defined! ( Check your wp-config.php ).' );
-        return null;
-    }
-    $client_secret = CRM_CLIENT_SECRET;
+    // --- No cached token, proceed to fetch a new one ---
 
-    if ( ! defined('CRM_URL') ) { 
-        error_log(__FUNCTION__ . ': No CRM_URL defined ( Check your wp-config.php ).' );
+    if ( ! defined('CRM_CLIENT_ID') || ! defined('CRM_CLIENT_SECRET') || ! defined('CRM_URL') ) { 
+        error_log(__FUNCTION__ . ': Missing CRM configuration in wp-config.php');
         return null;
     }
+
     $api_url = CRM_URL . '/Api/access_token';
 
     $response = wp_remote_post($api_url, [
         'body' => [
-            'grant_type' => 'client_credentials',
-            'client_id' => $client_id,
-            'client_secret' => $client_secret
+            'grant_type'    => 'client_credentials',
+            'client_id'     => CRM_CLIENT_ID,
+            'client_secret' => CRM_CLIENT_SECRET
         ],
-        'timeout' => 15,
+        'timeout'   => 15,
         'sslverify' => false
     ]);
 
-    if (is_wp_error($response)) {
+    if ( is_wp_error($response) ) {
         error_log('SuiteCRM API Auth Error: ' . $response->get_error_message());
         return null;
     }
 
     $body = json_decode(wp_remote_retrieve_body($response), true);
-    return $body['access_token'] ?? null;
+    $token = $body['access_token'] ?? null;
+
+    if ( $token ) {
+        // 2. Cache the token. SuiteCRM tokens usually last 3600 seconds (1 hour).
+        // We save it for 55 minutes (3300 seconds) to be safe and avoid edge-case expiration.
+        set_transient('suitecrm_api_token', $token, 3300);
+    }
+
+    return $token;
 }
 
 function sync_new_user_to_suitecrm($user_id, $old_user_data) {

@@ -166,8 +166,8 @@ function suitecrm_get_access_token() {
 
     // --- No cached token, proceed to fetch a new one ---
 
-    if ( ! defined('CRM_CLIENT_ID') || ! defined('CRM_CLIENT_SECRET') || ! defined('CRM_URL') ) { 
-        error_log(__FUNCTION__ . ': Missing CRM configuration in wp-config.php');
+    if ( ! defined('SUITECRM_CLIENT_ID') || ! defined('SUITECRM_CLIENT_SECRET') || ! defined('SUITECRM_URL') ) { 
+        error_log(__FUNCTION__ . ': Missing SuiteCRM configuration in wp-config.php');
         return null;
     }
 
@@ -176,8 +176,8 @@ function suitecrm_get_access_token() {
     $response = wp_remote_post($api_url, [
         'body' => [
             'grant_type'    => 'client_credentials',
-            'client_id'     => CRM_CLIENT_ID,
-            'client_secret' => CRM_CLIENT_SECRET
+            'client_id'     => SUITECRM_CLIENT_ID,
+            'client_secret' => SUITECRM_CLIENT_SECRET
         ],
         'timeout'   => 15,
         'sslverify' => false

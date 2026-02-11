@@ -166,18 +166,20 @@ function suitecrm_get_access_token() {
 
     // --- No cached token, proceed to fetch a new one ---
 
-    if ( ! defined('SUITECRM_CLIENT_ID') || ! defined('SUITECRM_CLIENT_SECRET') || ! defined('SUITECRM_URL') ) { 
+    if ( ! defined('SUITECRM_CLIENT_ID') || ! defined('SUITECRM_CLIENT_SECRET') || ! defined('SUITECRM_URL') || ! defined('SUITECRM_USERNAME') || ! defined('SUITECRM_PASSWORD') ) { 
         error_log(__FUNCTION__ . ': Missing SuiteCRM configuration in wp-config.php');
         return null;
     }
 
-    $api_url = SUITECRM_URL . '/Api/access_token';
+    $api_url =  rtrim($SUITECRM_URL, '/') . '/access_token';
 
     $response = wp_remote_post($api_url, [
         'body' => [
-            'grant_type'    => 'client_credentials',
+            'grant_type'    => 'password',
             'client_id'     => SUITECRM_CLIENT_ID,
-            'client_secret' => SUITECRM_CLIENT_SECRET
+            'client_secret' => SUITECRM_CLIENT_SECRET,
+            'username'      => SUITECRM_USERNAME,
+            'password'      => SUITECRM_PASSWORD
         ],
         'timeout'   => 15,
         'sslverify' => false

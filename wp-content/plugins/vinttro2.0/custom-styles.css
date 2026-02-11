@@ -283,7 +283,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     overflow: hidden !important;
 }
 
-/* 2. CENTER THE WRAPPER & PIN THE POPUP */
+/* 2. THE WRAPPER (Centering Logic) */
 .sgpb-popup-dialog-main-div-theme-wrapper-3 {
     left: 0 !important;
     right: 0 !important;
@@ -291,47 +291,47 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     display: flex !important;
     justify-content: center !important;
     width: 100% !important;
-    pointer-events: none; /* Let clicks pass through the full-width wrapper... */
+    position: fixed !important;
+    /* We remove pointer-events: none because it kills the X button */
 }
 
 /* 3. THE POPUP BOX */
 #sgpb-popup-dialog-main-div {
-    pointer-events: auto; /* ...except for the popup box itself */
     width: 95% !important;
     max-width: 550px !important;
     max-height: 85vh !important;
-    overflow-y: auto !important;
-    position: relative !important; /* THIS IS KEY for the close button */
+    overflow-y: auto !important; /* Enable the vertical slider */
     display: block !important;
+    margin: 0 !important; /* Reset any plugin-forced margins */
+    border-width: 5px !important;
+    z-index: 10 !important;
 }
 
 /* 4. KILL THE OVERFLOW TRAPS */
-
 #sgpb-popup-dialog-main-div div {
     overflow: visible !important;
     height: auto !important;
 }
 
-/*
-
- 5. FIX THE GOLD X POSITION 
+/* 5. THE GOLD X (The Fix) */
+/* Since the X is a sibling, we position it relative to the VIEWPORT 
+   but align it to the right edge of our 550px centered box */
 .sgpb-popup-close-button-3 {
-    position: absolute !important;
-    right: 15px !important; /* Positioned relative to the 550px box 
-    top: 15px !important;
+    position: fixed !important;
+    /* This calculation centers the X relative to a 550px box */
+    left: calc(50% + 240px) !important; 
+    top: calc(5vh + 15px) !important;
+    width: 20px !important;
+    height: 20px !important;
     z-index: 999999 !important;
-}
-/*
-
-/* This resets the Gold X so it's relative to the POPUP, not the SCREEN */
-#sgpb-popup-dialog-main-div {
-    position: relative !important; /* This 'traps' the absolute X button */
+    cursor: pointer !important;
+    display: block !important;
 }
 
-.sgpb-popup-close-button-3 {
-    position: absolute !important;
-    right: 10px !important; /* Distance from the right edge of the FORM */
-    top: 10px !important;   /* Distance from the top edge of the FORM */
-    left: auto !important;  /* Kills the 'left: 17px' the plugin is forcing */
-    margin: 0 !important;
+/* Mobile Adjustment for the X */
+@media (max-width: 600px) {
+    .sgpb-popup-close-button-3 {
+        left: auto !important;
+        right: 5% !important;
+    }
 }

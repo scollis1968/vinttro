@@ -276,3 +276,45 @@ textarea {
     border-radius: 20px !important;
     overflow: hidden !important;
 }
+
+/*------------------------------------------------------------------------------------------*/
+/* 1. LOCK THE BACKGROUND 
+   When the popup wrapper is present, stop the body from scrolling */
+body:has(#sgpb-popup-dialog-main-div-wrapper) {
+    overflow: hidden !important;
+    height: 100vh !important;
+}
+
+/* 2. FIX THE POPUP WIDTH & POSITION
+   Force it to the center and stop it from expanding to 800px+ */
+#sgpb-popup-dialog-main-div-wrapper .sgpb-popup-dialog-main-div-theme-wrapper-3 {
+    left: 0 !important;
+    right: 0 !important;
+    top: 5vh !important; /* Push it down slightly from the top */
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
+
+#sgpb-popup-dialog-main-div {
+    width: 95% !important;
+    max-width: 550px !important; /* Your desired width */
+    max-height: 85vh !important;  /* Ensure it doesn't go off the screen */
+    overflow-y: auto !important;   /* THE VERTICAL SLIDER */
+    display: block !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+}
+
+/* 3. KILL THE NESTED 'OVERFLOW:HIDDEN' TRAPS
+   This targets the 100%/100% div that is chopping off your form */
+#sgpb-popup-dialog-main-div div {
+    overflow: visible !important;
+    height: auto !important;
+}
+
+/* 4. COMPLIANCE CONFLICT FIX
+   Ensure the cookie banner doesn't sit on top of the popup */
+#cmplz-cookiebanner-container {
+    z-index: 999900 !important; /* Slightly lower than the popup */
+}

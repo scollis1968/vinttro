@@ -83,7 +83,9 @@ function redirect_cf7_subscribers_only() {
     // Check if we are on the correct page
     if ( is_page( $subscribers_form_page_id ) && ! is_user_logged_in() ) {
         // Redirect to the guest form page
-        wp_redirect( 'https://wordpress.uat.vinttro.co.uk/register/' );
+        $redirect_url = home_url( '/register/' );
+        wp_redirect( $redirect_url );
+        //wp_redirect( 'https://wordpress.uat.vinttro.co.uk/register/' );
         exit;
     }
 }

@@ -171,7 +171,7 @@ function suitecrm_get_access_token() {
         return null;
     }
 
-    $api_url =  rtrim($SUITECRM_URL, '/') . '/access_token';
+    $api_url =  rtrim(SUITECRM_URL, '/') . '/access_token';
 
     $response = wp_remote_post($api_url, [
         'body' => [

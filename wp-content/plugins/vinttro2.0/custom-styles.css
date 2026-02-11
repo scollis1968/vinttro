@@ -278,43 +278,43 @@ textarea {
 }
 
 /*------------------------------------------------------------------------------------------*/
-/* 1. LOCK THE BACKGROUND 
-   When the popup wrapper is present, stop the body from scrolling */
+/* 1. LOCK THE BACKGROUND */
 body:has(#sgpb-popup-dialog-main-div-wrapper) {
     overflow: hidden !important;
-    height: 100vh !important;
 }
 
-/* 2. FIX THE POPUP WIDTH & POSITION
-   Force it to the center and stop it from expanding to 800px+ */
-#sgpb-popup-dialog-main-div-wrapper .sgpb-popup-dialog-main-div-theme-wrapper-3 {
+/* 2. CENTER THE WRAPPER & PIN THE POPUP */
+.sgpb-popup-dialog-main-div-theme-wrapper-3 {
     left: 0 !important;
     right: 0 !important;
-    top: 5vh !important; /* Push it down slightly from the top */
+    top: 5vh !important;
     display: flex !important;
     justify-content: center !important;
     width: 100% !important;
+    pointer-events: none; /* Let clicks pass through the full-width wrapper... */
 }
 
+/* 3. THE POPUP BOX */
 #sgpb-popup-dialog-main-div {
+    pointer-events: auto; /* ...except for the popup box itself */
     width: 95% !important;
-    max-width: 550px !important; /* Your desired width */
-    max-height: 85vh !important;  /* Ensure it doesn't go off the screen */
-    overflow-y: auto !important;   /* THE VERTICAL SLIDER */
+    max-width: 550px !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    position: relative !important; /* THIS IS KEY for the close button */
     display: block !important;
-    position: relative !important;
-    box-sizing: border-box !important;
 }
 
-/* 3. KILL THE NESTED 'OVERFLOW:HIDDEN' TRAPS
-   This targets the 100%/100% div that is chopping off your form */
+/* 4. KILL THE OVERFLOW TRAPS */
 #sgpb-popup-dialog-main-div div {
     overflow: visible !important;
     height: auto !important;
 }
 
-/* 4. COMPLIANCE CONFLICT FIX
-   Ensure the cookie banner doesn't sit on top of the popup */
-#cmplz-cookiebanner-container {
-    z-index: 999900 !important; /* Slightly lower than the popup */
+/* 5. FIX THE GOLD X POSITION */
+.sgpb-popup-close-button-3 {
+    position: absolute !important;
+    right: 15px !important; /* Positioned relative to the 550px box */
+    top: 15px !important;
+    z-index: 999999 !important;
 }

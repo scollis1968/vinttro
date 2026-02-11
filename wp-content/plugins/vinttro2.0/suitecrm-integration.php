@@ -76,7 +76,7 @@ class SuiteCrmAccount extends SuiteCrmBase {
 }
 
 function suitecrm_quote_request($contact_form) {
-    error_log("suitecrm-integration wpcf7_before_send_mail triggered.");
+    error_log("suitecrm-integration suitecrm_quote_request called.");
     $submission = WPCF7_Submission::get_instance();
     if (!$submission) return;
     $data = $submission->get_posted_data();
@@ -190,6 +190,12 @@ function suitecrm_get_access_token() {
 
     $body = json_decode(wp_remote_retrieve_body($response), true);
     $token = $body['access_token'] ?? null;
+
+    if ( !$token ) {
+        error_log('suitecrm-integration - suitecrm_get_access_token - No Token in $body: ' . json_encode($body));
+        return null;
+    }
+
 
     if ( $token ) {
         // 2. Cache the token. SuiteCRM tokens usually last 3600 seconds (1 hour).

@@ -305,11 +305,14 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     display: block !important;
 }
 
-/* 4. KILL THE OVERFLOW TRAPS 
+/* 4. KILL THE OVERFLOW TRAPS */
+
 #sgpb-popup-dialog-main-div div {
     overflow: visible !important;
     height: auto !important;
 }
+
+/*
 
  5. FIX THE GOLD X POSITION 
 .sgpb-popup-close-button-3 {

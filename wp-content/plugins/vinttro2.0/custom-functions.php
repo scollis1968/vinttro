@@ -17,12 +17,6 @@ require_once 'suitecrm-integration.php';
 
 
 function my_plugin_load_styles() {
-    wp_enqueue_style( 'my-custom-form-styles', plugins_url( 'custom-styles.css', __FILE__ ) );
-}
-add_action( 'wp_enqueue_scripts', 'my_plugin_load_styles' );
-
-//--------------------------------------------------------
-function my_plugin_load_styles() {
     // 1. Enqueue your custom CSS
     wp_enqueue_style( 'my-custom-form-styles', plugins_url( 'custom-styles.css', __FILE__ ), array(), '1.0.2' );
     
@@ -36,6 +30,13 @@ function my_plugin_load_styles() {
 }
 // Use priority 99 to ensure it fires after other plugins
 add_action( 'wp_enqueue_scripts', 'my_plugin_load_styles', 99 );
+
+//--------------------------------------------------------
+function my_plugin_load_scripts() {
+    // Enqueue the script, ensuring it loads in the footer
+    wp_enqueue_script( 'my-form-preview-script', plugins_url( 'custom-scripts.js', __FILE__ ), array('jquery'), '1.0', true );
+}
+add_action( 'wp_enqueue_scripts', 'my_plugin_load_scripts' );
 
 //--------------------------------------------------------
 

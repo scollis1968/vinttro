@@ -22,11 +22,20 @@ function my_plugin_load_styles() {
 add_action( 'wp_enqueue_scripts', 'my_plugin_load_styles' );
 
 //--------------------------------------------------------
-function my_plugin_load_scripts() {
-    // Enqueue the script, ensuring it loads in the footer
-    wp_enqueue_script( 'my-form-preview-script', plugins_url( 'custom-scripts.js', __FILE__ ), array('jquery'), '1.0', true );
+function my_plugin_load_styles() {
+    // 1. Enqueue your custom CSS
+    wp_enqueue_style( 'my-custom-form-styles', plugins_url( 'custom-styles.css', __FILE__ ), array(), '1.0.2' );
+    
+    // 2. Force a tiny bit of "Late" CSS directly into the header to kill the background scroll
+    // This is safer than a file for the 'body:has' rule
+    $custom_css = "
+        body:has(#sgpb-popup-dialog-main-div-wrapper) { overflow: hidden !important; }
+        .sgpb-popup-dialog-main-div-theme-wrapper-3 { left: 0 !important; right: 0 !important; display: flex !important; justify-content: center !important; }
+    ";
+    wp_add_inline_style( 'my-custom-form-styles', $custom_css );
 }
-add_action( 'wp_enqueue_scripts', 'my_plugin_load_scripts' );
+// Use priority 99 to ensure it fires after other plugins
+add_action( 'wp_enqueue_scripts', 'my_plugin_load_styles', 99 );
 
 //--------------------------------------------------------
 

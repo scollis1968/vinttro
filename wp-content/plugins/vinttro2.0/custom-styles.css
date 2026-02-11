@@ -305,16 +305,30 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     display: block !important;
 }
 
-/* 4. KILL THE OVERFLOW TRAPS */
+/* 4. KILL THE OVERFLOW TRAPS 
 #sgpb-popup-dialog-main-div div {
     overflow: visible !important;
     height: auto !important;
 }
 
-/* 5. FIX THE GOLD X POSITION */
+ 5. FIX THE GOLD X POSITION 
 .sgpb-popup-close-button-3 {
     position: absolute !important;
-    right: 15px !important; /* Positioned relative to the 550px box */
+    right: 15px !important; /* Positioned relative to the 550px box 
     top: 15px !important;
     z-index: 999999 !important;
+}
+/*
+
+/* This resets the Gold X so it's relative to the POPUP, not the SCREEN */
+#sgpb-popup-dialog-main-div {
+    position: relative !important; /* This 'traps' the absolute X button */
+}
+
+.sgpb-popup-close-button-3 {
+    position: absolute !important;
+    right: 10px !important; /* Distance from the right edge of the FORM */
+    top: 10px !important;   /* Distance from the top edge of the FORM */
+    left: auto !important;  /* Kills the 'left: 17px' the plugin is forcing */
+    margin: 0 !important;
 }

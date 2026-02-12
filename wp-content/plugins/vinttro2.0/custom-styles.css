@@ -335,3 +335,33 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
         right: 5% !important;
     }
 }
+
+/* ----------------------------------------------------------------------------*/
+/* This is Gemini generated solution to the Contact Form 7 acceptance field spacing issues */ 
+/* General Notes: - We use !important to override Contact Form 7's inline styles. - The goal is to create a clean, compact layout for the acceptance field without excessive spacing. - Adjust values as needed for your specific design preferences. */
+/* 1. Reset the acceptance field layout */
+.wpcf7-acceptance .wpcf7-list-item label {
+    display: flex !important;
+    align-items: flex-start; /* Keeps checkbox at the top of the text block */
+    gap: 12px;               /* Space between checkbox and text */
+    margin-bottom: 15px;     /* Space below the whole block */
+    line-height: 1.4;        /* Tightens the 'huge' line spacing */
+}
+
+/* 2. Style the checkbox itself */
+.wpcf7-acceptance input[type="checkbox"] {
+    margin-top: 4px !important; /* Tweaks vertical alignment with first line of text */
+    flex-shrink: 0;             /* Prevents the checkbox from squishing */
+}
+
+/* 3. Ensure the text aligns in a clean column */
+.wpcf7-list-item-label {
+    display: inline-block;
+    margin: 0 !important;       /* Removes any weird theme margins */
+    text-align: left;
+}
+
+/* 4. Optional: Clean up the bottom disclaimer spacing */
+.wpcf7-form p label {
+    line-height: 1.6;           /* Standardize general label spacing */
+}

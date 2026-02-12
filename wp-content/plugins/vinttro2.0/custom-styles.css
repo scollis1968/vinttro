@@ -339,62 +339,41 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 /* ----------------------------------------------------------------------------*/
 /* This is Gemini generated solution to the Contact Form 7 acceptance field spacing issues */ 
 /* General Notes: - We use !important to override Contact Form 7's inline styles. - The goal is to create a clean, compact layout for the acceptance field without excessive spacing. - Adjust values as needed for your specific design preferences. */
-/* 1. RESET THE WRAPPERS: Force everything to the left */
-.wpcf7-form-control-wrap[data-name="acceptance-896"],
-.wpcf7-acceptance,
-.wpcf7-list-item {
-    display: block !important;
-    text-align: left !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* 2. THE FLEX CONTAINER: Checkbox left, text right */
+/* 1. Target the specific Acceptance wrapper */
 .wpcf7-acceptance .wpcf7-list-item label {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: flex-start !important;
-    justify-content: flex-start !important; /* Forces content to start at the left */
-    gap: 12px !important;
-    margin: 10px 0 20px 0 !important;
+    display: grid !important;
+    /* Column 1: checkbox size | Column 2: the rest of the space */
+    grid-template-columns: 25px 1fr !important; 
+    align-items: start !important;
+    gap: 10px !important;
+    margin: 15px 0 !important;
     padding: 0 !important;
     width: 100% !important;
-    text-align: left !important;
 }
 
-/* 3. THE CHECKBOX: Prevent shifting */
+/* 2. Lock the Checkbox into the first column */
 .wpcf7-acceptance input[type="checkbox"] {
-    flex-shrink: 0 !important;
-    margin: 4px 0 0 0 !important; /* Vertical alignment tweak */
+    grid-column: 1 !important;
+    margin-top: 4px !important; /* Vertical alignment with first line of text */
     width: 18px !important;
     height: 18px !important;
-    -webkit-appearance: checkbox !important; /* Forces standard look */
+    padding: 0 !important;
 }
 
-/* 4. THE TEXT: The "Hanging Indent" Column */
+/* 3. Lock the Text into the second column */
 .wpcf7-list-item-label {
+    grid-column: 2 !important;
     display: block !important;
-    flex: 1 !important;
+    text-align: left !important;
+    line-height: 1.4 !important;
     margin: 0 !important;
     padding: 0 !important;
-    line-height: 1.4 !important;
-    text-align: left !important;
 }
 
-/* 5. THE DISCLAIMER: Spacing fix */
+/* 4. Ensure the disclaimer stays below and left-aligned */
 .wpcf7-form label:last-of-type {
     display: block !important;
     margin-top: 20px !important;
-    line-height: 1.5 !important;
-    clear: both !important;
-}
-
-/* 6. CLEAN UP POPUP INTERFERENCE */
-.wpcf7-form br {
-    display: none !important;
-}
-.wpcf7-form label {
-    display: block;
-    margin-bottom: 15px;
     text-align: left !important;
+    line-height: 1.5 !important;
 }

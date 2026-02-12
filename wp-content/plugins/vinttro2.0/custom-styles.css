@@ -358,6 +358,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     margin: 4px 0 0 0 !important;
     width: 18px !important;
     height: 18px !important;
+    margin-left: -15px !important;
     /* Ensure no margins are pushing it */
     padding: 0 !important;
 }

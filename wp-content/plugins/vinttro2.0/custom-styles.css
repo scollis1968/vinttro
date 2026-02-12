@@ -339,56 +339,54 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 /* ----------------------------------------------------------------------------*/
 /* This is Gemini generated solution to the Contact Form 7 acceptance field spacing issues */ 
 /* General Notes: - We use !important to override Contact Form 7's inline styles. - The goal is to create a clean, compact layout for the acceptance field without excessive spacing. - Adjust values as needed for your specific design preferences. */
-/* 1. RESET NESTED WRAPPERS */
-/* We need the spans to stop behaving like 'inline' elements */
-.wpcf7-acceptance, 
-.wpcf7-acceptance .wpcf7-list-item {
-    display: block !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* 2. THE HANGING INDENT LAYOUT */
-/* Force the label into a flex grid to create two distinct columns */
+/* 1. Force the Acceptance area to be a grid/flex container */
 .wpcf7-acceptance .wpcf7-list-item label {
     display: flex !important;
+    flex-direction: row !important;
     align-items: flex-start !important;
-    gap: 12px !important; /* This is your 'tab' width */
-    margin-left: 0 !important;
+    gap: 15px !important; /* This creates the 'tabbed' space */
+    margin: 0 0 20px 0 !important;
     padding: 0 !important;
-    line-height: 1.4 !important;
+    width: 100% !important;
 }
 
-/* 3. CHECKBOX PRECISION */
-/* Force the checkbox to the far left and align it with the top line of text */
+/* 2. Style the Checkbox Column */
 .wpcf7-acceptance input[type="checkbox"] {
-    margin: 4px 0 0 0 !important; 
-    padding: 0 !important;
-    flex-shrink: 0 !important; /* Prevents the box from squishing */
-    width: 18px !important;    /* Standard checkbox size */
+    flex-shrink: 0 !important; /* Stops the checkbox from getting squished */
+    margin: 4px 0 0 0 !important; /* Perfect vertical alignment with line 1 */
+    width: 18px !important;
     height: 18px !important;
+    cursor: pointer;
 }
 
-/* 4. TEXT ALIGNMENT */
-/* Ensure the text doesn't 'leak' back under the checkbox */
+/* 3. Style the Text Column */
 .wpcf7-list-item-label {
+    flex: 1 !important; /* Takes up all remaining space */
     display: block !important;
+    line-height: 1.5 !important;
     margin: 0 !important;
     padding: 0 !important;
     text-align: left !important;
+    font-size: 14px; /* Adjust to match your theme */
 }
 
-/* 5. DISCLAIMER SPACING (The VINTTRO text) */
-/* Targets the label following the submit button/breaks */
+/* 4. Fix the Bottom Disclaimer (VINTTRO will use...) */
 .wpcf7-form label:last-of-type {
     display: block !important;
-    margin-top: 25px !important; /* Space above the legal text */
-    line-height: 1.5 !important;
+    margin-top: 25px !important;
+    line-height: 1.6 !important;
     font-size: 0.9em;
+    padding-left: 0 !important;
 }
 
-/* 6. CLEAN UP AUTO-GAPS */
-/* Removes the double-spacing caused by CF7's auto-breaks */
+/* 5. Handle the Popup Builder's padding/BR interference */
 .wpcf7-form br {
     display: none !important;
+}
+.wpcf7-form label {
+    display: block;
+    margin-bottom: 15px;
+}
+.wpcf7-form label br {
+    display: block; /* Allows breaks inside labels if needed */
 }

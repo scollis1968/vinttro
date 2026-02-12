@@ -339,40 +339,45 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 /* ----------------------------------------------------------------------------*/
 /* This is Gemini generated solution to the Contact Form 7 acceptance field spacing issues */ 
 /* General Notes: - We use !important to override Contact Form 7's inline styles. - The goal is to create a clean, compact layout for the acceptance field without excessive spacing. - Adjust values as needed for your specific design preferences. */
-/* 1. Remove parent span constraints */
-.wpcf7-acceptance, 
-.wpcf7-acceptance .wpcf7-list-item {
-    display: block !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* 2. Reset the label to a clean flex container */
+/* 1. Fix the Checkbox & Hanging Indent */
 .wpcf7-acceptance .wpcf7-list-item label {
     display: flex !important;
     align-items: flex-start !important;
-    margin-left: 0 !important; /* Ensure no left margin */
-    padding-left: 0 !important; /* Ensure no left padding */
     gap: 12px;
+    margin-bottom: 20px !important; /* Space between checkbox and disclaimer */
 }
 
-/* 3. Force the checkbox to the absolute edge */
 .wpcf7-acceptance input[type="checkbox"] {
-    margin: 4px 0 0 0 !important; /* Reset all margins to 0 except the top tweak */
-    padding: 0 !important;
+    margin: 4px 0 0 0 !important;
     flex-shrink: 0;
-    /* If it still looks 1-2px too far right, uncomment the next line: */
-    /* margin-left: -2px !important; */ 
 }
 
-/* 4. Ensure the text flows correctly in its own column */
-.wpcf7-list-item-label {
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1.4;
-    display: block;
+/* 2. Fix the Bottom Disclaimer Spacing */
+/* This targets the label that follows the acceptance checkbox */
+.wpcf7-form .wpcf7-acceptance + br + input + br + label,
+.wpcf7-form label:last-of-type {
+    display: block !important;
+    margin-top: 15px !important; /* This adds the gap back */
+    padding-top: 0 !important;
+    line-height: 1.5 !important;
+    font-size: 0.95em;
+    color: #444;
 }
-/* 4. Kill the extra vertical gaps caused by CF7's auto-BR tags */
+
+/* 3. Global spacing for standard labels */
+.wpcf7-form label {
+    display: block;
+    margin-bottom: 15px; /* Consistent gap between all your text fields */
+}
+
+/* 4. The "Gap Killer" - Handle the auto BR tags selectively */
 .wpcf7-form br {
-    display: none; /* This removes the huge gaps, use margins on labels instead */
+    display: none; 
+}
+
+/* Re-enable BR inside labels if they are being used for "Required" text */
+.wpcf7-form label br {
+    display: block;
+    content: "";
+    margin-top: 5px;
 }

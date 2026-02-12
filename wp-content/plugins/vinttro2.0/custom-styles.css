@@ -355,7 +355,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 .wpcf7-acceptance .wpcf7-list-item label {
     display: block !important;
     position: relative !important;
-    padding-left: 30px !important; /* This creates the 'tab' for the text */
+    padding-left: 50px !important; /* This creates the 'tab' for the text */
     margin: 15px 0 !important;
     line-height: 1.4 !important;
     text-align: left !important;

@@ -339,61 +339,50 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 /* ----------------------------------------------------------------------------*/
 /* This is Gemini generated solution to the Contact Form 7 acceptance field spacing issues */ 
 /* General Notes: - We use !important to override Contact Form 7's inline styles. - The goal is to create a clean, compact layout for the acceptance field without excessive spacing. - Adjust values as needed for your specific design preferences. */
-/* 1. RESET ALL WRAPPERS */
-/* Force the container to the far left and kill any hidden padding */
-.wpcf7-form-control-wrap[data-name="acceptance-896"],
-.wpcf7-acceptance,
-.wpcf7-list-item {
-    display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    text-align: left !important;
-}
-
-/* 2. THE HANGING INDENT */
-/* We use padding on the label to create the 'tab' space */
-.wpcf7-acceptance .wpcf7-list-item label {
-    display: block !important;
-    position: relative !important;
-    padding-left: 50px !important; /* This creates the 'tab' for the text */
+/* 1. Target the specific popup container to ensure our rules win */
+#sgpb-popup-dialog-main-div .wpcf7-acceptance .wpcf7-list-item label {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    /* This is the 'Tab' space - adjust this number to nudge text */
+    gap: 20px !important; 
     margin: 15px 0 !important;
-    line-height: 1.4 !important;
-    text-align: left !important;
+    padding: 0 !important;
+    width: 100% !important;
 }
 
-/* 3. POSITION THE CHECKBOX */
-/* We 'pin' the checkbox to the absolute top-left of the label */
-.wpcf7-acceptance input[type="checkbox"] {
-    position: absolute !important;
-    left: 0 !important;    /* This forces it to the far left */
-    top: 3px !important;   /* Aligns it with the first line of text */
-    margin: 0 !important;
-    padding: 0 !important;
+/* 2. Lock the Checkbox to the left */
+#sgpb-popup-dialog-main-div .wpcf7-acceptance input[type="checkbox"] {
+    flex-shrink: 0 !important;
+    margin: 4px 0 0 0 !important;
     width: 18px !important;
     height: 18px !important;
-}
-
-/* 4. THE TEXT COLUMN */
-.wpcf7-list-item-label {
-    display: inline !important;
-    margin: 0 !important;
+    /* Ensure no margins are pushing it */
     padding: 0 !important;
 }
 
-/* 5. THE DISCLAIMER (VINTTRO will use...) */
-/* Targeting the label that appears after the submit button */
-.wpcf7-form label:last-of-type {
+/* 3. Force the Text to stay in its own column */
+#sgpb-popup-dialog-main-div .wpcf7-list-item-label {
     display: block !important;
-    margin-top: 30px !important; /* Restores the spacing you liked */
+    flex: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     text-align: left !important;
-    padding-left: 0 !important;
-    line-height: 1.5 !important;
+    line-height: 1.4 !important;
+    white-space: normal !important; /* Prevents text from forcing a single line */
 }
 
-/* 6. CLEAN UP */
-.wpcf7-form br {
-    display: none !important;
+/* 4. Reset any inherited centering from the popup */
+#sgpb-popup-dialog-main-div .wpcf7-form-control-wrap,
+#sgpb-popup-dialog-main-div .wpcf7-acceptance {
+    display: block !important;
+    text-align: left !important;
 }
-.wpcf7-form label {
+
+/* 5. The Bottom Disclaimer */
+.wpcf7-form label:last-of-type {
+    display: block !important;
+    margin-top: 25px !important;
     text-align: left !important;
 }

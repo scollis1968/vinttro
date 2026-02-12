@@ -372,3 +372,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     line-height: 1.4;
     display: block;
 }
+/* 4. Kill the extra vertical gaps caused by CF7's auto-BR tags */
+.wpcf7-form br {
+    display: none; /* This removes the huge gaps, use margins on labels instead */
+}

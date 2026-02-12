@@ -400,8 +400,8 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 
 /* 2. THE ACTIVE STATE (Gold) */
 #sgpb-popup-dialog-main-div .wpcf7-submit {
-    background-color: #d4af37 !important; /* Professional Gold */
-    color: #000000 !important;            /* Black text for contrast */
+    background-color: #B28324 !important; /* Professional Gold */
+    color: #999999 !important;            /* Black text for contrast */
     border: 1px solid #b8860b !important;
     font-weight: bold !important;
     text-transform: uppercase;
@@ -412,6 +412,10 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 
 /* 3. THE HOVER STATE (Slightly darker gold) */
 #sgpb-popup-dialog-main-div .wpcf7-submit:hover:not(:disabled) {
-    background-color: #b8860b !important; /* Darker gold on hover */
+    background-color: #B28324 !important; /* Darker gold on hover */
     color: #ffffff !important;            /* White text on hover */
+}
+#sgpb-popup-dialog-main-div .wpcf7-submit:active:not(:disabled) {
+    transform: translateY(2px); /* Moves the button down 2px when clicked */
+    box-shadow: none !important;
 }

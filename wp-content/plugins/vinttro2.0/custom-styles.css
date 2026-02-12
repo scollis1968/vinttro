@@ -339,42 +339,36 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 /* ----------------------------------------------------------------------------*/
 /* This is Gemini generated solution to the Contact Form 7 acceptance field spacing issues */ 
 /* General Notes: - We use !important to override Contact Form 7's inline styles. - The goal is to create a clean, compact layout for the acceptance field without excessive spacing. - Adjust values as needed for your specific design preferences. */
-/* 1. The Hanging Indent (Checkbox left, text tabbed) */
+/* 1. Remove parent span constraints */
+.wpcf7-acceptance, 
+.wpcf7-acceptance .wpcf7-list-item {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 2. Reset the label to a clean flex container */
 .wpcf7-acceptance .wpcf7-list-item label {
     display: flex !important;
     align-items: flex-start !important;
-    gap: 10px;
-    line-height: 1.4;
-    margin-bottom: 5px !important; /* Tightens space before the disclaimer */
+    margin-left: 0 !important; /* Ensure no left margin */
+    padding-left: 0 !important; /* Ensure no left padding */
+    gap: 12px;
 }
 
-/* 2. Precision Checkbox Alignment */
+/* 3. Force the checkbox to the absolute edge */
 .wpcf7-acceptance input[type="checkbox"] {
-    margin: 4px 0 0 2px !important; /* The 2px left margin aligns it to the input borders above */
+    margin: 4px 0 0 0 !important; /* Reset all margins to 0 except the top tweak */
     padding: 0 !important;
     flex-shrink: 0;
-    width: 16px;
-    height: 16px;
+    /* If it still looks 1-2px too far right, uncomment the next line: */
+    /* margin-left: -2px !important; */ 
 }
 
-/* 3. The Bottom Disclaimer (VINTTRO will use your info...) */
-/* We target the label that comes immediately after the acceptance span */
-span.wpcf7-acceptance + br + input + br + label, 
-.wpcf7-form label:last-of-type {
+/* 4. Ensure the text flows correctly in its own column */
+.wpcf7-list-item-label {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.4;
     display: block;
-    margin-top: 0 !important;
-    padding-top: 5px !important;
-    line-height: 1.3;
-    font-size: 0.9em; /* Makes the legal disclaimer slightly smaller/cleaner */
-    color: #555;      /* Optional: subtle grey for legal text */
-}
-
-/* 4. Kill the extra vertical gaps caused by CF7's auto-BR tags */
-.wpcf7-form br {
-    display: none; /* This removes the huge gaps, use margins on labels instead */
-}
-
-.wpcf7-form label {
-    display: block;
-    margin-bottom: 15px; /* Manually control the gap between fields */
 }

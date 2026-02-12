@@ -339,45 +339,56 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 /* ----------------------------------------------------------------------------*/
 /* This is Gemini generated solution to the Contact Form 7 acceptance field spacing issues */ 
 /* General Notes: - We use !important to override Contact Form 7's inline styles. - The goal is to create a clean, compact layout for the acceptance field without excessive spacing. - Adjust values as needed for your specific design preferences. */
-/* 1. Fix the Checkbox & Hanging Indent */
+/* 1. RESET NESTED WRAPPERS */
+/* We need the spans to stop behaving like 'inline' elements */
+.wpcf7-acceptance, 
+.wpcf7-acceptance .wpcf7-list-item {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 2. THE HANGING INDENT LAYOUT */
+/* Force the label into a flex grid to create two distinct columns */
 .wpcf7-acceptance .wpcf7-list-item label {
     display: flex !important;
     align-items: flex-start !important;
-    gap: 12px;
-    margin-bottom: 20px !important; /* Space between checkbox and disclaimer */
+    gap: 12px !important; /* This is your 'tab' width */
+    margin-left: 0 !important;
+    padding: 0 !important;
+    line-height: 1.4 !important;
 }
 
+/* 3. CHECKBOX PRECISION */
+/* Force the checkbox to the far left and align it with the top line of text */
 .wpcf7-acceptance input[type="checkbox"] {
-    margin: 4px 0 0 0 !important;
-    flex-shrink: 0;
+    margin: 4px 0 0 0 !important; 
+    padding: 0 !important;
+    flex-shrink: 0 !important; /* Prevents the box from squishing */
+    width: 18px !important;    /* Standard checkbox size */
+    height: 18px !important;
 }
 
-/* 2. Fix the Bottom Disclaimer Spacing */
-/* This targets the label that follows the acceptance checkbox */
-.wpcf7-form .wpcf7-acceptance + br + input + br + label,
+/* 4. TEXT ALIGNMENT */
+/* Ensure the text doesn't 'leak' back under the checkbox */
+.wpcf7-list-item-label {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+}
+
+/* 5. DISCLAIMER SPACING (The VINTTRO text) */
+/* Targets the label following the submit button/breaks */
 .wpcf7-form label:last-of-type {
     display: block !important;
-    margin-top: 15px !important; /* This adds the gap back */
-    padding-top: 0 !important;
+    margin-top: 25px !important; /* Space above the legal text */
     line-height: 1.5 !important;
-    font-size: 0.95em;
-    color: #444;
+    font-size: 0.9em;
 }
 
-/* 3. Global spacing for standard labels */
-.wpcf7-form label {
-    display: block;
-    margin-bottom: 15px; /* Consistent gap between all your text fields */
-}
-
-/* 4. The "Gap Killer" - Handle the auto BR tags selectively */
+/* 6. CLEAN UP AUTO-GAPS */
+/* Removes the double-spacing caused by CF7's auto-breaks */
 .wpcf7-form br {
-    display: none; 
-}
-
-/* Re-enable BR inside labels if they are being used for "Required" text */
-.wpcf7-form label br {
-    display: block;
-    content: "";
-    margin-top: 5px;
+    display: none !important;
 }

@@ -387,3 +387,31 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     margin-top: 25px !important;
     text-align: left !important;
 }
+ /* ------------------------------------------------------------------------------- */
+ /* 1. THE DISABLED STATE (Default/Gray) */
+#sgpb-popup-dialog-main-div .wpcf7-submit:disabled {
+    background-color: #e0e0e0 !important; /* Light gray */
+    color: #999999 !important;            /* Muted text */
+    border: 1px solid #d1d1d1 !important;
+    cursor: not-allowed !important;       /* Shows a 'no' icon on hover */
+    opacity: 1 !important;                /* Ensures it's not too faded */
+    transition: all 0.3s ease;
+}
+
+/* 2. THE ACTIVE STATE (Gold) */
+#sgpb-popup-dialog-main-div .wpcf7-submit {
+    background-color: #d4af37 !important; /* Professional Gold */
+    color: #000000 !important;            /* Black text for contrast */
+    border: 1px solid #b8860b !important;
+    font-weight: bold !important;
+    text-transform: uppercase;
+    padding: 12px 30px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease;
+}
+
+/* 3. THE HOVER STATE (Slightly darker gold) */
+#sgpb-popup-dialog-main-div .wpcf7-submit:hover:not(:disabled) {
+    background-color: #b8860b !important; /* Darker gold on hover */
+    color: #ffffff !important;            /* White text on hover */
+}

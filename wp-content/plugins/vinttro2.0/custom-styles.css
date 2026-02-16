@@ -401,7 +401,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 /* 2. THE ACTIVE STATE (Gold) */
 #sgpb-popup-dialog-main-div .wpcf7-submit {
     background-color: #B28324 !important; /* Professional Gold */
-    color: #999999 !important;            /* Black text for contrast */
+    color: #ffffff !important;            /* Black text for contrast */
     border: 1px solid #b8860b !important;
     font-weight: bold !important;
     text-transform: uppercase;

@@ -15,8 +15,6 @@ The current setup consists of the following components.
 1. Acturis
 
 
-
-
 ### Chalenges / Requirements
 
 ### Proposed setup.

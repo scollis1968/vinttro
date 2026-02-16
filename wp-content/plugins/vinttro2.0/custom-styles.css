@@ -1,0 +1,421 @@
+/* my-custom-styles.css */
+
+/* Container for the image, usually the custom-upload-area */
+
+
+/* The actual uploaded preview image */
+.fill-dropzone-image {
+    /* Critical settings for filling the space */
+    width: 100%;
+    height: 100%;
+    
+    /* Ensure the image covers the area without stretching */
+    object-fit: cover; 
+    
+    /* Inherit the rounded corners/border from the container (if applicable) */
+    /* Or apply the styles you had before: */
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    
+    /* Optional: Smooth transition for a cleaner look */
+    transition: opacity 0.3s ease;
+}
+/* 1. Hide the default input visually, but keep it functional */
+.custom-file-upload-input {
+    /* Make the input invisible */
+    opacity: 0; 
+    /* Make sure it sits on top of the custom area for accessibility/clicking */
+    position: absolute; 
+    /* Set its size to cover the custom area */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Ensure the browser only shows the default element if JS fails */
+    cursor: pointer; 
+}
+
+/* 2. Style your custom clickable area */
+.custom-upload-area {
+    /* Crucial: required for the absolute positioning of the input field */
+    position: relative; 
+    
+    /* Custom styling */
+    border: 2px dashed #ccc;
+    text-align: center;
+    padding: 10px;
+    cursor: pointer;
+    min-height: 200px; /* Give it space for the message and preview */
+    display: flex; /* Helps center content */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Important: prevents the image from breaking out */
+ 
+}
+
+
+/* Optional: Style the placeholder image */
+.upload-placeholder-image {
+    max-width: 100px;
+    margin-bottom: 10px;
+}
+
+
+
+
+/* 1. Styling for Text-based Input Fields and Textareas */
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="tel"],
+input[type="password"],
+input[type="date"],
+select,
+textarea {
+    border-radius: 5px;
+    /* Added a color to the border rule for visual consistency */
+    border: 1px solid #999;
+    padding: 10px; 
+    width: 100%;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* 2. Wrapper for Margin and Padding Control */
+.form-padding-wrapper {
+    /* 20px of space inside the wrapper */
+    padding: 20px; 
+    /* 10px of space outside the wrapper */
+    margin: 10px; 
+    
+    /* Optional: helps visualize the area (corrected comment syntax) */
+    border: 1px solid #ccc;
+}
+
+/* 3. Contact Form 7 Label Styling */
+.wpcf7 label {
+    /* Adjusted font size to a relative unit for better scaling/accessibility */
+    font-size: 0.5rem !important; 
+    font-weight: normal; 
+}
+
+/* Hides the programmatic trigger button for the confirmation popup */
+.confirmation-popup-trigger-button {
+    display: none !important;
+    position: absolute !important;
+    left: -9999px !important; /* Move it far off-screen */
+    width: 1px !important;    /* Reduce its size */
+    height: 1px !important;
+    overflow: hidden !important; /* Hide any overflow */
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    opacity: 0 !important;
+}
+
+/* Change the mobile header bar background color */
+.mob-menu-header-holder.mobmenu {
+    background-color: #FFFFFF !important;
+}
+
+.mobmenur-container{
+	  padding-right : 12px;
+}
+.menu-main_menu-container {
+    fill: #999999 !important;	
+}
+.wp-block-search {
+    padding-left: 55px; 
+}
+.wp-block-search__input{
+    border-radius: 4px;	
+}
+.wp-block-search__button {
+    background-color: #B28324;
+    color: #FFFFFF;
+	height:40px;
+    border-radius: 20px;
+    padding: 0px 20px;
+	 margin-top: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+/* Change the color of the hamburger menu icon (the SVG fill) */
+.mobmenur-container .menu path {
+    fill: #AA8800 !important;
+}
+.mob-cancel-button path{
+	 fill: #AA8800 !important;
+}
+/* Change the color of the close icon when the menu is open (if needed) */
+.mobmenur-container .cancel-1 path {
+    fill: #000000 !important;
+	  padding-top : 5px;
+}
+
+
+/* 1. Target the main mobile header bar */
+.mob-menu-header-holder.mobmenu {
+    display: flex;
+    align-items: center; 
+}
+
+/*--------------------------*/
+/* --- MOBILE MENU CONTENT STYLING --- */
+
+/* 1. Default Menu Item Text Color */
+/* Changes the color of the text for all menu links */
+.mobmenu-content .wp-mobile-menu a {
+    color: #999999!important; 
+	/* Example: Gold text */
+}
+
+/* 2. Default Menu Item Background Color */
+/* Changes the background of the menu rows */
+.mobmenu-content .wp-mobile-menu li {
+    background-color: #FFFFFF !important; /* Example: White background */
+    border-bottom: 1px solid #EEEEEE; /* Optional: Adds a subtle divider line */
+}
+
+/* 3. HOVER / TAP Text Color */
+/* Changes the text color when the user hovers/taps the menu item */
+.mobmenu-content .wp-mobile-menu a:hover,
+.mobmenu-content .wp-mobile-menu li:hover > a {
+    color: #B28324 !important; /* Example: Red text on hover */
+}
+
+/* 4. HOVER / TAP Background Color */
+/* Changes the background color when the user hovers/taps the menu item */
+.mobmenu-content .wp-mobile-menu li:hover {
+    background-color: #FFFFFF !important; /* Example: Light Gray background on hover */
+}
+
+/* 5. Sub-Menu Styling (Optional but recommended for consistency) */
+/* Targets nested sub-menus (like VinttroCover) to ensure they match */
+.mobmenu-content .wp-mobile-menu ul.sub-menu {
+    background-color: #FFFFFF !important; /* Slightly different background for sub-menu */
+}
+
+.metaslider {
+    /* Rounded Corners */
+    border-radius: 15px; 
+    
+    /* Border Style */
+    border: 3px solid #ffffff; 
+    
+    /* Optional: Ensure the images themselves respect the rounded corners */
+    overflow: hidden; 
+}
+/*------------------------------------------------------------------------------------------------------- */
+.mobmenu-content .menu-switch-container {
+    display: flex; /* Arrange links horizontally */
+    justify-content: space-between; /* Push items to the edges */
+    align-items: center;
+    padding: 10px 15px; /* Match mobile menu padding */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Separator line */
+    background-color: rgba(0, 0, 0, 0.1); /* Subtle background */
+}
+
+.mobmenu-right-alignment {
+    position: relative; 
+}
+
+/* Position the label absolutely and style it as an H2 */
+.mobmenu-right-alignment .menu-label {
+    /* Position */
+    position: absolute; 
+    top: 0; 
+    left: 15px; 
+    z-index: 1000000; 
+    
+    /* Tweak: Add padding to the top for vertical centering */
+    padding: 10px 0; 
+    margin: 0;
+    
+    /* Tweak: H2 Styling */
+    font-size: 1.2em; /* Simulates H2 size */
+    font-weight: 700; /* Extra bold */
+    color: #B28324; /* ✨ Gold Color */
+
+    
+    /* Ensure the close button doesn't affect the line height */
+    line-height: 1.2;
+    background: none; 
+}
+
+.mobmenu-content .menu-label {
+    font-weight: bold;
+    color: #fff; /* Match your menu text color */
+    font-size: 1.1em;
+    padding: 5px 0;
+}
+
+.mobmenu-content .menu-switch-link {
+    text-decoration: none;
+    color: #ffd700; /* Use a highlight color for the clickable link */
+    font-weight: bold;
+    padding: 5px 10px;
+    border: 1px solid #ffd700;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.mobmenu-content .menu-switch-link:hover {
+    background-color: #ffd700;
+    color: #333;
+}
+/* Target the image containers and the images themselves */
+.tribe-events-calendar-list__event-featured-image,
+.tribe-events-calendar-list__event-featured-image img,
+.tribe-events-event-image,
+.tribe-events-event-image img,
+.tribe-common--view-skeleton .tribe-events-calendar-list__event-featured-image {
+    border-radius: 20px !important;
+    overflow: hidden !important;
+}
+
+/*------------------------------------------------------------------------------------------*/
+/* 1. LOCK THE BACKGROUND */
+body:has(#sgpb-popup-dialog-main-div-wrapper) {
+    overflow: hidden !important;
+}
+
+/* 2. THE WRAPPER (Centering Logic) */
+.sgpb-popup-dialog-main-div-theme-wrapper-3 {
+    left: 0 !important;
+    right: 0 !important;
+    top: 5vh !important;
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+    position: fixed !important;
+    /* We remove pointer-events: none because it kills the X button */
+}
+
+/* 3. THE POPUP BOX */
+#sgpb-popup-dialog-main-div {
+    width: 95% !important;
+    max-width: 550px !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important; /* Enable the vertical slider */
+    display: block !important;
+    margin: 0 !important; /* Reset any plugin-forced margins */
+    border-width: 5px !important;
+    z-index: 10 !important;
+}
+
+/* 4. KILL THE OVERFLOW TRAPS */
+#sgpb-popup-dialog-main-div div {
+    overflow: visible !important;
+    height: auto !important;
+}
+
+/* 5. THE GOLD X (The Fix) */
+/* Since the X is a sibling, we position it relative to the VIEWPORT 
+   but align it to the right edge of our 550px centered box */
+.sgpb-popup-close-button-3 {
+    position: fixed !important;
+    /* This calculation centers the X relative to a 550px box */
+    left: calc(50% + 240px) !important; 
+    top: calc(5vh + 15px) !important;
+    width: 20px !important;
+    height: 20px !important;
+    z-index: 999999 !important;
+    cursor: pointer !important;
+    display: block !important;
+}
+
+/* Mobile Adjustment for the X */
+@media (max-width: 600px) {
+    .sgpb-popup-close-button-3 {
+        left: auto !important;
+        right: 5% !important;
+    }
+}
+
+/* ----------------------------------------------------------------------------*/
+/* This is Gemini generated solution to the Contact Form 7 acceptance field spacing issues */ 
+/* General Notes: - We use !important to override Contact Form 7's inline styles. - The goal is to create a clean, compact layout for the acceptance field without excessive spacing. - Adjust values as needed for your specific design preferences. */
+/* 1. Target the specific popup container to ensure our rules win */
+#sgpb-popup-dialog-main-div .wpcf7-acceptance .wpcf7-list-item label {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    /* This is the 'Tab' space - adjust this number to nudge text */
+    gap: 20px !important; 
+    margin: 15px 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+/* 2. Lock the Checkbox to the left */
+#sgpb-popup-dialog-main-div .wpcf7-acceptance input[type="checkbox"] {
+    flex-shrink: 0 !important;
+    margin: 4px 0 0 0 !important;
+    width: 18px !important;
+    height: 18px !important;
+    margin-left: -15px !important;
+    /* Ensure no margins are pushing it */
+    padding: 0 !important;
+}
+
+/* 3. Force the Text to stay in its own column */
+#sgpb-popup-dialog-main-div .wpcf7-list-item-label {
+    display: block !important;
+    flex: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+    line-height: 1.4 !important;
+    white-space: normal !important; /* Prevents text from forcing a single line */
+}
+
+/* 4. Reset any inherited centering from the popup */
+#sgpb-popup-dialog-main-div .wpcf7-form-control-wrap,
+#sgpb-popup-dialog-main-div .wpcf7-acceptance {
+    display: block !important;
+    text-align: left !important;
+}
+
+/* 5. The Bottom Disclaimer */
+.wpcf7-form label:last-of-type {
+    display: block !important;
+    margin-top: 25px !important;
+    text-align: left !important;
+}
+ /* ------------------------------------------------------------------------------- */
+ /* 1. THE DISABLED STATE (Default/Gray) */
+#sgpb-popup-dialog-main-div .wpcf7-submit:disabled {
+    background-color: #e0e0e0 !important; /* Light gray */
+    color: #999999 !important;            /* Muted text */
+    border: 1px solid #d1d1d1 !important;
+    cursor: not-allowed !important;       /* Shows a 'no' icon on hover */
+    opacity: 1 !important;                /* Ensures it's not too faded */
+    transition: all 0.3s ease;
+}
+
+/* 2. THE ACTIVE STATE (Gold) */
+#sgpb-popup-dialog-main-div .wpcf7-submit {
+    background-color: #B28324 !important; /* Professional Gold */
+    color: #ffffff !important;            /* Black text for contrast */
+    border: 1px solid #b8860b !important;
+    font-weight: bold !important;
+    text-transform: uppercase;
+    padding: 12px 30px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease;
+}
+
+/* 3. THE HOVER STATE (Slightly darker gold) */
+#sgpb-popup-dialog-main-div .wpcf7-submit:hover:not(:disabled) {
+    background-color: #B28324 !important; /* Darker gold on hover */
+    color: #ffffff !important;            /* White text on hover */
+}
+#sgpb-popup-dialog-main-div .wpcf7-submit:active:not(:disabled) {
+    transform: translateY(2px); /* Moves the button down 2px when clicked */
+    box-shadow: none !important;
+}

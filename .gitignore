@@ -1,0 +1,82 @@
+# ---------------------
+# General and OS files
+# ---------------------
+.DS_Store             # Mac OS X folder settings
+.DS_Store?
+._*
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+/.vscode              # Visual Studio Code settings
+.idea                 # JetBrains IDEs (IntelliJ, PyCharm, etc.)
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+*.swp                 # Vim temporary files
+
+# ---------------------
+# Project Specific Files
+# ---------------------
+# Environment variables and secrets
+.env
+.env.*
+config/secrets.yml
+/vault
+
+# Compiled and build artifacts
+/build/
+/dist/
+/target/
+/out/
+*.log
+*.tmp
+*.class
+*.exe
+*.dll
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+# pip-related
+pip-log.txt
+pip-delete-this-directory.txt
+# Installer files
+*.egg-info/
+.coverage
+.pytest_cache/
+htmlcov/
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json      # You might want to commit this, but it's a common ignore
+
+# Ruby
+*.gem
+*.rbc
+/spec/reports/
+/coverage/
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+!docker-compose.yml     # Exclude the ignore rule for this file
+!Dockerfile
+
+# ---------------------
+# Backups and temporary files
+# ---------------------
+*.bak
+*.orig
+*.swp
+*~
+*.log

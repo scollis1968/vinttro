@@ -2,14 +2,45 @@
 /**
  * Plugin Name:       VINTTRO2.0 Custom Functions
  * Description:       A collection of my custom functions.
- * Version:           1.0.1
+ * Version:           1.0.1a
  * Author:            Stephen Collis
  */
 
 
 
-// ---------------------------------------------------
 // Start of custom code
+// ---------------------------------------------------
+
+require_once 'modal-form-functions.php';
+require_once 'conditional-menus.php';
+require_once 'suitecrm-integration.php';
+
+
+function my_plugin_load_styles() {
+    // 1. Enqueue your custom CSS
+    wp_enqueue_style( 'my-custom-form-styles', plugins_url( 'custom-styles.css', __FILE__ ), array(), '1.0.2' );
+    
+    // 2. Force a tiny bit of "Late" CSS directly into the header to kill the background scroll
+    // This is safer than a file for the 'body:has' rule
+    $custom_css = "
+        body:has(#sgpb-popup-dialog-main-div-wrapper) { overflow: hidden !important; }
+        .sgpb-popup-dialog-main-div-theme-wrapper-3 { left: 0 !important; right: 0 !important; display: flex !important; justify-content: center !important; }
+    ";
+    wp_add_inline_style( 'my-custom-form-styles', $custom_css );
+}
+// Use priority 99 to ensure it fires after other plugins
+add_action( 'wp_enqueue_scripts', 'my_plugin_load_styles', 99 );
+
+//--------------------------------------------------------
+function my_plugin_load_scripts() {
+    // Enqueue the script, ensuring it loads in the footer
+    wp_enqueue_script( 'my-form-preview-script', plugins_url( 'custom-scripts.js', __FILE__ ), array('jquery'), '1.0', true );
+}
+add_action( 'wp_enqueue_scripts', 'my_plugin_load_scripts' );
+
+//--------------------------------------------------------
+
+
 add_filter( 'wpcf7_special_mail_tags', 'my_custom_email_tags', 10, 2 );
 
 function my_custom_email_tags( $output, $name ) {
@@ -52,7 +83,9 @@ function redirect_cf7_subscribers_only() {
     // Check if we are on the correct page
     if ( is_page( $subscribers_form_page_id ) && ! is_user_logged_in() ) {
         // Redirect to the guest form page
-        wp_redirect( 'https://wordpress.uat.vinttro.co.uk/register/' );
+        $redirect_url = home_url( '/register/' );
+        wp_redirect( $redirect_url );
+        //wp_redirect( 'https://wordpress.uat.vinttro.co.uk/register/' );
         exit;
     }
 }
@@ -75,43 +108,7 @@ function suitecrm_store_user_id_after_registration($user_id) {
 // Step 2: Wait for meta to be updated before pushing to SuiteCRM
 add_action('profile_update', 'sync_new_user_to_suitecrm', 10, 2);
 
-function suitecrm_get_access_token() {
-    if ( ! defined('CRM_CLIENT_ID') ) { 
-        error_log(__FUNCTION__ . ': No CRM_CLIENT_ID defined! ( Check your wp-config.php ).' );
-        return null;
-    }
-    $client_id = CRM_CLIENT_ID;
 
-    if ( ! defined('CRM_CLIENT_SECRET') ) { 
-        error_log(__FUNCTION__ . ': No CRM_CLIENT_SECRET defined! ( Check your wp-config.php ).' );
-        return null;
-    }
-    $client_secret = CRM_CLIENT_SECRET;
-
-    if ( ! defined('CRM_URL') ) { 
-        error_log(__FUNCTION__ . ': No CRM_URL defined ( Check your wp-config.php ).' );
-        return null;
-    }
-    $api_url = CRM_URL . '/Api/access_token';
-
-    $response = wp_remote_post($api_url, [
-        'body' => [
-            'grant_type' => 'client_credentials',
-            'client_id' => $client_id,
-            'client_secret' => $client_secret
-        ],
-        'timeout' => 15,
-        'sslverify' => false
-    ]);
-
-    if (is_wp_error($response)) {
-        error_log('SuiteCRM API Auth Error: ' . $response->get_error_message());
-        return null;
-    }
-
-    $body = json_decode(wp_remote_retrieve_body($response), true);
-    return $body['access_token'] ?? null;
-}
 
 function sync_new_user_to_suitecrm($user_id, $old_user_data) {
     // Check if this is a newly registered user by looking up the transient
@@ -187,3 +184,57 @@ function sync_new_user_to_suitecrm($user_id, $old_user_data) {
       //  error_log('SuiteCRM Lead Creation Response: ' . $response_body);
     }
 }
+
+function suitecrm_conditional_menu_stub( $items, $args ) {
+/**
+ * Custom function to modify menu items based on complex user data (e.g., SuiteCRM).
+ * * @param string $items The HTML list items of the current menu.
+ * @param object $args  The arguments of the current menu.
+ * @return string The modified HTML list items.
+ */
+
+    // --- 1. TARGET THE RIGHT MENU (Crucial Step) ---
+    // Change 'primary' to the slug of the menu location you are modifying.
+    // If you're unsure, you can remove this check to test all menus, 
+    // but it's best practice to target one.
+    if ( $args->theme_location == 'primary' ) {
+        
+        // --- 2. CHECK LOGIN STATUS ---
+        if ( is_user_logged_in() ) {
+            
+            // Get the current user ID
+            $user_id = get_current_user_id();
+
+            // --- 3. CUSTOM LOGIC STUB (Replace this with SuiteCRM API Call) ---
+            
+            // *** DEMO CONDITION STUB ***
+            // Replace this block with your SuiteCRM API calls to check subscription status.
+            // For the demo, we'll check if the User ID is an even number.
+            
+            $is_subscribed_to_premium = ( $user_id % 2 == 0 );
+            // --- END DEMO CONDITION STUB ---
+
+
+            // --- 4. INSERT MENU ITEM HTML ---
+            if ( $is_subscribed_to_premium ) {
+                // If the user meets the condition (e.g., subscribed via SuiteCRM data)
+                
+                // Note: The HTML must be a standard <li> element.
+                $custom_item_html = '<li class="menu-item menu-item-suitecrm-special">';
+                $custom_item_html .= '<a href="/premium-dashboard/">🔥 Premium Dashboard</a>';
+                $custom_item_html .= '</li>';
+
+                // Append the custom item to the existing menu items
+                $items .= $custom_item_html;
+            }
+            
+        } else {
+            // Optional: You could add a specific "Log In" link here if one doesn't exist.
+            // But often, this is better handled by adding it directly in the WP Menu Editor.
+        }
+    }
+
+    return $items;
+}
+
+add_filter( 'wp_nav_menu_items', 'suitecrm_conditional_menu_stub', 10, 2 );

@@ -12,7 +12,7 @@
 
 - name: Download SuiteCRM zip file
   ansible.builtin.get_url:
-    url: "https://sourceforge.net/projects/suitecrm/files/SuiteCRM-8.7.1.zip/download"
+    url: "https://sourceforge.net/projects/suitecrm/files/SuiteCRM-8.8.1.zip/download"
     #url: "https://github.com/salesagility/SuiteCRM-Core/releases/download/v8.9.0/SuiteCRM-8.9.0.zip"
     dest: "/tmp/SuiteCRM-8.8.1.zip"
     mode: '0755'

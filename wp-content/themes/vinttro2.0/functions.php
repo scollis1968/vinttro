@@ -1,3 +1,5 @@
+<?php
+
 // **************************************************************************************** SC20250902
 // Custom Edits for SuiteCRM V8 API
 // Step 1: Store user ID after registration
@@ -108,3 +110,11 @@ function sync_new_user_to_suitecrm($user_id, $old_user_data) {
       //  error_log('SuiteCRM Lead Creation Response: ' . $response_body);
     }
 }
+
+
+// ---
+// Optional: If you need to REMOVE a menu item, you would use str_replace or regex 
+// within the function to strip the HTML of the unwanted item before returning $items.
+// ---
+
+?>

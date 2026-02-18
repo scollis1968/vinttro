@@ -1,3 +1,4 @@
+<?php
 add_action('admin_menu', 'add_sync_button_to_menu');
 
 function add_sync_button_to_menu() {

@@ -21,9 +21,9 @@ function render_sync_page() {
         file_put_contents($log_file, $log_entry, FILE_APPEND);
 
         // 3. Call the Webhook on the Prod Server
-        $response = wp_remote_post('https://your-prod-server:9000/hooks/sync-uat-content', array(
+        $response = wp_remote_post('https://services.uat.vinttro.co.uk/hooks/sync-uat-content', array(
             'headers' => array(
-                'X-Sync-Token' => 'YOUR_SUPER_SECRET_KEY_HERE',
+                'X-Sync-Token' => '63f4945d921d599f27ae4fdf5bada3f2',
                 'Content-Type' => 'application/json'
             ),
             'timeout' => 5 // We just need to trigger it, not wait for the whole sync

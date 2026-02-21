@@ -49,7 +49,7 @@ add_filter( 'wp_nav_menu_args', 'custom_swap_mobile_menu_on_b2b' );
 // --- Configuration ---
 // Define these constants outside the function for clean access.
 define( 'B2B_PARENT_ID', 1825 ); // *** REPLACE with your actual B2B parent ID ***
-define( 'B2B_HOME_URL', 'https://wordpress.uat.vinttro.co.uk/b2b/' ); // *** REPLACE with your actual B2B home URL ***
+// define( 'B2B_HOME_URL', site_url('/b2b/' );
 
 /**
  * Passes the current menu type to JavaScript.
@@ -69,7 +69,7 @@ function custom_set_mobile_menu_state() {
     $menu_data = array(
         'isB2B'         => $is_b2b_page,
         'b2cHomeUrl'    => esc_url( home_url( '/' ) ),
-        'b2bHomeUrl'    => esc_url( B2B_HOME_URL ),
+        'b2bHomeUrl'    => esc_url( home_url( '/b2b/' )),
     );
 
     // 3. Localize the script data

@@ -117,4 +117,20 @@ function sync_new_user_to_suitecrm($user_id, $old_user_data) {
 // within the function to strip the HTML of the unwanted item before returning $items.
 // ---
 
+/**
+ * Fix Complianz Accessibility: Move interactive checkboxes out of <summary> tags.
+ */
+add_filter('cmplz_banner_html', function($html) {
+    // This regex looks for checkboxes inside summary tags and moves the closing 
+    // </summary> tag to appear BEFORE the checkbox input.
+    // It targets the functional, statistics, and marketing checkboxes.
+    
+    $search = '/(<summary.*?>)(.*?)(<input.*?class="cmplz-consent-checkbox".*?>)(.*?)(<\/summary>)/s';
+    $replace = '$1$2$5$3$4'; // Moves the </summary> tag ($5) before the checkbox ($3)
+    
+    $fixed_html = preg_replace($search, $replace, $html);
+    
+    return $fixed_html;
+}, 10, 1);
+
 ?>

@@ -86,7 +86,6 @@ function redirect_cf7_subscribers_only() {
         // Redirect to the guest form page
         $redirect_url = home_url( '/register/' );
         wp_redirect( $redirect_url );
-        //wp_redirect( 'https://wordpress.uat.vinttro.co.uk/register/' );
         exit;
     }
 }

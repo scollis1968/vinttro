@@ -6,7 +6,7 @@ function my_custom_viewport_meta_tag() {
     // The meta tag to prevent zooming and fix fixed-position element centering
     // todo - remove commented line after testing
     //echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">';
-    echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">';
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=6.0">';
 
 }
 

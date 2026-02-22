@@ -134,7 +134,7 @@ add_filter('cmplz_banner_html', function($html) {
 }, 10, 1);
 
 /**
- * Fix WP Mobile Menu Accessibility: Wrap search form in <li>
+ * Fix WP Mobile Menu Accessibility: Wrap search form in <li>...
  */
 add_action('wp_footer', function() {
     ?>

@@ -133,4 +133,23 @@ add_filter('cmplz_banner_html', function($html) {
     return $fixed_html;
 }, 10, 1);
 
+/**
+ * Fix WP Mobile Menu Accessibility: Wrap search form in <li>
+ */
+add_action('wp_footer', function() {
+    ?>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            var searchForm = document.querySelector('ul.rightmtop > form');
+            if (searchForm) {
+                var li = document.createElement('li');
+                li.setAttribute('role', 'none'); // Keeps ARIA clean
+                searchForm.parentNode.insertBefore(li, searchForm);
+                li.appendChild(searchForm);
+            }
+        });
+    </script>
+    <?php
+}, 100);
+
 ?>

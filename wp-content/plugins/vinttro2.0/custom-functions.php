@@ -238,3 +238,14 @@ function suitecrm_conditional_menu_stub( $items, $args ) {
 }
 
 add_filter( 'wp_nav_menu_items', 'suitecrm_conditional_menu_stub', 10, 2 );
+
+/**
+ * WP Mobile Menu: Wrap search form in <li> for accessibility
+ */
+add_filter('wp_mobile_menu_custom_search', function($search_html) {
+    if (!empty($search_html)) {
+        // Wrap the returned search form in an <li> tag
+        return '<li class="mob-menu-search-wrapper" role="none">' . $search_html . '</li>';
+    }
+    return $search_html;
+}, 20);

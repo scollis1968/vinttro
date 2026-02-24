@@ -139,15 +139,25 @@ add_filter('cmplz_banner_html', function($html) {
 add_action('wp_footer', function() {
     ?>
     <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function() {
-            var searchForm = document.querySelector('ul.rightmtop > form');
-            if (searchForm) {
-                var li = document.createElement('li');
-                li.setAttribute('role', 'none'); // Keeps ARIA clean
-                searchForm.parentNode.insertBefore(li, searchForm);
-                li.appendChild(searchForm);
+        (function() {
+            function wrapSearchInLi() {
+                // We look for the form inside that specific UL
+                var searchForm = document.querySelector('ul.rightmtop form'); 
+                
+                // Check if it's already wrapped to avoid infinite loops
+                if (searchForm && searchForm.parentElement.tagName !== 'LI') {
+                    var li = document.createElement('li');
+                    li.setAttribute('role', 'presentation'); 
+                    searchForm.parentNode.insertBefore(li, searchForm);
+                    li.appendChild(searchForm);
+                    console.log('Mobile menu search wrapped successfully!');
+                }
             }
-        });
+
+            // Run on load and also after a tiny delay to catch "lazy" menus
+            window.addEventListener('load', wrapSearchInLi);
+            setTimeout(wrapSearchInLi, 500); 
+        })();
     </script>
     <?php
 }, 100);

@@ -133,33 +133,6 @@ add_filter('cmplz_banner_html', function($html) {
     return $fixed_html;
 }, 10, 1);
 
-/**
- * Fix WP Mobile Menu Accessibility: Wrap search form in <li>...
- */
-add_action('wp_footer', function() {
-    ?>
-    <script type="text/javascript">
-        (function() {
-            function wrapSearchInLi() {
-                // We look for the form inside that specific UL
-                var searchForm = document.querySelector('ul.rightmtop form'); 
-                
-                // Check if it's already wrapped to avoid infinite loops
-                if (searchForm && searchForm.parentElement.tagName !== 'LI') {
-                    var li = document.createElement('li');
-                    li.setAttribute('role', 'presentation'); 
-                    searchForm.parentNode.insertBefore(li, searchForm);
-                    li.appendChild(searchForm);
-                    console.log('Mobile menu search wrapped successfully!');
-                }
-            }
 
-            // Run on load and also after a tiny delay to catch "lazy" menus
-            window.addEventListener('load', wrapSearchInLi);
-            setTimeout(wrapSearchInLi, 500); 
-        })();
-    </script>
-    <?php
-}, 100);
 
 ?>

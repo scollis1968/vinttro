@@ -240,21 +240,19 @@ function suitecrm_conditional_menu_stub( $items, $args ) {
 add_filter( 'wp_nav_menu_items', 'suitecrm_conditional_menu_stub', 10, 2 );
 
 /**
- * Fix: Force wrap search form in <li> inside the rightmtop menu
- * This intercepts the final HTML output to ensure Lighthouse is happy.
+ * Fix: Ensure EVERYTHING inside ul.rightmtop is wrapped in <li>
  */
 ob_start();
 add_action('shutdown', function() {
     $final_html = ob_get_clean();
 
-    // Look for the specific ul and its direct form child
-    // We wrap the form in an <li> and add role="none" for accessibility
-    $pattern = '/(<ul[^>]*class="[^"]*rightmtop[^"]*"[^>]*>)\s*(<form[^>]*role="search"[^>]*>)/is';
-    $replacement = '$1<li role="none">$2';
+    // This pattern looks for the start of the UL, then captures 
+    // EVERYTHING (including "Search Search") until it hits the </form>
+    // then wraps all of it in one <li>.
+    $pattern = '/(<ul[^>]*class="[^"]*rightmtop[^"]*"[^>]*>)(.*?)(\s*<form[^>]*role="search".*?<\/form>)/is';
+    $replacement = '$1<li role="none">$2$3</li>';
     
-    // We also need to close the </li> after the </form>
     $final_html = preg_replace($pattern, $replacement, $final_html);
-    $final_html = str_replace('</form></ul>', '</form></li></ul>', $final_html);
 
     echo $final_html;
 }, 0);

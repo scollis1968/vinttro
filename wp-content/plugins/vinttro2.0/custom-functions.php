@@ -241,22 +241,31 @@ add_filter( 'wp_nav_menu_items', 'suitecrm_conditional_menu_stub', 10, 2 );
 
 
 /**
- * Fix: WP Mobile Menu Structure & Remove Redundant "Search" Label
+ * Final Fix: Clean WP Mobile Menu List Structure & Input Accessibility
  */
 ob_start();
 add_action('shutdown', function() {
     $final_html = ob_get_clean();
 
     if (strpos($final_html, 'rightmtop') !== false) {
-        // 1. Remove the <label>Search</label> tag to get rid of the extra "Search" word
-        $final_html = preg_replace('/<label[^>]*class="wp-block-search__label"[^>]*>.*?<\/label>/is', '', $final_html);
+        // 1. Remove the visible label tag entirely to stop the double "Search" text
+        $final_html = preg_replace('/<label[^>]*>.*?<\/label>/is', '', $final_html);
 
-        // 2. Tighten the <ul> structure: Remove ALL whitespace/text between <ul> and <li>
-        // This regex captures the UL, finds the form inside, and rebuilds it with ZERO gaps.
-        $pattern = '/(<ul[^>]*class="[^"]*rightmtop[^"]*"[^>]*>)(.*?)(<form.*?<\/form>)(.*?)(<\/ul>)/is';
-        $replacement = '$1<li role="presentation">$3</li>$5';
+        // 2. Inject an aria-label into the input so it's accessible but invisible
+        $final_html = str_replace('<input ', '<input aria-label="Search Site" ', $final_html);
+
+        // 3. NUCLEAR CLEAN: Find the UL and its inner content. 
+        // We strip all whitespace and wrap the WHOLE thing in one <li>.
+        $pattern = '/(<ul[^>]*class="[^"]*rightmtop[^"]*"[^>]*>)(.*?)(<\/ul>)/is';
         
-        $final_html = preg_replace($pattern, $replacement, $final_html);
+        $final_html = preg_replace_callback($pattern, function($matches) {
+            $ul_open = $matches[1];
+            $content = trim($matches[2]); // Remove stray "Search" text and whitespace
+            $ul_close = $matches[3];
+            
+            // We ensure ONLY the <li> is inside the <ul>
+            return $ul_open . '<li role="none">' . $content . '</li>' . $ul_close;
+        }, $final_html);
     }
 
     echo $final_html;

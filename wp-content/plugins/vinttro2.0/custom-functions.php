@@ -239,20 +239,25 @@ function suitecrm_conditional_menu_stub( $items, $args ) {
 
 add_filter( 'wp_nav_menu_items', 'suitecrm_conditional_menu_stub', 10, 2 );
 
+
 /**
- * Fix: Ensure EVERYTHING inside ul.rightmtop is wrapped in <li>
+ * Fix: WP Mobile Menu Structure & Remove Redundant "Search" Label
  */
 ob_start();
 add_action('shutdown', function() {
     $final_html = ob_get_clean();
 
-    // This pattern looks for the start of the UL, then captures 
-    // EVERYTHING (including "Search Search") until it hits the </form>
-    // then wraps all of it in one <li>.
-    $pattern = '/(<ul[^>]*class="[^"]*rightmtop[^"]*"[^>]*>)(.*?)(\s*<form[^>]*role="search".*?<\/form>)/is';
-    $replacement = '$1<li role="none">$2$3</li>';
-    
-    $final_html = preg_replace($pattern, $replacement, $final_html);
+    if (strpos($final_html, 'rightmtop') !== false) {
+        // 1. Remove the <label>Search</label> tag to get rid of the extra "Search" word
+        $final_html = preg_replace('/<label[^>]*class="wp-block-search__label"[^>]*>.*?<\/label>/is', '', $final_html);
+
+        // 2. Tighten the <ul> structure: Remove ALL whitespace/text between <ul> and <li>
+        // This regex captures the UL, finds the form inside, and rebuilds it with ZERO gaps.
+        $pattern = '/(<ul[^>]*class="[^"]*rightmtop[^"]*"[^>]*>)(.*?)(<form.*?<\/form>)(.*?)(<\/ul>)/is';
+        $replacement = '$1<li role="presentation">$3</li>$5';
+        
+        $final_html = preg_replace($pattern, $replacement, $final_html);
+    }
 
     echo $final_html;
 }, 0);

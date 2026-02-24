@@ -240,12 +240,21 @@ function suitecrm_conditional_menu_stub( $items, $args ) {
 add_filter( 'wp_nav_menu_items', 'suitecrm_conditional_menu_stub', 10, 2 );
 
 /**
- * WP Mobile Menu: Wrap search form in <li> for accessibility
+ * Fix: Force wrap search form in <li> inside the rightmtop menu
+ * This intercepts the final HTML output to ensure Lighthouse is happy.
  */
-add_filter('wp_mobile_menu_custom_search', function($search_html) {
-    if (!empty($search_html)) {
-        // Wrap the returned search form in an <li> tag
-        return '<li class="mob-menu-search-wrapper" role="none">' . $search_html . '</li>';
-    }
-    return $search_html;
-}, 20);
+ob_start();
+add_action('shutdown', function() {
+    $final_html = ob_get_clean();
+
+    // Look for the specific ul and its direct form child
+    // We wrap the form in an <li> and add role="none" for accessibility
+    $pattern = '/(<ul[^>]*class="[^"]*rightmtop[^"]*"[^>]*>)\s*(<form[^>]*role="search"[^>]*>)/is';
+    $replacement = '$1<li role="none">$2';
+    
+    // We also need to close the </li> after the </form>
+    $final_html = preg_replace($pattern, $replacement, $final_html);
+    $final_html = str_replace('</form></ul>', '</form></li></ul>', $final_html);
+
+    echo $final_html;
+}, 0);

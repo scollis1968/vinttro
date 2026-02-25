@@ -174,13 +174,19 @@ document.addEventListener('wpcf7mailsent', function(event) {
 document.addEventListener('wpcf7mailsent', function(event) {
     
     // --- Configuration ---
-    const defaultConfirmationId = 1863; // The fallback popup
+    const defaultConfirmationId = 1863; // The fallback popup 0333 4042 007
     
     // Map of specific forms that need a UNIQUE confirmation popup
     // Format: 'CF7_FORM_ID': UNIQUE_POPUP_ID
     const customPopups = {
-        '4675': 5940, // Example: Vehicle Services - Generic Enquiry Form gets Popup 5940 - 0800
-        '2002': 5940  // Example: Legal - Enquiry - gets Popup 5940 - 0800
+        '4626': 5940, // b2b-enquiry                      - gets Confirmation Popup 5940 - 0333 4042 008
+        '5938': 1863, // b2b-insurance                    - gets Confirmation Popup 1863 - 0333 4042 007
+        '5034': 5940, // b2b-legal-enquiry                - gets Confirmation Popup 5940 - 0333 4042 008
+        '2293': 1863, // cover-quote-request              - gets Confirmation Popup 1863 - 0333 4042 007
+        '2303': 1863, // cover-quote-request-car          - gets Confirmation Popup 1863 - 0333 4042 007
+        '5020': 5940, // legal-enquiry                    - gets Confirmation Popup 5940 - 0333 4042 008
+        '5195': 5940, // member-application               - gets Confirmation Popup 5940 - 0333 4042 008
+        '4675': 5940  // vehicle-services-general-enquiry - gets Confirmation Popup 5940 - 0333 4042 008
     };
     // ---------------------
 

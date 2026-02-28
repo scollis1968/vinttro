@@ -240,3 +240,22 @@ function suitecrm_conditional_menu_stub( $items, $args ) {
 add_filter( 'wp_nav_menu_items', 'suitecrm_conditional_menu_stub', 10, 2 );
 
 
+/**
+ * Add GA4 Tracking Code to Head, EXCLUDING all Administrators
+ */
+add_action('wp_head', 'vinttro_add_analytics_with_exclusion');
+function vinttro_add_analytics_with_exclusion() {
+    // Only run this if the user is NOT an administrator
+    if ( !current_user_can( 'manage_options' ) ) {
+        ?>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-9W0FQ6PNW2"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'G-9W0FQ6PNW2');
+        </script>
+        <?php
+    }
+}

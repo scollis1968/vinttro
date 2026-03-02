@@ -129,7 +129,8 @@ function extractLastUrlSegment(urlString) {
   const segments = cleanedUrl.split('/');
   return segments.pop();
 }
-
+/*
+// ------------------- old version of confirmation popup logic, now replaced by the more robust click trigger method below -------------------
 document.addEventListener('wpcf7mailsent', function(event) {
     
     // --- Configuration: UPDATE THESE IDs ---
@@ -166,6 +167,54 @@ document.addEventListener('wpcf7mailsent', function(event) {
 
     } else {
         console.error('Popup Builder API (SGPBPopup) not found.');
+    }
+
+}, false);
+*/
+document.addEventListener('wpcf7mailsent', function(event) {
+    
+    // --- Configuration ---
+    const defaultConfirmationId = 1863; // The fallback popup 0333 4042 007
+    
+    // Map of specific forms that need a UNIQUE confirmation popup
+    // Format: 'CF7_FORM_ID': UNIQUE_POPUP_ID
+    const customPopups = {
+        '4626': 5940, // b2b-enquiry                      - gets Confirmation Popup 5940 - 0333 4042 008
+        '5938': 1863, // b2b-insurance                    - gets Confirmation Popup 1863 - 0333 4042 007
+        '5034': 5940, // b2b-legal-enquiry                - gets Confirmation Popup 5940 - 0333 4042 008
+        '2293': 1863, // cover-quote-request              - gets Confirmation Popup 1863 - 0333 4042 007
+        '2303': 1863, // cover-quote-request-car          - gets Confirmation Popup 1863 - 0333 4042 007
+        '5020': 5940, // legal-enquiry                    - gets Confirmation Popup 5940 - 0333 4042 008
+        '5195': 5940, // member-application               - gets Confirmation Popup 5940 - 0333 4042 008
+        '4675': 5940  // vehicle-services-general-enquiry - gets Confirmation Popup 5940 - 0333 4042 008
+    };
+    // ---------------------
+
+    const submittedFormId = event.detail.contactFormId;
+    
+    // Determine which confirmation ID to use
+    const confirmationModalId = customPopups[submittedFormId] || defaultConfirmationId;
+    const confirmationTriggerClass = `sg-popup-id-${confirmationModalId}`;
+
+    if (typeof SGPBPopup !== 'undefined') {
+
+        // 1. Close the form popup (we use the submitted ID as the reference)
+        SGPBPopup.closePopupById(submittedFormId);
+        
+        // 2. Trigger the confirmation popup
+        setTimeout(function() {
+            const confirmationTrigger = document.querySelector(`.${confirmationTriggerClass}`);
+
+            if (confirmationTrigger) {
+                confirmationTrigger.click(); 
+                console.log(`Form ${submittedFormId} sent. Triggering Popup: ${confirmationModalId}`);
+            } else {
+                console.error(`Trigger class .${confirmationTriggerClass} not found.`);
+            }
+        }, 200); 
+
+    } else {
+        console.error('Popup Builder API not found.');
     }
 
 }, false);

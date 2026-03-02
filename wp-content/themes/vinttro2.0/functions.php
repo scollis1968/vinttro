@@ -133,4 +133,6 @@ add_filter('cmplz_banner_html', function($html) {
     return $fixed_html;
 }, 10, 1);
 
+
+
 ?>

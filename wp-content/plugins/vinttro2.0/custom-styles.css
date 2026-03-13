@@ -456,7 +456,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 /* Targeted fix for the Auto-P issue */
 .vinttro-row p {
     display: flex; /* Forces the internal spans back into a row */
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
     margin: 0;     /* Removes the default paragraph spacing */
     padding: 0;
@@ -464,15 +464,20 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 
 /* Adjust the field to take up the remaining space */
 .vinttro-field {
-    flex: 1; 
+    flex: 1;
     display: flex;
-    flex-wrap: wrap; /* Keeps radio buttons together */
+    flex-wrap: wrap;
+    align-items: flex-start; /* Ensures options start at the top */
 }
 
 /* Ensure the label doesn't shrink */
+/* Align the label to the top with a small offset */
 .vinttro-label {
-    flex: 0 0 160px; /* Adjusted slightly to save space */
-    margin-bottom: 0 !important; 
+    flex: 0 0 160px;
+    font-weight: 600;
+    font-size: 15px;
+    padding-top: 3px; /* This nudges the text down to line up with the radio circle */
+    margin-bottom: 0 !important;
 }
 
 

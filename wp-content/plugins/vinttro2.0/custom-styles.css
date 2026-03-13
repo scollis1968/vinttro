@@ -419,3 +419,36 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     transform: translateY(2px); /* Moves the button down 2px when clicked */
     box-shadow: none !important;
 }
+/* ------------------------------------------------------------------------------ */
+/* VINTTRO Forms Styling */
+/* Container for the rows */
+.vinttro-form .form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px; /* Adds space between rows */
+    flex-wrap: wrap;    /* Ensures it looks good on mobile */
+}
+
+/* The Label text */
+.vinttro-form .field-label {
+    flex: 0 0 200px;    /* Fixes the label width to 200px */
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+/* Styling the radio options to sit nicely */
+.vinttro-form .wpcf7-list-item {
+    margin: 0 10px 0 0;
+    display: inline-block;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    .vinttro-form .form-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .vinttro-form .field-label {
+        margin-bottom: 5px;
+    }
+}

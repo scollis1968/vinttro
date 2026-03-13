@@ -421,34 +421,46 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 }
 /* ------------------------------------------------------------------------------ */
 /* VINTTRO Forms Styling */
-/* Container for the rows */
-.vinttro-form .form-row {
+/* Container for the vehicle check section */
+.vinttro-check-container {
+    margin-top: 20px;
+}
+
+/* Create the side-by-side row */
+.vinttro-row {
     display: flex;
     align-items: center;
-    margin-bottom: 15px; /* Adds space between rows */
-    flex-wrap: wrap;    /* Ensures it looks good on mobile */
+    padding: 12px 0;
+    border-bottom: 1px solid #eee; /* Adds a subtle divider for readability */
 }
 
-/* The Label text */
-.vinttro-form .field-label {
-    flex: 0 0 200px;    /* Fixes the label width to 200px */
-    font-weight: bold;
-    margin-right: 15px;
+/* Fixed width for the label to keep things aligned */
+.vinttro-label {
+    flex: 0 0 180px; /* Label stays at 180px wide */
+    font-weight: 600;
+    font-size: 15px;
 }
 
-/* Styling the radio options to sit nicely */
-.vinttro-form .wpcf7-list-item {
-    margin: 0 10px 0 0;
-    display: inline-block;
+/* Styling the radio buttons themselves */
+.vinttro-field .wpcf7-list-item {
+    margin: 0 15px 0 0;
+    display: inline-flex;
+    align-items: center;
 }
 
-/* Mobile adjustments */
+.vinttro-field .wpcf7-list-item-label {
+    margin-left: 5px;
+    font-size: 14px;
+}
+
+/* MOBILE OPTIMIZATION */
 @media (max-width: 600px) {
-    .vinttro-form .form-row {
-        flex-direction: column;
+    .vinttro-row {
+        flex-direction: column; /* Stacks label on top of options for small screens */
         align-items: flex-start;
     }
-    .vinttro-form .field-label {
-        margin-bottom: 5px;
+    .vinttro-label {
+        margin-bottom: 8px;
+        flex: 0 0 auto;
     }
 }

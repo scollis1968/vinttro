@@ -430,7 +430,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 .vinttro-row {
     display: flex;
     align-items: center;
-    padding: 12px 0;
+    padding: 4px 0;
     border-bottom: 1px solid #eee; /* Adds a subtle divider for readability */
 }
 
@@ -454,7 +454,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 }
 
 /* MOBILE OPTIMIZATION */
-@media (max-width: 600px) {
+@media (max-width: 800px) {
     .vinttro-row {
         flex-direction: column; /* Stacks label on top of options for small screens */
         align-items: flex-start;

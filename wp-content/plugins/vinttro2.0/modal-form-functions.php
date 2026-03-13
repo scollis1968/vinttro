@@ -48,42 +48,41 @@ function get_cf7_id_by_title_contains( $title_substring ) {
 function my_custom_cf7_scripts() {
     ?>
     <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        const conditionalGroups = document.querySelectorAll('.conditional-field');
+        document.addEventListener('DOMContentLoaded', function() {
+            const conditionalGroups = document.querySelectorAll('.conditional-field');
 
-        conditionalGroups.forEach(group => {
-            const targetName = group.getAttribute('data-depends-on');
-            const targetValue = group.getAttribute('data-if-value');
-            
-            // Find the input/select/radio inside CF7
-            // CF7 inputs usually have the name attribute we defined
-            const input = document.querySelector(`[name="${targetName}"]`) || 
-                        document.querySelector(`[name="${targetName}[]"]`);
+            conditionalGroups.forEach(group => {
+                const targetName = group.getAttribute('data-depends-on');
+                const targetValue = group.getAttribute('data-if-value');
 
-            if (input) {
+                // Function to check the current value and toggle visibility
                 const toggleField = () => {
-                    // Handle both standard inputs and radio/checkboxes
-                    const currentValue = input.type === 'checkbox' || input.type === 'radio' 
-                        ? document.querySelector(`[name="${targetName}"]:checked`)?.value 
-                        : input.value;
+                    // Specifically find the checked radio button in the group
+                    const checkedRadio = document.querySelector(`input[name="${targetName}"]:checked`);
+                    const currentValue = checkedRadio ? checkedRadio.value : null;
 
                     if (currentValue === targetValue) {
                         group.style.display = 'block';
                     } else {
                         group.style.display = 'none';
-                        // Optional: Clear the values if hidden again
+                        // Optional: Clear fields if hidden
                         group.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
                     }
                 };
 
-                // Listen for changes
-                input.addEventListener('change', toggleField);
+                // Find ALL radio buttons in this group and attach the listener to each
+                const allRadios = document.querySelectorAll(`input[name="${targetName}"]`);
                 
-                // Run once on load in case of browser "back" button cache
-                toggleField();
-            }
+                if (allRadios.length > 0) {
+                    allRadios.forEach(radio => {
+                        radio.addEventListener('change', toggleField);
+                    });
+                    
+                    // Run once on load to catch default values
+                    toggleField();
+                }
+            });
         });
-    });
     </script>
     <?php
 }

@@ -422,7 +422,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 /* ------------------------------------------------------------------------------ */
 /* VINTTRO Forms Styling */
 /* Container for the vehicle check section */
-.vinttro-check-container {
+.vinttro-form-container {
     margin-top: 20px;
 }
 

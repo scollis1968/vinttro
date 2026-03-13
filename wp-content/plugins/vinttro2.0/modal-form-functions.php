@@ -44,3 +44,47 @@ function get_cf7_id_by_title_contains( $title_substring ) {
     // 5. Return null if not found
     return null;
 }
+
+function my_custom_cf7_scripts() {
+    ?>
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        const conditionalGroups = document.querySelectorAll('.conditional-field');
+
+        conditionalGroups.forEach(group => {
+            const targetName = group.getAttribute('data-depends-on');
+            const targetValue = group.getAttribute('data-if-value');
+            
+            // Find the input/select/radio inside CF7
+            // CF7 inputs usually have the name attribute we defined
+            const input = document.querySelector(`[name="${targetName}"]`) || 
+                        document.querySelector(`[name="${targetName}[]"]`);
+
+            if (input) {
+                const toggleField = () => {
+                    // Handle both standard inputs and radio/checkboxes
+                    const currentValue = input.type === 'checkbox' || input.type === 'radio' 
+                        ? document.querySelector(`[name="${targetName}"]:checked`)?.value 
+                        : input.value;
+
+                    if (currentValue === targetValue) {
+                        group.style.display = 'block';
+                    } else {
+                        group.style.display = 'none';
+                        // Optional: Clear the values if hidden again
+                        group.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
+                    }
+                };
+
+                // Listen for changes
+                input.addEventListener('change', toggleField);
+                
+                // Run once on load in case of browser "back" button cache
+                toggleField();
+            }
+        });
+    });
+    </script>
+    <?php
+}
+add_action('wp_footer', 'my_custom_cf7_scripts');   

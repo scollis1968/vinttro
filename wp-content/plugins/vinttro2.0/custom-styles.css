@@ -453,6 +453,29 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     font-size: 14px;
 }
 
+/* Targeted fix for the Auto-P issue */
+.vinttro-row p {
+    display: flex; /* Forces the internal spans back into a row */
+    align-items: center;
+    width: 100%;
+    margin: 0;     /* Removes the default paragraph spacing */
+    padding: 0;
+}
+
+/* Adjust the field to take up the remaining space */
+.vinttro-field {
+    flex: 1; 
+    display: flex;
+    flex-wrap: wrap; /* Keeps radio buttons together */
+}
+
+/* Ensure the label doesn't shrink */
+.vinttro-label {
+    flex: 0 0 160px; /* Adjusted slightly to save space */
+    margin-bottom: 0 !important; 
+}
+
+
 /* MOBILE OPTIMIZATION */
 @media (max-width: 800px) {
     .vinttro-row {

@@ -482,7 +482,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 
 
 /* MOBILE OPTIMIZATION */
-@media (max-width: 800px) {
+@media (max-width: 600px) {
     .vinttro-row {
         flex-direction: column; /* Stacks label on top of options for small screens */
         align-items: flex-start;

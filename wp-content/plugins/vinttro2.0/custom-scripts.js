@@ -186,7 +186,7 @@ document.addEventListener('wpcf7mailsent', function(event) {
         '2303': 1863, // cover-quote-request-car          - gets Confirmation Popup 1863 - 0333 4042 007
         '5020': 5940, // legal-enquiry                    - gets Confirmation Popup 5940 - 0333 4042 008
         '5195': 5940, // member-application               - gets Confirmation Popup 5940 - 0333 4042 008
-        '4675': 5940,  // vehicle-services-general-enquiry - gets Confirmation Popup 5940 - 0333 4042 008
+        '4675': 5940, // vehicle-services-general-enquiry - gets Confirmation Popup 5940 - 0333 4042 008
         '6104': 6150  // VIsP Fleet Vehicle Check         - gets Thank You popup 150
     };
     // ---------------------

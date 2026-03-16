@@ -482,13 +482,32 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
 
 
 /* MOBILE OPTIMIZATION */
+/* Force form rows to stack on mobile */
 @media (max-width: 600px) {
     .vinttro-row {
-        flex-direction: column; /* Stacks label on top of options for small screens */
-        align-items: flex-start;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        margin-bottom: 15px;
     }
-    .vinttro-label {
-        margin-bottom: 8px;
-        flex: 0 0 auto;
+
+    .vinttro-label, 
+    .vinttro-field {
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 5px;
+    }
+
+    /* CF7 adds spans that can mess with width */
+    .wpcf7-form-control-wrap {
+        display: block;
+        width: 100%;
+    }
+
+    /* Ensure the select box takes full width */
+    .vinttro-field select,
+    .vinttro-field input {
+        width: 100% !important;
+        box-sizing: border-box;
     }
 }

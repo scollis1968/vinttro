@@ -35,7 +35,7 @@ add_action( 'wp_enqueue_scripts', 'my_plugin_load_styles', 99 );
 //--------------------------------------------------------
 function my_plugin_load_scripts() {
     // Enqueue the script, ensuring it loads in the footer
-    wp_enqueue_script( 'my-form-preview-script', plugins_url( 'custom-scripts.js', __FILE__ ), array('jquery'), '1.3', true );
+    wp_enqueue_script( 'my-form-preview-script', plugins_url( 'custom-scripts.js', __FILE__ ), array('jquery'), filemtime(plugin_dir_path(__FILE__) . 'custom-scripts.js'), true );
 }
 add_action( 'wp_enqueue_scripts', 'my_plugin_load_scripts' );
 

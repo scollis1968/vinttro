@@ -19,7 +19,7 @@ function updatePageContext() {
     // 2. Logic: Keyword matching (Order matters! Specific matches first)
     
     if (currentURL.includes('fleet')) {
-        message = "Streamline Your Business – Multi-Vehicle Fleet Rates";
+        message = "Multi-Vehicle Fleet Rates";
     } 
     else if (currentURL.includes('motor-trade') || currentURL.includes('motor%20trade')) {
         message = "Professional Cover for Your Motor Trade Business";

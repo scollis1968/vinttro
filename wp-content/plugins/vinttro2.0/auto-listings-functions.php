@@ -7,7 +7,7 @@ add_filter( 'auto_listings_shortcode_listings_query', function( $query_args, $at
     // STEP 1: PROOF OF LIFE
     // Uncomment the line below, refresh the page. 
     // If it dies, we have finally caught the right hook!
-    die('<h1>SUCCESS: We hit the Shortcode Filter!</h1>');
+    //die('<h1>SUCCESS: We hit the Shortcode Filter!</h1>');
 
     // STEP 2: Logic to apply the filters from the URL
     

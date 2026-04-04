@@ -1,39 +1,41 @@
 
 jQuery(document).ready(function($) {
- function updatePageContext() {
-        const currentURL = window.location.href;
-        const sourcePage = extractLastUrlSegment(currentURL);
-        
-        // Use .val() and then trigger 'change' so CF7 knows it happened
-        $('.cf7-page-url').val(currentURL).trigger('change');
-        $('.cf7-page-name').val(sourcePage).trigger('change');
+function updatePageContext() {
+    // 1. Get the URL and normalize it to lowercase for easier searching
+    const currentURL = window.location.href.toLowerCase();
+    
+    // We still keep sourcePage for the form field, but let's strip query params
+    // so things like ?fbclid don't end up in your "Page Name" field.
+    const cleanPath = window.location.pathname.replace(/\/$/, ""); // remove trailing slash
+    const sourcePage = cleanPath.split('/').pop().replace(/-/g, ' ');
 
-        // Update the Header Message
-        const headerElement = $('#dynamic-message-header');
-        let message = "";
-        
-        // Normalize for matching
-        const pageKey = sourcePage ? sourcePage.toLowerCase().replace(/-/g, ' ').trim() : "";
+    // Update CF7 fields
+    $('.cf7-page-url').val(window.location.href).trigger('change');
+    $('.cf7-page-name').val(sourcePage).trigger('change');
 
-        switch (sourcePage.toLowerCase()) {
-            case "specialist-car-insurance":
-                //message = "🚗 At VINTTRO we understand what specialist car insurance means";
-                message = "Here at VINTTRO we understand what specialist car insurance means";
-                break;
-            case "fleet insurance":
-                message = "🚛 Streamline Your Business – Multi-Vehicle Fleet Rates";
-                break;
-            case "prestige car insurance":
-                message = "✨ Tailored Cover for Your High-Performance Vehicle";
-                break;
-            case "motor trade":
-                message = "🛠️ Professional Cover for Your Motor Trade Business";
-                break;
-            default:
-                message = "Custom Quote for " + sourcePage.charAt(0).toUpperCase() + sourcePage.slice(1).toLowerCase().replace(/-/g, ' ').trim() + ", please provide some basic information and our expert team will be in touch.";
-        }
-        headerElement.html(message + ", please provide some basic information and our expert team will be in touch.");
+    const headerElement = $('#dynamic-message-header');
+    let message = "Custom Quote"; // Default fallback
+
+    // 2. Logic: Keyword matching (Order matters! Specific matches first)
+    
+    if (currentURL.includes('fleet')) {
+        message = "Streamline Your Business – Multi-Vehicle Fleet Rates";
+    } 
+    else if (currentURL.includes('motor-trade') || currentURL.includes('motor%20trade')) {
+        message = "Professional Cover for Your Motor Trade Business";
     }
+    // Check for "car" AND "performance" (or "prestige")
+    else if (currentURL.includes('car') && (currentURL.includes('performance') || currentURL.includes('prestige') || currentURL.includes('luxury'))) {
+        message = "Tailored Cover for Your High-Performance Vehicle";
+    }
+    // General "car" match
+    else if (currentURL.includes('car')) {
+        message = "Here at VINTTRO we understand what specialist car insurance means";
+    }
+
+    // 3. Apply the message
+    headerElement.html(`${message}, please provide some basic information and our expert team will be in touch.`);
+}
 
     // Run context update immediately AND when popup opens (Popup Builder event)
     updatePageContext();

@@ -2,34 +2,38 @@
 /**
  * Force the Auto Listings shortcode to respect URL parameters
  */
-die('DEBUG: auto_listings Plugin File is Active');
-add_filter( 'auto_listings_query_args', function( $args ) {
-    // DEBUG: This will stop the site and print "HELLO FROM PHP"
-    // If you see this message when you load the page, the hook is working!
-    die('<h1>HELLO FROM PHP</h1>');
+add_filter( 'auto_listings_shortcode_listings_query', function( $query_args, $atts ) {
     
-    // 1. Filter by Make (The taxonomy name is usually 'al_make')
+    // STEP 1: PROOF OF LIFE
+    // Uncomment the line below, refresh the page. 
+    // If it dies, we have finally caught the right hook!
+    die('<h1>SUCCESS: We hit the Shortcode Filter!</h1>');
+
+    // STEP 2: Logic to apply the filters from the URL
+    
+    // Filter by Make
     if ( ! empty( $_GET['make'] ) ) {
-        $args['tax_query'][] = array(
+        // We use 'make' here, but check if it should be 'al_make'
+        $query_args['tax_query'][] = array(
             'taxonomy' => 'al_make', 
             'field'    => 'slug',
-            'terms'    => sanitize_text_field( $_GET['make'] ),
+            'terms'    => strtolower( sanitize_text_field( $_GET['make'] ) ),
         );
     }
 
-    // 2. Filter by Fuel Type (Usually 'al_fuel_type')
+    // Filter by Fuel Type
     if ( ! empty( $_GET['fuel_type'] ) ) {
-        $args['tax_query'][] = array(
+        $query_args['tax_query'][] = array(
             'taxonomy' => 'al_fuel_type',
             'field'    => 'slug',
-            'terms'    => sanitize_text_field( $_GET['fuel_type'] ),
+            'terms'    => strtolower( sanitize_text_field( $_GET['fuel_type'] ) ),
         );
     }
 
-    // Ensure the tax_query relationship is correct if multiple filters are used
-    if ( isset($args['tax_query']) && count($args['tax_query']) > 1 ) {
-        $args['tax_query']['relation'] = 'AND';
+    // Set the relation if more than one filter is present
+    if ( isset( $query_args['tax_query'] ) && count( $query_args['tax_query'] ) > 1 ) {
+        $query_args['tax_query']['relation'] = 'AND';
     }
 
-    return $args;
-});
+    return $query_args;
+}, 10, 2 );

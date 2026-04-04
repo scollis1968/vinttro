@@ -2,6 +2,7 @@
 
 /* Container for the image, usually the custom-upload-area */
 
+@import url('auto-listings.css');
 
 /* The actual uploaded preview image */
 .fill-dropzone-image {

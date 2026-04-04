@@ -1,0 +1,46 @@
+/* 1. Global UI Sharpening */
+body {
+    --p-input-border-color: #abb3bb; /* Darken input borders */
+}
+
+/* Tighten up cards and borders */
+.card, .panel {
+    border: 1px solid #d1d7dc !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+}
+
+/* 2. Target the Fleet Subpanel specifically */
+/* Note: You may need to inspect the element to get the exact ID/Class */
+app-subpanel-list-view {
+    border-top: 2px solid #3498db !important; /* Blue accent for subpanels */
+    background-color: #f8f9fa;
+}
+
+/* Make headers more 'sharp' */
+.subpanel-header h4 {
+    font-weight: 700 !important;
+    color: #2c3e50;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+/* Sharpen the buttons */
+.btn {
+    border-radius: 2px !important;
+    font-weight: 600 !important;
+}
+.dynamic-field,
+.dynamic-label {
+    font-weight: bold !important;
+    color: #916D1C;
+}
+
+.login-button {
+    background-color: #3498db !important;
+    border: none !important;
+    color: white !important;
+    padding: 10px 20px !important;
+    font-size: 1rem !important;
+    border-radius: 4px !important;
+}

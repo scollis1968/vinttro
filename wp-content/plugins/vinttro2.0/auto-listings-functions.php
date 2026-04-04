@@ -2,6 +2,7 @@
 /**
  * Force the Auto Listings shortcode to respect URL parameters
  */
+die('DEBUG: auto_listings Plugin File is Active');
 add_filter( 'auto_listings_query_args', function( $args ) {
     // DEBUG: This will stop the site and print "HELLO FROM PHP"
     // If you see this message when you load the page, the hook is working!

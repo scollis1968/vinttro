@@ -4,35 +4,32 @@
  */
 add_filter( 'auto_listings_shortcode_listings_query', function( $query_args, $atts ) {
     
-    // STEP 1: PROOF OF LIFE
-    // Uncomment the line below, refresh the page. 
-    // If it dies, we have finally caught the right hook!
-    //die('<h1>SUCCESS: We hit the Shortcode Filter!</h1>');
+    // Initialize meta_query if it's not already there
+    if ( ! isset( $query_args['meta_query'] ) ) {
+        $query_args['meta_query'] = array();
+    }
 
-    // STEP 2: Logic to apply the filters from the URL
-    
-    // Filter by Make
+    // 1. Filter by Make (using the key we found: _al_listing_make_display)
     if ( ! empty( $_GET['make'] ) ) {
-        // We use 'make' here, but check if it should be 'al_make'
-        $query_args['tax_query'][] = array(
-            'taxonomy' => 'al_make', 
-            'field'    => 'slug',
-            'terms'    => strtolower( sanitize_text_field( $_GET['make'] ) ),
+        $query_args['meta_query'][] = array(
+            'key'     => '_al_listing_make_display',
+            'value'   => sanitize_text_field( $_GET['make'] ),
+            'compare' => '=', // Change to 'LIKE' if exact match fails
         );
     }
 
-    // Filter by Fuel Type
+    // 2. Filter by Fuel Type (using the key we found: _al_listing_model_engine_fuel)
     if ( ! empty( $_GET['fuel_type'] ) ) {
-        $query_args['tax_query'][] = array(
-            'taxonomy' => 'al_fuel_type',
-            'field'    => 'slug',
-            'terms'    => strtolower( sanitize_text_field( $_GET['fuel_type'] ) ),
+        $query_args['meta_query'][] = array(
+            'key'     => '_al_listing_model_engine_fuel',
+            'value'   => sanitize_text_field( $_GET['fuel_type'] ),
+            'compare' => '=',
         );
     }
 
-    // Set the relation if more than one filter is present
-    if ( isset( $query_args['tax_query'] ) && count( $query_args['tax_query'] ) > 1 ) {
-        $query_args['tax_query']['relation'] = 'AND';
+    // If both are used, ensure they both must match
+    if ( count( $query_args['meta_query'] ) > 1 ) {
+        $query_args['meta_query']['relation'] = 'AND';
     }
 
     return $query_args;

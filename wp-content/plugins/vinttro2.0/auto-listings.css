@@ -1,41 +1,92 @@
-/* Container for the car image */
+/* 1. IMAGE & HOVER MASKING */
 .auto-listings-items .image {
     width: 100%;
     margin-bottom: 15px;
-    overflow: hidden; /* Ensures the zoom/overflow doesn't break the radius */
+    position: relative;
+    /* We put the radius and overflow here to "mask" the zooming image */
+    border-radius: 8px; 
+    overflow: hidden;   
+    background-color: #f0f0f0; /* Slight placeholder color while loading */
 }
 
-/* Make images consistent and give them the Vinttro radius */
 .auto-listings-items .image img {
     display: block;
     width: 100%;
-    /* Set a consistent ratio - 3/2 is great for cars */
-    aspect-ratio: 3 / 2; 
-    /* This is the magic: it crops the image to fit the box without distortion */
-    object-fit: cover; 
-    /* The Vinttro small radius */
-    border-radius: 8px; 
-    transition: transform 0.3s ease; /* Subtle hover effect prep */
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Optional: Slight hover effect on the image */
+/* The car stays inside the rounded corners while zooming */
 .auto-listings-items li:hover .image img {
-    transform: scale(1.03);
+    transform: scale(1.08);
 }
 
-/* Uniform card styling (optional but recommended) */
+/* 2. THE GOLD PILL BUTTON */
+.auto-listings-items li .al-button {
+    background-color: #C19A6B !important; /* Vinttro Gold - adjust HEX if needed */
+    color: #ffffff !important;
+    border-radius: 50px !important; /* High value creates the pill shape */
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    border: none !important;
+    text-decoration: none !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 12px rgba(193, 154, 107, 0.2);
+}
+
+.auto-listings-items li .al-button:hover {
+    background-color: #A98357 !important; /* Slightly deeper gold */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(193, 154, 107, 0.3);
+}
+
+/* 3. CARD & ALIGNMENT */
 .auto-listings-items.grid-view li.auto-listing {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    height: 100%; /* Keeps the buttons aligned at the bottom */
-    border: 1px solid #eee;
-    padding: 15px;
+    border: 1px solid #f0f0f0;
+    padding: 20px;
     border-radius: 12px;
     background: #fff;
-    transition: box-shadow 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .auto-listings-items.grid-view li.auto-listing:hover {
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    border-color: #e0e0e0;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+}
+
+/* Forces the button to the bottom even if titles are different lengths */
+.auto-listings-items .summary {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.auto-listings-items .at-a-glance {
+    margin-bottom: 20px;
+}
+
+.auto-listings-items .bottom-wrap {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Clean up the title link */
+.auto-listings-items .title a {
+    text-decoration: none;
+    color: #333;
+    transition: color 0.2s;
+}
+
+.auto-listings-items .title a:hover {
+    color: #C19A6B;
 }

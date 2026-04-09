@@ -18,46 +18,45 @@ add_action('rest_api_init', function () {
  * The logic that runs when the API is hit
  */
 function vinttro_handle_crm_member($request) {
-    // Get the JSON data from the request body
     $params = $request->get_json_params();
-    
-    $email      = sanitize_email($params['email']);
-    $first_name = sanitize_text_field($params['first_name']);
-    $last_name  = sanitize_text_field($params['last_name']);
+    $email = sanitize_email($params['email']);
 
-    if (empty($email)) {
-        return new WP_Error('no_email', 'Email is required', ['status' => 400]);
-    }
-
-    // 1. Check if user already exists
+    // 1. Double check exists (to avoid duplicate errors)
     if (email_exists($email)) {
-        return new WP_REST_Response([
-            'status'  => 'exists',
-            'message' => 'User already has an account.'
-        ], 200); // 200 because it's a "success" in logic, just no action needed
+        return new WP_REST_Response(['message' => 'User exists'], 200);
     }
 
-    // 2. Create the User
+    // 2. Attempt user creation
     $user_id = wp_insert_user([
-        'user_login' => $email, // Using email as username is standard for memberships
+        'user_login' => $email,
         'user_email' => $email,
-        'first_name' => $first_name,
-        'last_name'  => $last_name,
-        'role'       => 'subscriber', // Or your specific membership role
-        'user_pass'  => wp_generate_password(12, true) // Random password
+        'first_name' => sanitize_text_field($params['first_name']),
+        'last_name'  => sanitize_text_field($params['last_name']),
+        'role'       => 'subscriber',
+        'user_pass'  => wp_generate_password(12, true)
     ]);
 
     if (is_wp_error($user_id)) {
-        return $user_id;
+        return new WP_Error('create_failed', $user_id->get_error_message(), ['status' => 500]);
     }
 
-    // 3. Trigger the "Activation" Email
-    // 'both' sends notice to admin AND the "set password" email to the user.
-    wp_new_user_notification($user_id, null, 'both');
+    // 3. The "Danger Zone": Email and Hooks
+    // Wrap this in a check to see if it's the source of the crash
+    try {
+        if (function_exists('wp_new_user_notification')) {
+            wp_new_user_notification($user_id, null, 'both');
+        }
+    } catch (Exception $e) {
+        // If email fails, we still want to know the user was created
+        return new WP_REST_Response([
+            'status' => 'user_created_email_failed',
+            'user_id' => $user_id,
+            'error' => $e->getMessage()
+        ], 201);
+    }
 
     return new WP_REST_Response([
-        'status'  => 'created',
-        'user_id' => $user_id,
-        'message' => 'User created and activation email sent.'
+        'status' => 'success',
+        'user_id' => $user_id
     ], 201);
 }

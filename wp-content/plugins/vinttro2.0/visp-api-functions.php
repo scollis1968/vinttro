@@ -1,4 +1,4 @@
-<?PHP
+<?php
 /**
  * Register the custom route
  */

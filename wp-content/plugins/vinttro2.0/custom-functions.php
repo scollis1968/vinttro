@@ -101,13 +101,16 @@ add_action( 'wp', 'redirect_cf7_subscribers_only' );
 // **************************************************************************************** SC20250902
 // Custom Edits for SuiteCRM V8 API
 // Step 1: Store user ID after registration
+/*
 add_action('user_register', 'suitecrm_store_user_id_after_registration', 10, 1);
 
 function suitecrm_store_user_id_after_registration($user_id) {
     set_transient("suitecrm_user_$user_id", $user_id, 60); // Store user ID for 60 seconds
 }
+*/
 
 // Step 2: Wait for meta to be updated before pushing to SuiteCRM
+/*
 add_action('profile_update', 'sync_new_user_to_suitecrm', 10, 2);
 
 
@@ -186,6 +189,7 @@ function sync_new_user_to_suitecrm($user_id, $old_user_data) {
       //  error_log('SuiteCRM Lead Creation Response: ' . $response_body);
     }
 }
+*/
 
 function suitecrm_conditional_menu_stub( $items, $args ) {
 /**

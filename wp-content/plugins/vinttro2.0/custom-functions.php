@@ -16,6 +16,7 @@ require_once 'conditional-menus.php';
 require_once 'suitecrm-integration.php';
 require_once 'deployment-functions.php';
 require_once 'auto-listings-functions.php';
+requite_once 'visp-api-functions.php';
 
 
 function my_plugin_load_styles() {

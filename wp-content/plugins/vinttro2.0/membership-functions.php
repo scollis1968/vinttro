@@ -20,14 +20,8 @@ add_shortcode('vinttro_dashboard', function() {
 
         <div class="dashboard-grid">
             <?php echo vinttro_get_reminders_panel($user_id); ?>
-            <?php echo vinttro_get_garage_panel($user_id); ?>
-
-            <div class="dashboard-panel placeholder">
-                <h3>My Garage</h3>
-                <p>Coming soon: Manage your collection here.</p>
-            </div>
-            
-            </div>
+            <?php echo vinttro_get_garage_panel($user_id); ?>           
+        </div>
     </div>
     <?php
     return ob_get_clean();

@@ -40,6 +40,17 @@ function vinttro_handle_crm_member($request) {
         return new WP_Error('create_failed', $user_id->get_error_message(), ['status' => 500]);
     }
 
+    // Update metadata sent from SuiteCRM
+    if (isset($params['mot_date'])) {
+        update_user_meta($user_id, 'vinttro_mot_date', sanitize_text_field($params['mot_date']));
+    }
+    if (isset($params['insurance_renewal'])) {
+        update_user_meta($user_id, 'vinttro_insurance_renewal', sanitize_text_field($params['insurance_renewal']));
+    }
+    if (isset($params['membership_status'])) {
+        update_user_meta($user_id, 'vinttro_membership_status', sanitize_text_field($params['membership_status']));
+    }
+
     // 3. The "Danger Zone": Email and Hooks
     // Wrap this in a check to see if it's the source of the crash
     try {

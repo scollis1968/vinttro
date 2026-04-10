@@ -1,0 +1,42 @@
+.vinttro-dashboard {
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: sans-serif;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.dashboard-panel {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.dashboard-panel h3 {
+    margin-top: 0;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.reminder-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dashed #eee;
+}
+
+.reminder-item:last-child { border-bottom: none; }
+
+.dashboard-panel.placeholder {
+    background: #eee;
+    border-style: dashed;
+    color: #888;
+}

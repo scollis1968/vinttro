@@ -20,6 +20,7 @@ add_shortcode('vinttro_dashboard', function() {
 
         <div class="dashboard-grid">
             <?php echo vinttro_get_reminders_panel($user_id); ?>
+            <?php echo vinttro_get_garage_panel($user_id); ?>
 
             <div class="dashboard-panel placeholder">
                 <h3>My Garage</h3>
@@ -35,6 +36,7 @@ add_shortcode('vinttro_dashboard', function() {
 /**
  * Logic for the Reminders Panel
  */
+
 function vinttro_get_reminders_panel($user_id) {
     $mot = get_user_meta($user_id, 'vinttro_mot_date', true);
     $ins = get_user_meta($user_id, 'vinttro_insurance_renewal', true);
@@ -50,6 +52,30 @@ function vinttro_get_reminders_panel($user_id) {
         <div class="reminder-item">
             <span class="label">Insurance Renewal:</span>
             <span class="value"><?php echo $ins ? date('d M Y', strtotime($ins)) : '<em>Not set</em>'; ?></span>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+function vinttro_get_garage_panel($user_id) {
+    $garage = get_user_meta($user_id, 'vinttro_garage', true);
+
+    if (empty($garage) || !is_array($garage)) {
+        return '<div class="dashboard-panel"><h3>My Garage</h3><p>No vehicles found.</p></div>';
+    }
+
+    ob_start();
+    ?>
+    <div class="dashboard-panel">
+        <h3>🏎️ My Garage</h3>
+        <div class="garage-list">
+            <?php foreach ($garage as $car) : ?>
+                <div class="garage-item" style="border-bottom: 1px solid #eee; padding: 10px 0;">
+                    <strong><?php echo esc_html($car['make'] . ' ' . $car['model']); ?></strong><br>
+                    <small>Reg: <?php echo esc_html($car['reg']); ?></small><br>
+                    <small>MOT Due: <?php echo esc_html($car['mot_expiry']); ?></small>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
     <?php

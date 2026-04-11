@@ -72,6 +72,7 @@ function vinttro_handle_crm_member($request) {
 
         foreach ($params['vehicles'] as $vehicle) {
             $garage_data[] = [
+                'fleet'      => sanitize_text_field($vehicle['fleet']),
                 'make'       => sanitize_text_field($vehicle['make']),
                 'model'      => sanitize_text_field($vehicle['model']),
                 'reg'        => sanitize_text_field($vehicle['reg']),

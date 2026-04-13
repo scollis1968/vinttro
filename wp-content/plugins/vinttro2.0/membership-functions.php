@@ -20,7 +20,7 @@ add_shortcode('vinttro_dashboard', function() {
 
         <div class="dashboard-grid">
             <?php echo vinttro_get_reminders_panel($user_id); ?>
-            <?php echo vinttro_get_garage_panel($user_id); ?>
+            <?php echo vinttro_get_garage_panel($user_id); ?><br>
             <?php echo vinttro_get_fleet_panel($user_id); ?>           
         </div>
     </div>
@@ -76,19 +76,22 @@ function vinttro_get_garage_panel($user_id) {
     <?php
     return ob_get_clean();
 }
-
-function vinttro_get_fleet_panel($user_id) {
-    $garage = get_user_meta($user_id, 'vinttro_garage', true);
+function vinttro_get_fleet_panels($user_id) {
+    // 1. Pull the new fleets data
+    $fleets = get_user_meta($user_id, 'vinttro_fleets', true);
     
-    if (empty($garage) || !is_array($garage)) {
-        return '<div class="dashboard-panel"><h3>🚚 My Fleet</h3><p>No vehicles found.</p></div>';
+    if (empty($fleets) || !is_array($fleets)) {
+        return '<div class="dashboard-panel"><h3>🚚 My Fleets</h3><p>No fleets found.</p></div>';
     }
 
     ob_start();
     ?>
     <style>
-        .fleet-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .fleet-container { margin-bottom: 30px; }
+        .fleet-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; }
         .fleet-table th, .fleet-table td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #eee; }
+        .fleet-table th { background-color: #f8f9fa; color: #555; font-size: 0.9em; text-transform: uppercase; }
+        
         .status-pill { 
             padding: 4px 8px; 
             border-radius: 4px; 
@@ -96,49 +99,56 @@ function vinttro_get_fleet_panel($user_id) {
             font-weight: bold; 
             color: #fff; 
             display: inline-block;
+            min-width: 80px;
+            text-align: center;
         }
         /* Color Coding */
-        .status-past { background-color: #8b0000; } /* Very Red / Dark Red */
-        .status-urgent { background-color: #e74c3c; } /* Red (< 1 week) */
-        .status-soon { background-color: #f39c12; } /* Orange/Amber (< 3 weeks) */
-        .status-ok { background-color: #27ae60; } /* Green */
-        .status-none { background-color: #bdc3c7; color: #333; } /* Grey for missing dates */
+        .status-past { background-color: #8b0000; } 
+        .status-urgent { background-color: #e74c3c; } 
+        .status-soon { background-color: #f39c12; } 
+        .status-ok { background-color: #27ae60; } 
+        .status-none { background-color: #bdc3c7; color: #333; }
     </style>
 
-    <div class="dashboard-panel">
-        <h3>🚚 My Fleet</h3>
-        <table class="fleet-table">
-            <thead>
-                <tr>
-                    <th>Vehicle</th>
-                    <th>Next MOT</th>
-                    <th>Next Service</th>
-                    <th>Last Check</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php 
-                foreach ($garage as $car) : 
-                    // 1. Filter: Only show if 'fleet' property is truthy
-                    if (empty($car['fleet'])) continue;
+    <?php 
+    // 2. Loop through each fleet
+    foreach ($fleets as $fleet) : 
+        $fleet_name = !empty($fleet['name']) ? $fleet['name'] : 'Unnamed Fleet';
+        $vehicles   = !empty($fleet['vehicles']) ? $fleet['vehicles'] : [];
+    ?>
+        <div class="dashboard-panel fleet-container">
+            <h3>🚚 Fleet: <?php echo esc_html($fleet_name); ?></h3>
+            
+            <?php if (empty($vehicles)) : ?>
+                <p>No vehicles assigned to this fleet.</p>
+            <?php else : ?>
+                <table class="fleet-table">
+                    <thead>
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>Next MOT</th>
+                            <th>Next Service</th>
+                            <th>Last Check</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($vehicles as $car) : ?>
+                            <tr>
+                                <td>
+                                    <strong><?php echo esc_html($car['reg'] ?? 'N/A'); ?></strong><br>
+                                    <small><?php echo esc_html(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?></small>
+                                </td>
+                                <td><?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?></td>
+                                <td><?php echo vinttro_render_date_pill($car['service_due'] ?? ''); ?></td>
+                                <td><?php echo vinttro_render_date_pill($car['last_check'] ?? ''); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; ?>
 
-                    echo '<tr>';
-                        // Vehicle Info
-                        echo '<td>';
-                            echo '<strong>' . esc_html($car['reg']) . '</strong><br>';
-                            echo '<small>' . esc_html($car['make'] . ' ' . $car['model']) . '</small>';
-                        echo '</td>';
-
-                        // Date Columns
-                        echo '<td>' . vinttro_render_date_pill($car['mot_expiry'] ?? '') . '</td>';
-                        echo '<td>' . vinttro_render_date_pill($car['service_due'] ?? '') . '</td>';
-                        echo '<td>' . vinttro_render_date_pill($car['last_check'] ?? '') . '</td>';
-                    echo '</tr>';
-                endforeach; 
-                ?>
-            </tbody>
-        </table>
-    </div>
     <?php
     return ob_get_clean();
 }

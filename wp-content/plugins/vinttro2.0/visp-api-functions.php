@@ -103,6 +103,9 @@ if (isset($params['fleets']) && is_array($params['fleets'])) {
                     'model'      => sanitize_text_field($vehicle['model'] ?? ''),
                     'reg'        => sanitize_text_field($vehicle['reg'] ?? ''),
                     'mot_expiry' => sanitize_text_field($vehicle['mot_expiry'] ?? ''),
+                    'date_next_service' => sanitize_text_field($vehicle['date_next_service'] ?? ''),
+                    'date_last_service' => sanitize_text_field($vehicle['date_last_service'] ?? ''),
+                    'date_last_check' => sanitize_text_field($vehicle['date_last_check'] ?? ''),
                     'ins_expiry' => sanitize_text_field($vehicle['ins_expiry'] ?? ''),
                     'image_url'  => esc_url_raw($vehicle['image_url'] ?? ''),
                     // Note: Your test data has extra fields like 'driver_name'. 

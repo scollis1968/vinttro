@@ -108,7 +108,7 @@ function vinttro_handle_crm_member($request) {
             }
             $fleet_data[] = [
                 'name'       => sanitize_text_field($fleet['name']),
-                'vehicles'   => sanitize_text_field($fleet['vehicles'])
+                'vehicles'   => sanitize_text_field($fleet_vehicles)
             ];
         }
 

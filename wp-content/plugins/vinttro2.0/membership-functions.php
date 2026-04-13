@@ -112,7 +112,7 @@ function vinttro_get_fleet_panels($user_id) {
             <table class="fleet-table">
                 <thead>
                     <tr>
-                        <th>Vehicle</th>
+                        <th>Vehicle (Reg)</th>
                         <th>Next MOT</th>
                         <th>Next Service</th>
                         <th>Last Check</th>
@@ -120,50 +120,49 @@ function vinttro_get_fleet_panels($user_id) {
                 </thead>
                 <tbody>
                     <?php foreach (($fleet['vehicles'] ?? []) as $car) : 
-                        // Logic to determine "Worst" issue severity
                         $issues = $car['outstanding_issues'] ?? [];
-                        $status_text = '✅ No Issues';
-                        $status_class = 'status-safe'; // Default Green
+                        $has_issues = !empty($issues);
                         
-                        if (!empty($issues)) {
-                            $status_text = '⚠️ Outstanding Issues';
+                        // Determine Status Class
+                        $status_class = 'status-safe';
+                        if ($has_issues) {
                             $severities = array_column($issues, 'severity');
-                            
-                            if (in_array('high', $severities)) {
-                                $status_class = 'status-critical'; // Red
-                            } elseif (in_array('medium', $severities)) {
-                                $status_class = 'status-warning'; // Orange
-                            } else {
-                                $status_class = 'status-info'; // Blue/Low
-                            }
+                            if (in_array('high', $severities)) $status_class = 'status-critical';
+                            elseif (in_array('medium', $severities)) $status_class = 'status-warning';
+                            else $status_class = 'status-info';
                         }
                     ?>
-                        <tr>
+                        <tr class="vehicle-main-row <?php echo $has_issues ? 'has-issues' : 'no-issues'; ?>">
                             <td class="vehicle-cell">
                                 <span class="vehicle-reg" title="<?php echo esc_attr(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?>">
                                     <?php echo esc_html($car['reg'] ?? 'N/A'); ?>
                                 </span>
-                                
-                                <div class="vehicle-status <?php echo $status_class; ?>">
-                                    <?php echo esc_html($status_text); ?>
-                                </div>
-
-                                <?php if (!empty($issues)) : ?>
-                                    <ul class="vehicle-issue-details">
-                                        <?php foreach ($issues as $issue) : ?>
-                                            <li>
-                                                <strong><?php echo esc_html($issue['title']); ?>:</strong> 
-                                                <?php echo esc_html($issue['description']); ?> 
-                                                <small>(<?php echo esc_html($issue['date'] ?? ''); ?>)</small>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                <?php endif; ?>
+                                <span class="vehicle-status-dot <?php echo $status_class; ?>" title="<?php echo $has_issues ? 'Issues Reported' : 'All Clear'; ?>"></span>
                             </td>
                             <td><?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?></td>
                             <td><?php echo vinttro_render_date_pill($car['date_next_service'] ?? ''); ?></td>
                             <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? ''); ?></td>
                         </tr>
+
+                        <?php if ($has_issues) : ?>
+                            <tr class="vehicle-issues-row">
+                                <td colspan="4">
+                                    <div class="issues-expanded-box">
+                                        <strong>Outstanding Issues:</strong>
+                                        <ul class="issue-detailed-list">
+                                            <?php foreach ($issues as $issue) : ?>
+                                                <li>
+                                                    <span class="issue-severity-tag sev-<?php echo esc_attr($issue['severity']); ?>"></span>
+                                                    <strong><?php echo esc_html($issue['title']); ?>:</strong> 
+                                                    <?php echo esc_html($issue['description']); ?>
+                                                    <span class="issue-date">- Reported: <?php echo esc_html($issue['date'] ?? ''); ?></span>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </tbody>
             </table>

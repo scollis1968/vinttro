@@ -40,3 +40,67 @@
     border-style: dashed;
     color: #888;
 }
+/* Fleet Table Styling */
+.fleet-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: #fff;
+}
+
+.fleet-table th, 
+.fleet-table td {
+    text-align: left;
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.fleet-table th {
+    background-color: #f4f4f4;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #666;
+    letter-spacing: 0.05em;
+}
+
+/* Status Pills */
+.status-pill {
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Status Color Logic */
+.status-past { 
+    background-color: #8b0000; 
+} /* Dark Red */
+
+.status-urgent { 
+    background-color: #e74c3c; 
+} /* Bright Red */
+
+.status-soon { 
+    background-color: #f39c12; 
+} /* Amber/Orange */
+
+.status-ok { 
+    background-color: #27ae60; 
+} /* Green */
+
+.status-none { 
+    background-color: #bdc3c7; 
+    color: #333; 
+} /* Grey for N/A */
+
+/* Layout Helper for Top Row (Reminders + Garage) */
+.top-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}

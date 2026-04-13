@@ -86,6 +86,36 @@ function vinttro_handle_crm_member($request) {
         update_user_meta($user_id, 'vinttro_garage', $garage_data);
     }
 
+    // --- Handling the Fleet data ---
+    if (isset($params['fleets']) && is_array($params['fleets'])) {
+        $fleet_data = [];
+
+        foreach ($params['fleets'] as $fleet) {
+            if (isset($fleet['vehicles']) && is_array($fleet['vehicles'])) {
+                $fleet_vehicles = [];
+
+                foreach ($fleet['vehicles'] as $vehicle) {
+                    $fleet_vehicles[] = [
+                        'fleet'      => sanitize_text_field($vehicle['fleet']),
+                        'make'       => sanitize_text_field($vehicle['make']),
+                        'model'      => sanitize_text_field($vehicle['model']),
+                        'reg'        => sanitize_text_field($vehicle['reg']),
+                        'mot_expiry' => sanitize_text_field($vehicle['mot_expiry']),
+                        'ins_expiry' => sanitize_text_field($vehicle['ins_expiry']),
+                        'image_url'  => esc_url_raw($vehicle['image_url'])
+                    ];
+                }
+            }
+            $fleet_data[] = [
+                'name'       => sanitize_text_field($fleet['name']),
+                'vehicles'   => sanitize_text_field($fleet['vehicles'])
+            ];
+        }
+
+        // This saves the entire array into one meta field
+        update_user_meta($user_id, 'vinttro_fleets', $fleet_data);
+    }
+
     // --- CASE 4: Welcome Email (Only for NEW users) ---
     if ($is_new_user) {
         try {

@@ -273,3 +273,22 @@ function vinttro_add_analytics_body() {
         <?php
     }
 }
+add_action( 'show_user_profile', 'display_custom_user_meta' );
+add_action( 'edit_user_profile', 'display_custom_user_meta' );
+
+function display_custom_user_meta( $user ) {
+    ?>
+    <h3>Custom User Meta Data</h3>
+    <table class="form-table">
+        <?php 
+        $meta_data = get_user_meta( $user->ID ); 
+        foreach ( $meta_data as $key => $value ) {
+            // We usually want to hide internal WP keys starting with an underscore
+            if ( strpos( $key, '_' ) !== 0 ) {
+                echo '<tr><th>' . esc_html( $key ) . '</th><td>' . esc_html( $value[0] ) . '</td></tr>';
+            }
+        }
+        ?>
+    </table>
+    <?php
+}

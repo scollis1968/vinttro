@@ -116,3 +116,55 @@
 .severity-high { border-left-color: #e74c3c; background: #fff5f5; color: #c0392b; }
 .severity-medium { border-left-color: #f39c12; background: #fffcf5; color: #d35400; }
 .severity-low { border-left-color: #3498db; background: #f5faff; color: #2980b9; }
+/* Vehicle Column Layout */
+.vehicle-cell {
+    vertical-align: top;
+    min-width: 200px;
+}
+
+.vehicle-reg {
+    font-weight: 800;
+    font-size: 1.1rem;
+    cursor: help;
+    border-bottom: 1px dotted #ccc;
+    display: inline-block;
+    color: #333;
+}
+
+/* Status Labels below Reg */
+.vehicle-status {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+.status-safe { color: #27ae60; }     /* Green */
+.status-info { color: #3498db; }     /* Blue (Low) */
+.status-warning { color: #f39c12; }  /* Orange (Medium) */
+.status-critical { color: #e74c3c; } /* Red (High) */
+
+/* Detailed Issue List under Status */
+.vehicle-issue-details {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #666;
+}
+
+.vehicle-issue-details li {
+    padding: 4px 0;
+    border-top: 1px solid #f0f0f0;
+}
+
+.vehicle-issue-details li strong {
+    color: #444;
+}
+
+.vehicle-issue-details li small {
+    display: block;
+    color: #999;
+}

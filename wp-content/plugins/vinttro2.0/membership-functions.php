@@ -138,8 +138,8 @@ function vinttro_get_fleet_panels($user_id) {
                                         <small><?php echo esc_html(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?></small>
                                     </td>
                                     <td><?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?></td>
-                                    <td><?php echo vinttro_render_date_pill($car['service_due'] ?? ''); ?></td>
-                                    <td><?php echo vinttro_render_date_pill($car['last_check'] ?? ''); ?></td>
+                                    <td><?php echo vinttro_render_date_pill($car['date_next_service'] ?? ''); ?></td>
+                                    <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? ''); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

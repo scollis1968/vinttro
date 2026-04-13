@@ -168,3 +168,75 @@
     display: block;
     color: #999;
 }
+
+/* Table Layout Tweaks */
+.fleet-table tr.vehicle-main-row td {
+    border-bottom: none; /* Hide bottom border to merge with issues row */
+    padding-top: 15px;
+    padding-bottom: 15px;
+    vertical-align: middle;
+}
+
+/* Status Dot next to Reg */
+.vehicle-status-dot {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 8px;
+}
+
+/* The Spanning Issues Row */
+.vehicle-issues-row td {
+    padding: 0 15px 15px 15px; /* No top padding to keep it tight to the vehicle row */
+    border-bottom: 1px solid #eee;
+}
+
+.issues-expanded-box {
+    background: #f9f9f9; /* Faint grey background */
+    border-left: 4px solid #ddd; /* Left margin indicator */
+    padding: 12px 20px;
+    border-radius: 0 4px 4px 0;
+    margin-left: 10px; /* Indent it from the Reg column slightly */
+}
+
+/* Change background if high severity */
+.vehicle-main-row.has-issues + .vehicle-issues-row .issues-expanded-box {
+    background: #fffafa; /* Very faint red tint */
+    border-left-color: #e74c3c;
+}
+
+/* Issue List */
+.issue-detailed-list {
+    margin: 8px 0 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.issue-detailed-list li {
+    font-size: 0.85rem;
+    padding: 5px 0;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #efefef;
+}
+
+.issue-detailed-list li:last-child { border-bottom: none; }
+
+.issue-severity-tag {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.sev-high { background: #e74c3c; }
+.sev-medium { background: #f39c12; }
+.sev-low { background: #3498db; }
+
+.issue-date {
+    margin-left: auto;
+    color: #999;
+    font-size: 0.75rem;
+}

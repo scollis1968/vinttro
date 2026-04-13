@@ -87,35 +87,41 @@ function vinttro_handle_crm_member($request) {
     }
 
     // --- Handling the Fleet data ---
-    if (isset($params['fleets']) && is_array($params['fleets'])) {
-        $fleet_data = [];
+if (isset($params['fleets']) && is_array($params['fleets'])) {
+    $fleet_data = [];
 
-        foreach ($params['fleets'] as $fleet) {
-            if (isset($fleet['vehicles']) && is_array($fleet['vehicles'])) {
-                $fleet_vehicles = [];
+    foreach ($params['fleets'] as $fleet) {
+        // 1. Initialize the array INSIDE the loop so it resets for every fleet
+        $fleet_vehicles = []; 
 
-                foreach ($fleet['vehicles'] as $vehicle) {
-                    $fleet_vehicles[] = [
-                        'fleet'      => sanitize_text_field($vehicle['fleet']),
-                        'make'       => sanitize_text_field($vehicle['make']),
-                        'model'      => sanitize_text_field($vehicle['model']),
-                        'reg'        => sanitize_text_field($vehicle['reg']),
-                        'mot_expiry' => sanitize_text_field($vehicle['mot_expiry']),
-                        'ins_expiry' => sanitize_text_field($vehicle['ins_expiry']),
-                        'image_url'  => esc_url_raw($vehicle['image_url'])
-                    ];
-                }
+        if (isset($fleet['vehicles']) && is_array($fleet['vehicles'])) {
+            foreach ($fleet['vehicles'] as $vehicle) {
+                $fleet_vehicles[] = [
+                    // Added ?? '' because these keys might be missing in some JSON objects
+                    'fleet'      => sanitize_text_field($vehicle['fleet'] ?? ''), 
+                    'make'       => sanitize_text_field($vehicle['make'] ?? ''),
+                    'model'      => sanitize_text_field($vehicle['model'] ?? ''),
+                    'reg'        => sanitize_text_field($vehicle['reg'] ?? ''),
+                    'mot_expiry' => sanitize_text_field($vehicle['mot_expiry'] ?? ''),
+                    'ins_expiry' => sanitize_text_field($vehicle['ins_expiry'] ?? ''),
+                    'image_url'  => esc_url_raw($vehicle['image_url'] ?? ''),
+                    // Note: Your test data has extra fields like 'driver_name'. 
+                    // Add them here if you want to save them!
+                    'driver_name' => sanitize_text_field($vehicle['driver_name'] ?? ''),
+                ];
             }
-            $fleet_data[] = [
-                'name'       => sanitize_text_field($fleet['name']),
-                'vehicles'   => sanitize_text_field($fleet_vehicles)
-            ];
         }
 
-        // This saves the entire array into one meta field
-        update_user_meta($user_id, 'vinttro_fleets', $fleet_data);
+        $fleet_data[] = [
+            'name'     => sanitize_text_field($fleet['name'] ?? ''),
+            // ERROR FIXED HERE: Removed sanitize_text_field() from the array
+            'vehicles' => $fleet_vehicles 
+        ];
     }
 
+    // WordPress update_user_meta automatically handles (serializes) arrays
+    update_user_meta($user_id, 'vinttro_fleets', $fleet_data);
+}
     // --- CASE 4: Welcome Email (Only for NEW users) ---
     if ($is_new_user) {
         try {

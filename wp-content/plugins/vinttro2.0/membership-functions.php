@@ -103,70 +103,53 @@ function vinttro_get_garage_panel($user_id) {
  */
 function vinttro_get_fleet_panels($user_id) {
     $fleets = get_user_meta($user_id, 'vinttro_fleets', true);
-    
-    if (empty($fleets) || !is_array($fleets)) {
-        return '<div class="dashboard-panel"><h3>🚚 My Fleets</h3><p>No fleets found.</p></div>';
-    }
+    if (empty($fleets) || !is_array($fleets)) return '';
 
     ob_start();
-    ?>
-    <div class="fleets-wrapper">
-        <?php foreach ($fleets as $fleet) : 
-            $fleet_name = !empty($fleet['name']) ? $fleet['name'] : 'Unnamed Fleet';
-            $vehicles   = !empty($fleet['vehicles']) ? $fleet['vehicles'] : [];
-        ?>
-            <div class="dashboard-panel fleet-container" style="margin-bottom: 20px;">
-                <h3>🚚 Fleet: <?php echo esc_html($fleet_name); ?></h3>
-                
-                <?php if (empty($vehicles)) : ?>
-                    <p>No vehicles assigned to this fleet.</p>
-                <?php else : ?>
-                    <table class="fleet-table">
-                        <thead>
-                            <tr>
-                                <th>Vehicle</th>
-                                <th>Reminders</th>
-                                <th>Outstanding Issues</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($vehicles as $car) : ?>
-                                <tr>
-                                    <td>
-                                        <strong><?php echo esc_html($car['reg'] ?? 'N/A'); ?></strong><br>
-                                        <small><?php echo esc_html(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?></small>
-                                    </td>
-                                    <td>
-                                        <div style="font-size: 0.85em; line-height: 1.8;">
-                                            MOT: <?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?><br>
-                                            Service: <?php echo vinttro_render_date_pill($car['date_next_service'] ?? ''); ?><br>
-                                            Check: <?php echo vinttro_render_date_pill($car['date_last_check'] ?? ''); ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <?php if (!empty($car['outstanding_issues'])) : ?>
-                                            <ul class="issue-list" style="margin:0; padding:0; list-style:none;">
-                                                <?php foreach ($car['outstanding_issues'] as $issue) : 
-                                                    $sev = esc_attr($issue['severity']);
-                                                ?>
-                                                    <li class="issue-item severity-<?php echo $sev; ?>" title="<?php echo esc_attr($issue['description']); ?>">
-                                                        ⚠️ <strong><?php echo esc_html($issue['title']); ?></strong>
-                                                    </li>
-                                                <?php endforeach; ?>
-                                            </ul>
-                                        <?php else : ?>
-                                            <span style="color: #aaa; font-size: 0.85em;">✅ No issues</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </div>
-        <?php endforeach; ?>
-    </div>
-    <?php
+    foreach ($fleets as $fleet) : ?>
+        <div class="dashboard-panel fleet-container" style="margin-bottom: 30px;">
+            <h3>🚚 Fleet: <?php echo esc_html($fleet['name'] ?? 'Unnamed'); ?></h3>
+            <table class="fleet-table">
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Dates & Maintenance</th>
+                        <th>Outstanding Issues</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach (($fleet['vehicles'] ?? []) as $car) : ?>
+                        <tr>
+                            <td>
+                                <strong><?php echo esc_html($car['reg'] ?? 'N/A'); ?></strong><br>
+                                <small><?php echo esc_html(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?></small>
+                            </td>
+                            <td>
+                                <div style="font-size: 0.85em; line-height: 1.6;">
+                                    MOT: <?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?><br>
+                                    Service: <?php echo vinttro_render_date_pill($car['date_next_service'] ?? ''); ?><br>
+                                    Check: <?php echo vinttro_render_date_pill($car['date_last_check'] ?? ''); ?>
+                                </div>
+                            </td>
+                            <td>
+                                <?php if (!empty($car['outstanding_issues'])) : ?>
+                                    <div class="issues-container">
+                                        <?php foreach ($car['outstanding_issues'] as $issue) : ?>
+                                            <div class="issue-item severity-<?php echo esc_attr($issue['severity']); ?>" title="<?php echo esc_attr($issue['description']); ?>">
+                                                <strong><?php echo esc_html($issue['title']); ?></strong>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php else : ?>
+                                    <span style="color: #aaa; font-size: 0.85em;">✅ No issues</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endforeach;
     return ob_get_clean();
 }
 /**

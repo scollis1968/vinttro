@@ -106,29 +106,13 @@
 }
 /* Issue List Styling */
 .issue-item {
-    font-size: 0.8rem;
-    padding: 4px 8px;
-    margin-bottom: 4px;
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    margin-bottom: 5px;
     border-radius: 4px;
-    border-left: 4px solid #ccc;
+    border-left: 3px solid #ccc;
     background: #fdfdfd;
 }
-
-/* Severity Colors */
-.severity-high { 
-    border-left-color: #e74c3c; 
-    color: #c0392b;
-    background: #fff5f5;
-}
-
-.severity-medium { 
-    border-left-color: #f39c12; 
-    color: #d35400;
-    background: #fffcf5;
-}
-
-.severity-low { 
-    border-left-color: #3498db; 
-    color: #2980b9;
-    background: #f5faff;
-}
+.severity-high { border-left-color: #e74c3c; background: #fff5f5; color: #c0392b; }
+.severity-medium { border-left-color: #f39c12; background: #fffcf5; color: #d35400; }
+.severity-low { border-left-color: #3498db; background: #f5faff; color: #2980b9; }

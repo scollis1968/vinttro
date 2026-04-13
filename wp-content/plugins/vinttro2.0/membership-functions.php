@@ -113,37 +113,56 @@ function vinttro_get_fleet_panels($user_id) {
                 <thead>
                     <tr>
                         <th>Vehicle</th>
-                        <th>Dates & Maintenance</th>
-                        <th>Outstanding Issues</th>
+                        <th>Next MOT</th>
+                        <th>Next Service</th>
+                        <th>Last Check</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach (($fleet['vehicles'] ?? []) as $car) : ?>
+                    <?php foreach (($fleet['vehicles'] ?? []) as $car) : 
+                        // Logic to determine "Worst" issue severity
+                        $issues = $car['outstanding_issues'] ?? [];
+                        $status_text = '✅ No Issues';
+                        $status_class = 'status-safe'; // Default Green
+                        
+                        if (!empty($issues)) {
+                            $status_text = '⚠️ Outstanding Issues';
+                            $severities = array_column($issues, 'severity');
+                            
+                            if (in_array('high', $severities)) {
+                                $status_class = 'status-critical'; // Red
+                            } elseif (in_array('medium', $severities)) {
+                                $status_class = 'status-warning'; // Orange
+                            } else {
+                                $status_class = 'status-info'; // Blue/Low
+                            }
+                        }
+                    ?>
                         <tr>
-                            <td>
-                                <strong><?php echo esc_html($car['reg'] ?? 'N/A'); ?></strong><br>
-                                <small><?php echo esc_html(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?></small>
-                            </td>
-                            <td>
-                                <div style="font-size: 0.85em; line-height: 1.6;">
-                                    MOT: <?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?><br>
-                                    Service: <?php echo vinttro_render_date_pill($car['date_next_service'] ?? ''); ?><br>
-                                    Check: <?php echo vinttro_render_date_pill($car['date_last_check'] ?? ''); ?>
+                            <td class="vehicle-cell">
+                                <span class="vehicle-reg" title="<?php echo esc_attr(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?>">
+                                    <?php echo esc_html($car['reg'] ?? 'N/A'); ?>
+                                </span>
+                                
+                                <div class="vehicle-status <?php echo $status_class; ?>">
+                                    <?php echo esc_html($status_text); ?>
                                 </div>
-                            </td>
-                            <td>
-                                <?php if (!empty($car['outstanding_issues'])) : ?>
-                                    <div class="issues-container">
-                                        <?php foreach ($car['outstanding_issues'] as $issue) : ?>
-                                            <div class="issue-item severity-<?php echo esc_attr($issue['severity']); ?>" title="<?php echo esc_attr($issue['description']); ?>">
-                                                <strong><?php echo esc_html($issue['title']); ?></strong>
-                                            </div>
+
+                                <?php if (!empty($issues)) : ?>
+                                    <ul class="vehicle-issue-details">
+                                        <?php foreach ($issues as $issue) : ?>
+                                            <li>
+                                                <strong><?php echo esc_html($issue['title']); ?>:</strong> 
+                                                <?php echo esc_html($issue['description']); ?> 
+                                                <small>(<?php echo esc_html($issue['date'] ?? ''); ?>)</small>
+                                            </li>
                                         <?php endforeach; ?>
-                                    </div>
-                                <?php else : ?>
-                                    <span style="color: #aaa; font-size: 0.85em;">✅ No issues</span>
+                                    </ul>
                                 <?php endif; ?>
                             </td>
+                            <td><?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?></td>
+                            <td><?php echo vinttro_render_date_pill($car['date_next_service'] ?? ''); ?></td>
+                            <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? ''); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

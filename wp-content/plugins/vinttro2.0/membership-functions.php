@@ -1,3 +1,4 @@
+<?php
 /**
  * Main Dashboard Shortcode: [vinttro_dashboard]
  */

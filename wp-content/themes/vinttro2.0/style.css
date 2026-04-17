@@ -10,3 +10,28 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Tags: custom-code, full-site-editing
 Text Domain: my-custom-theme
 */
+/* 1. Center the entire listing and pull it away from the left edge */
+.auto-listings-single.listing {
+    max-width: 1200px;       /* Standard width to match your header/footer */
+    margin: 40px auto;       /* Centers it and adds space top/bottom */
+    padding: 0 20px;         /* Keeps it from hitting the edge on mobile */
+}
+
+/* 2. Apply the 20px radius to the image and its slider container */
+.auto-listings-single .lSSlideWrapper, 
+.auto-listings-single .lSSlideWrapper img {
+    border-radius: 20px;
+    overflow: hidden;        /* Required so the image doesn't "leak" out of the rounded corners */
+}
+
+/* 3. Optional: Add some breathing room between the gallery and the sidebar/content */
+.auto-listings-single .has-sidebar {
+    display: flex;
+    gap: 40px;               /* Adds a nice gap between the image and the text */
+    margin-top: 20px;
+}
+
+/* 4. Fix for the Title section padding */
+.auto-listings-single .full-width.upper {
+    margin-bottom: 20px;
+}

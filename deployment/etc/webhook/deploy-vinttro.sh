@@ -67,7 +67,10 @@ DEST_PARENT="/var/www/wordpress/wp-content/themes/"
 if [ -d "$SOURCE_THEME" ]; then
     # Sync the directory itself (no trailing slash on source) into the parent
     sudo rsync -av --delete "$SOURCE_THEME" "$DEST_PARENT"
-    
+    if [ $? -ne 0 ]; then
+        log "ERROR: Deploying VINTTRO theme -> rsync -av --delete."
+        exit 1
+    fi    
     # CRITICAL: Fix permissions so WordPress (www-data) can actually use it
     sudo chown -R www-data:www-data "$DEST_PARENT/$THEME_NAME"
 else

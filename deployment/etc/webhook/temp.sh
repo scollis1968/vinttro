@@ -58,8 +58,8 @@ if [ $? -ne 0 ]; then
 fi
 
 log "Deploying Vinttro Theme..."
-SOURCE_DIR="/tmp/vinttro-repo/wp-content/themes/vinttro_child_theme/"
-DESTINATION_DIR="/var/www/wordpress/wp-content/themes/inttro_child_theme/"
+SOURCE_DIR="/tmp/vinttro-repo/wp-content/themes/vinttro2.0/"
+DESTINATION_DIR="/var/www/wordpress/wp-content/themes/vinttro2.0/"
 sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
 
 if [ $? -ne 0 ]; then

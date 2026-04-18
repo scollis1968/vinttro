@@ -58,14 +58,23 @@ if [ $? -ne 0 ]; then
 fi
 
 log "Deploying Vinttro Theme..."
-SOURCE_DIR="/tmp/vinttro-repo/wp-content/themes/vinttro_child_theme/"
-DESTINATION_DIR="/var/www/wordpress/wp-content/themes/vinttro_child_theme/"
-sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
+# Define the parent directory and the specific folder name
+THEME_NAME="vinttro_child_theme"
+SOURCE_THEME="$STAGING_DIR/wp-content/themes/$THEME_NAME"
+DEST_PARENT="/var/www/wordpress/wp-content/themes/"
 
-if [ $? -ne 0 ]; then
-    log "ERROR: Theme rsync failed."
+# Ensure the source actually exists before trying to sync
+if [ -d "$SOURCE_THEME" ]; then
+    # Sync the directory itself (no trailing slash on source) into the parent
+    sudo rsync -av --delete "$SOURCE_THEME" "$DEST_PARENT"
+    
+    # CRITICAL: Fix permissions so WordPress (www-data) can actually use it
+    sudo chown -R www-data:www-data "$DEST_PARENT/$THEME_NAME"
+else
+    log "ERROR: Source theme directory $SOURCE_THEME not found!"
     exit 1
 fi
+
 
 log "Deploying SuiteCrm/VINTTRO customisation ..."
 SOURCE_DIR="/tmp/vinttro-repo/suitecrm/vinttro2.0/"

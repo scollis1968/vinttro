@@ -1,0 +1,47 @@
+/*
+Theme Name: vinttro_child_theme
+Theme URI: 
+Author: Stephen Collis
+Author URI: 
+Description: A vinttro theme as a child of "Twenty Twenty-Five"
+Requires at least: 6.9
+Tested up to: 6.9
+Requires PHP: 5.7
+Version: 
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Template: twentytwentyfive
+Text Domain: vinttro_child_theme
+Tags: 
+*/
+/* 1. Resize the logo */
+.vinttro-logo img {
+    width: 160px !important; /* Adjust this number to your preferred size */
+    height: auto !important;
+}
+
+/* 2. Make it "sit on top" of the menu bar (Overlap) */
+.vinttro-logo {
+    margin-top: -50px !important; /* Pulls it up over the container edge */
+    margin-bottom: 0 !important;
+    position: relative;
+    z-index: 9999; /* Ensures it stays above the menu bar */
+}
+
+/* 3. Center it if it's currently hugging the left */
+.vinttro-logo {
+    display: flex;
+    justify-content: center;
+}
+/* 5. Nudge the 'V' Logo down in the mobile bar */
+.mob-menu-logo-holder {
+    padding-top: 12px !important; /* Increase this number to move it lower */
+    display: flex !important;
+    align-items: center !important;
+}
+
+.mob-standard-logo {
+    height: 30px !important; /* Optional: adjust size if needed */
+    width: auto !important;
+    margin-top: 0 !important; /* Ensure no other margins are pulling it up */
+}

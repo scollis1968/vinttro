@@ -1,20 +1,11 @@
 <?php
-/**
- * The Template for displaying listing content in the single-listing.php template
- *
- * @package Auto Listings.
- */
+if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+// 1. CRITICAL: Force the plugin to recognize the listing data
+global $post, $listing;
+$listing = al_get_listing( $post->ID ); 
 
 do_action( 'auto_listings_before_single_listing' );
-
-if ( post_password_required() ) {
-    echo get_the_password_form();
-    return;
-}
 ?>
 
 <div id="listing-<?php the_ID(); ?>" <?php post_class( 'auto-listings-single listing' ); ?>>
@@ -26,11 +17,13 @@ if ( post_password_required() ) {
     <div class="vinttro-main-grid" style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap;">
 
         <div class="vinttro-content-area" style="flex: 1 1 600px; min-width: 0;">
-            
             <div class="vinttro-gallery-box">
                 <?php 
-                if ( function_exists( 'auto_listings_template_single_image' ) ) {
-                    auto_listings_template_single_image(); 
+                // We use the $listing object directly to be 100% sure it's not empty
+                if ( $listing ) {
+                    echo $listing->get_gallery(); 
+                } else {
+                    auto_listings_template_single_image();
                 }
                 ?>
             </div>
@@ -41,33 +34,28 @@ if ( post_password_required() ) {
                     <?php the_content(); ?>
                 </div>
             </div>
-
         </div>
 
         <div class="vinttro-sidebar-area" style="flex: 1 1 300px; background: #fafafa; padding: 30px; border-radius: 20px; border: 1px solid #eee;">
-            
             <div class="vinttro-price-box" style="margin-bottom: 25px;">
-                <?php 
-                if ( function_exists( 'auto_listings_template_single_price' ) ) {
-                    auto_listings_template_single_price(); 
-                }
-                ?>
+                <?php auto_listings_template_single_price(); ?>
             </div>
             
             <div class="vinttro-specs-table">
                 <?php 
-                if ( function_exists( 'auto_listings_template_single_data' ) ) {
-                    auto_listings_template_single_data(); 
-                }
+                // Using the specific hook for the data table
+                auto_listings_template_single_data(); 
                 ?>
             </div>
 
             <div class="vinttro-enquiry-form" style="margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
-                <?php do_action( 'auto_listings_single_summary' ); ?>
+                <?php 
+                // This is the most reliable way to get the contact form
+                auto_listings_get_template( 'single-listing/enquiry-form.php' ); 
+                ?>
             </div>
         </div>
 
     </div>
 </div>
-
 <?php do_action( 'auto_listings_after_single_listing' ); ?>

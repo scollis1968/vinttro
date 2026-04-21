@@ -91,3 +91,43 @@ Tags:
     max-width: 100%;
     height: auto !important;
 }
+/* 1. Force the Gallery to stay on screen */
+.lSSlideOuter .lSSlideWrapper {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    height: auto !important;
+}
+
+/* 2. KILL the 22-million pixel offset */
+.lSSlideOuter .lSSlide {
+    width: 100% !important;
+    transform: translate3d(0px, 0px, 0px) !important; /* Force it back to center */
+    display: block !important;
+}
+
+/* 3. Ensure individual slides are visible */
+.lSSlideOuter .lslide {
+    width: 100% !important;
+    margin-right: 0 !important;
+    float: none !important;
+    display: block !important;
+}
+
+/* 4. Make sure images actually have size */
+.lSSlideOuter img {
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* 5. Force the container to show (Prevents the 'disappearing' act) */
+.auto-listings-single, 
+.image-gallery, 
+.content, 
+.description {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}

@@ -83,67 +83,62 @@ Text Domain: vinttro_child_theme
 }
 
 /* ==========================================================================
-   3. THE SLIDER (LIGHTSLIDER) REPAIR - UNLOCKED
+   3. THE SLIDER (LIGHTSLIDER) STABILITY REPAIR
    ========================================================================== */
 
-/* 1. Ensure the parent container is the correct "anchor" for the arrows */
-.lSSlideOuter {
-    position: relative !important;
-    width: 100% !important;
-    overflow: visible !important; /* Allow arrows to hang slightly off if needed */
-}
-
-.lSSlideWrapper {
-    overflow: hidden !important;
-    width: 100% !important;
-    border-radius: 20px;
-}
-
-/* 2. REMOVE the !important lock on transform so the arrows can move the slides */
-ul#image-gallery.lightSlider {
-    display: flex !important;
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    list-style: none !important;
-    /* Removed the transform !important lock that was here */
-}
-
-/* 3. Ensure slides take up exactly one frame */
-ul#image-gallery.lightSlider li {
-    flex: 0 0 100% !important;
+/* 1. Force the container to be sane */
+.vinttro-gallery-box, .lSSlideOuter, .lSSlideWrapper {
     width: 100% !important;
     max-width: 100% !important;
+    overflow: hidden !important;
+    height: auto !important;
+    min-height: 300px;
 }
 
-/* 4. Fix Navigation Arrow Layers (Z-Index) */
-.lSAction {
-    position: absolute;
+/* 2. Bypassing the broken JS Math:
+      We force the list to stay at 0,0 and use CSS to show/hide images */
+ul#image-gallery.lightSlider {
+    width: 100% !important;
+    transform: none !important; /* Prevents images from flying off-screen */
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: relative;
+    height: 450px !important; /* Set a fixed height for the slider area */
+}
+
+/* 3. Hide all slides by default, only show the 'active' one */
+ul#image-gallery.lightSlider li {
+    position: absolute !important;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none; /* Allows clicks to pass through the container... */
-    z-index: 99;
+    width: 100% !important;
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+    pointer-events: none;
+    display: block !important;
 }
 
-.lSAction > a {
-    pointer-events: auto; /* ...but makes the actual buttons clickable */
-    z-index: 100;
-    cursor: pointer !important;
-    opacity: 0.8;
-    transition: opacity 0.3s;
-}
-
-.lSAction > a:hover {
+/* 4. Show the active slide (The one the JS selects) */
+ul#image-gallery.lightSlider li.active {
     opacity: 1;
+    pointer-events: auto;
+    z-index: 10;
 }
 
-/* Hide clones that cause navigation loops */
-ul#image-gallery.lightSlider li.clone {
-    display: none !important;
+/* 5. Force the image to fill the frame */
+ul#image-gallery.lightSlider img {
+    width: 100% !important;
+    height: 450px !important; /* Matches the container height */
+    object-fit: cover; /* Keeps the car looking sharp, not squashed */
 }
 
+/* 6. Fix the Navigation Arrows */
+.lSAction > a {
+    z-index: 999 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
 /* ==========================================================================
    4. SPECS TABLE STYLING
    ========================================================================== */

@@ -131,3 +131,37 @@ Tags:
     visibility: visible !important;
     display: block !important;
 }
+/* 1. Force the parent container to a sane width */
+.image-gallery, .gallery-wrap, .lSSlideOuter {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* 2. Overpower the 106,000px width calculation on the list */
+ul#image-gallery.lightSlider {
+    width: 100% !important;
+    transform: translate3d(0px, 0px, 0px) !important; /* Resets the 'off-screen' position */
+    height: auto !important;
+    padding: 0 !important;
+}
+
+/* 3. Force the individual slides to match the container width */
+ul#image-gallery.lightSlider li {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-right: 0 !important;
+    float: left; /* Essential for sliders */
+}
+
+/* 4. Fix the images within the slides */
+ul#image-gallery.lightSlider img {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+}
+
+/* 5. Hide the 'clones' that the broken JS created */
+ul#image-gallery.lightSlider li.clone {
+    display: none !important;
+}

@@ -1,7 +1,7 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-// 1. CRITICAL: Force the plugin to recognize the listing data
+// 1. CRITICAL: Force the plugin to recognize the listing data...
 global $post, $listing;
 $listing = al_get_listing( $post->ID ); 
 

@@ -83,64 +83,65 @@ Text Domain: vinttro_child_theme
 }
 
 /* ==========================================================================
-   3. THE SLIDER (LIGHTSLIDER) REPAIR
+   3. THE SLIDER (LIGHTSLIDER) REPAIR - UNLOCKED
    ========================================================================== */
 
-/* Force the gallery container to a sane width */
-.image-gallery, .gallery-wrap, .lSSlideOuter {
+/* 1. Ensure the parent container is the correct "anchor" for the arrows */
+.lSSlideOuter {
+    position: relative !important;
     width: 100% !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
+    overflow: visible !important; /* Allow arrows to hang slightly off if needed */
 }
 
-/* KILL vertical stacking: Force slides into a horizontal row */
+.lSSlideWrapper {
+    overflow: hidden !important;
+    width: 100% !important;
+    border-radius: 20px;
+}
+
+/* 2. REMOVE the !important lock on transform so the arrows can move the slides */
 ul#image-gallery.lightSlider {
     display: flex !important;
-    flex-direction: row !important;
-    width: auto !important; /* Allow the horizontal row to exist */
-    transform: translate3d(0px, 0px, 0px) !important; /* Start at the first image */
+    width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
     list-style: none !important;
+    /* Removed the transform !important lock that was here */
 }
 
-/* Force individual slides to stay 100% width of the gallery box */
+/* 3. Ensure slides take up exactly one frame */
 ul#image-gallery.lightSlider li {
-    flex: 0 0 100% !important; /* Fixes vertical stacking */
+    flex: 0 0 100% !important;
     width: 100% !important;
     max-width: 100% !important;
-    margin-right: 0 !important;
-    float: left !important;
 }
 
-/* Fix the images within the slides */
-ul#image-gallery.lightSlider img {
-    width: 100% !important;
-    height: auto !important;
-    display: block !important;
-    object-fit: cover;
+/* 4. Fix Navigation Arrow Layers (Z-Index) */
+.lSAction {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allows clicks to pass through the container... */
+    z-index: 99;
 }
 
-/* Hide the 'clones' and extra junk created by broken JS */
+.lSAction > a {
+    pointer-events: auto; /* ...but makes the actual buttons clickable */
+    z-index: 100;
+    cursor: pointer !important;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+}
+
+.lSAction > a:hover {
+    opacity: 1;
+}
+
+/* Hide clones that cause navigation loops */
 ul#image-gallery.lightSlider li.clone {
     display: none !important;
-}
-
-/* Fix the Thumbnails (Pager) */
-.lSPager.lSGallery {
-    display: flex !important;
-    justify-content: flex-start;
-    gap: 10px;
-    margin-top: 15px !important;
-    width: 100% !important;
-    transform: none !important;
-    overflow-x: auto;
-}
-
-.lSPager.lSGallery li {
-    flex: 0 0 80px !important;
-    width: 80px !important;
-    height: 60px !important;
 }
 
 /* ==========================================================================

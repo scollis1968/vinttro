@@ -45,7 +45,7 @@ Tags:
     width: auto !important;
     margin-top: 0 !important; /* Ensure no other margins are pulling it up */
 }
-*/
+
 /* 1. Center the entire listing and pull it away from the left edge */
 .auto-listings-single.listing {
     max-width: 1200px;       /* Standard width to match your header/footer */

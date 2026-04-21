@@ -28,7 +28,11 @@ if ( post_password_required() ) {
         <div class="vinttro-content-area" style="flex: 1 1 600px; min-width: 0;">
             
             <div class="vinttro-gallery-box">
-                <?php auto_listings_get_template( 'single-listing/image.php' ); ?>
+                <?php 
+                if ( function_exists( 'auto_listings_template_single_image' ) ) {
+                    auto_listings_template_single_image(); 
+                }
+                ?>
             </div>
             
             <div class="vinttro-description-text" style="margin-top: 40px;">
@@ -43,11 +47,19 @@ if ( post_password_required() ) {
         <div class="vinttro-sidebar-area" style="flex: 1 1 300px; background: #fafafa; padding: 30px; border-radius: 20px; border: 1px solid #eee;">
             
             <div class="vinttro-price-box" style="margin-bottom: 25px;">
-                <?php auto_listings_get_template( 'single-listing/price.php' ); ?>
+                <?php 
+                if ( function_exists( 'auto_listings_template_single_price' ) ) {
+                    auto_listings_template_single_price(); 
+                }
+                ?>
             </div>
             
             <div class="vinttro-specs-table">
-                <?php auto_listings_get_template( 'single-listing/data.php' ); ?>
+                <?php 
+                if ( function_exists( 'auto_listings_template_single_data' ) ) {
+                    auto_listings_template_single_data(); 
+                }
+                ?>
             </div>
 
             <div class="vinttro-enquiry-form" style="margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">

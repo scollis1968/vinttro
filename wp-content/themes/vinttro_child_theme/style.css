@@ -162,3 +162,6 @@ ul#image-gallery.lightSlider img {
     padding: 10px 0;
     border-bottom: 1px solid #eee;
 }
+.vinttro-image {
+    border-radius: 20px;
+}

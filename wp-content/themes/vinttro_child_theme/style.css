@@ -71,3 +71,23 @@ Tags:
 .auto-listings-single .full-width.upper {
     margin-bottom: 20px;
 }
+/* Fix for the massive width calculation error */
+.vinttro-results {
+    flex: 1;
+    min-width: 0; /* Critical: allows flex items to shrink/calculate correctly */
+    overflow: hidden; /* Prevents the massive slider from creating a horizontal scrollbar */
+}
+
+/* Ensure the gallery container doesn't start hidden */
+.listing-gallery, 
+.auto-listings-single {
+    opacity: 1 !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Force the images to be contained */
+.lSSlideOuter .lSSlideWrapper img {
+    max-width: 100%;
+    height: auto !important;
+}

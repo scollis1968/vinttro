@@ -25,7 +25,7 @@ if ( post_password_required() ) {
 <div id="listing-<?php the_ID(); ?>" class="auto-listings-single listing">
 
         <div class="full-width upper">
-        <p>Hello, World! 88!</p>
+
                 <?php
                 /**
                  * @hooked auto_listings_template_single_title
@@ -84,3 +84,5 @@ if ( post_password_required() ) {
         </div>
 
 </div>
+
+<?php do_action( 'auto_listings_after_single_listing' ); ?>

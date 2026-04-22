@@ -1,3 +1,6 @@
+
+
+
 <?php
 /**
  * The Template for displaying listing content in the single-listing.php template..
@@ -15,6 +18,15 @@ if ( post_password_required() ) {
     return;
 }
 ?>
+
+<pre>
+<?php 
+global $wp_filter;
+if ( isset( $wp_filter['auto_listings_single_content'] ) ) {
+    print_r( $wp_filter['auto_listings_single_content'] );
+}
+?>
+</pre>
 
 <div id="listing-<?php the_ID(); ?>" <?php post_class( 'auto-listings-single listing' ); ?>>
 

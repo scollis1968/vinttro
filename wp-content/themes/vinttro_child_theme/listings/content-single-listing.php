@@ -29,14 +29,25 @@ if ( post_password_required() ) {
             <div class="vinttro-gallery-box">
                 <?php do_action( 'auto_listings_single_gallery' ); ?>
             </div>
-            
             <div class="vinttro-description-text" style="margin-top: 40px;">
-                <?php do_action( 'auto_listings_single_content' ); ?>
+                <?php the_content(); ?>
             </div>
         </div>
 
         <div class="vinttro-sidebar-area" style="flex: 1 1 300px; background: #fafafa; padding: 30px; border-radius: 20px; border: 1px solid #eee;">
             <?php do_action( 'auto_listings_single_sidebar' ); ?>
+
+            <div class="vinttro-sidebar-tabs" style="margin-top: 30px;">
+                <?php 
+                // Manually trigger the tabs here
+                if ( function_exists( 'auto_listings_output_tabs' ) ) {
+                    auto_listings_output_tabs();
+                } elseif ( function_exists( 'auto_listings' ) ) {
+                    // If the plugin uses the class method (common in newer versions)
+                    auto_listings()->template_listing->output_tabs();
+                }
+                ?>
+            </div>
         </div>
 
     </div>

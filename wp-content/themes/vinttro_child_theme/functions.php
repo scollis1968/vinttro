@@ -94,3 +94,16 @@ add_action( 'wp_head', function() {
     </style>
     <?php
 }, 9999 );
+/**
+ * Move Auto Listings tabs from main content to sidebar
+ */
+function move_vinttro_listing_tabs() {
+    // 1. Remove tabs from the main content area
+    // The default priority for tabs is 30
+    remove_action( 'auto_listings_single_content', 'auto_listings_output_tabs', 30 );
+
+    // 2. Add tabs to the sidebar area
+    // We use a higher priority (like 25) to place it after the contact form/price
+    add_action( 'auto_listings_single_sidebar', 'auto_listings_output_tabs', 25 );
+}
+add_action( 'init', 'move_vinttro_listing_tabs' );

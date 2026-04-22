@@ -50,6 +50,12 @@ if ( post_password_required() ) {
                 Enquire About This Vehicle
             </a>
         </div>
+        <div class="vinttro-cta-wrapper" data-listing-id="<?php the_ID(); ?>">
+            <?php echo do_blocks( '<!-- wp:group {"layout":{"type":"flex","flexWrap":"wrap"}} -->
+                                   <div class="wp-block-group"><!-- wp:block {"ref":6496} /--></div>
+                                   <!-- /wp:group -->' 
+                                ); ?>
+        </div>
 
         <div class="vinttro-sidebar-tabs" style="margin-top: 30px;">
             <?php 
@@ -59,13 +65,7 @@ if ( post_password_required() ) {
             }
             ?>
         </div>
-        <div class="vinttro-cta-wrapper" data-listing-id="<?php the_ID(); ?>">
-            <?php echo do_blocks( '<!-- wp:group {"layout":{"type":"flex","flexWrap":"wrap"}} -->
-                                   <div class="wp-block-group"><!-- wp:block {"ref":5935} /--></div>
-                                   <!-- /wp:group -->' 
-                                ); ?>
-        </div>
-
+ 
     </div>
  </div>
 

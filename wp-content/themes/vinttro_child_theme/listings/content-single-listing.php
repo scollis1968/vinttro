@@ -1,6 +1,6 @@
 <?php
 /**
- * The Template for displaying listing content in the single-listing.php template
+ * The Template for displaying listing content in the single-listing.php template..
  * Override for Vinttro Child Theme
  */
 

@@ -95,17 +95,18 @@ add_action( 'wp_head', function() {
     <?php
 }, 9999 );
 /**
- * Safely move Auto Listings tabs to the sidebar
+ * Correctly move Auto Listings tabs using the class instance
  */
-add_action( 'wp_head', function() {
-    // 1. Check if the function exists to prevent a Critical Error
-    if ( function_exists( 'auto_listings_output_tabs' ) ) {
+add_action( 'wp', function() {
+    // Check if the plugin is active and the template class exists
+    if ( function_exists( 'auto_listings' ) && isset( auto_listings()->template_listing ) ) {
         
-        // 2. Remove it from the main content (Default priority is 30)
-        remove_action( 'auto_listings_single_content', 'auto_listings_output_tabs', 30 );
+        $al_template = auto_listings()->template_listing;
 
-        // 3. Add it to your custom sidebar hook
-        // Priority 25 puts it after the 'At a Glance' and 'Contact' sections
-        add_action( 'auto_listings_single_sidebar', 'auto_listings_output_tabs', 25 );
+        // 1. Remove from the main content (Class method requires the array syntax)
+        remove_action( 'auto_listings_single_content', array( $al_template, 'output_tabs' ), 30 );
+
+        // 2. Add to your sidebar
+        add_action( 'auto_listings_single_sidebar', array( $al_template, 'output_tabs' ), 25 );
     }
-}, 10 );
+}, 20 );

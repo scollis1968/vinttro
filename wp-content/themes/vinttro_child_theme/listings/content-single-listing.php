@@ -60,7 +60,10 @@ if ( post_password_required() ) {
             ?>
         </div>
         <div class="vinttro-cta-wrapper" data-listing-id="<?php the_ID(); ?>">
-            <?php echo do_blocks( '' ); ?>
+            <?php echo do_blocks( '<!-- wp:group {"layout":{"type":"flex","flexWrap":"wrap"}} -->
+                                   <div class="wp-block-group"><!-- wp:block {"ref":5935} /--></div>
+                                   <!-- /wp:group -->' 
+                                ); ?>
         </div>
 
     </div>

@@ -59,6 +59,9 @@ if ( post_password_required() ) {
             }
             ?>
         </div>
+        <div class="vinttro-cta-wrapper" data-listing-id="<?php the_ID(); ?>">
+            <?php echo do_blocks( '' ); ?>
+        </div>
 
     </div>
  </div>

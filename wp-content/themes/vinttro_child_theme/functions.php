@@ -94,19 +94,3 @@ add_action( 'wp_head', function() {
     </style>
     <?php
 }, 9999 );
-/**
- * Correctly move Auto Listings tabs using the class instance
- */
-add_action( 'wp', function() {
-    // Check if the plugin is active and the template class exists
-    if ( function_exists( 'auto_listings' ) && isset( auto_listings()->template_listing ) ) {
-        
-        $al_template = auto_listings()->template_listing;
-
-        // 1. Remove from the main content (Class method requires the array syntax)
-        remove_action( 'auto_listings_single_content', array( $al_template, 'output_tabs' ), 30 );
-
-        // 2. Add to your sidebar
-        add_action( 'auto_listings_single_sidebar', array( $al_template, 'output_tabs' ), 25 );
-    }
-}, 20 );

@@ -19,65 +19,48 @@ if ( post_password_required() ) {
 }
 ?>
 
-<pre>
-<?php 
-global $wp_filter;
-if ( isset( $wp_filter['auto_listings_single_content'] ) ) {
-    print_r( $wp_filter['auto_listings_single_content'] );
-}
-?>
-</pre>
 
-<div id="listing-<?php the_ID(); ?>" <?php post_class( 'auto-listings-single listing' ); ?>>
+<div class="vinttro-main-grid" style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap;">
 
-    <header class="vinttro-header" style="margin-bottom: 30px;">
-        <?php do_action( 'auto_listings_single_upper_full_width' ); ?>
-    </header>
-
-    <div class="vinttro-main-grid" style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap;">
-
-        <div class="vinttro-content-area" style="flex: 1 1 600px; min-width: 0;">
-            <div class="vinttro-gallery-box">
-                <?php do_action( 'auto_listings_single_gallery' ); ?>
-            </div>
-            
-            <div class="vinttro-description-text" style="margin-top: 40px;">
-                <?php the_content(); // This displays only the description ?>
-            </div>
+    <div class="vinttro-content-area" style="flex: 1 1 600px; min-width: 0;">
+        
+        <div class="vinttro-gallery-box">
+            <?php do_action( 'auto_listings_single_gallery' ); ?>
         </div>
-
-        <div class="vinttro-sidebar-area" style="flex: 1 1 300px; background: #fafafa; padding: 30px; border-radius: 20px; border: 1px solid #eee;">
-            
+        
+        <div class="vinttro-description-text" style="margin-top: 40px;">
             <?php 
-            // 1. Manually show Price & At-A-Glance (skipping the form)
-            if ( function_exists( 'auto_listings_template_single_price' ) ) auto_listings_template_single_price();
-            if ( function_exists( 'auto_listings_template_single_at_a_glance' ) ) auto_listings_template_single_at_a_glance();
+            // From your debug: Priority 10 & 20
+            if ( function_exists( 'auto_listings_template_single_tagline' ) ) auto_listings_template_single_tagline();
+            if ( function_exists( 'auto_listings_template_single_description' ) ) auto_listings_template_single_description();
             ?>
-
-            <div class="vinttro-cta-wrapper" style="margin: 20px 0;">
-                <a href="#your-popup-id" class="vinttro-button popup-trigger" style="display: block; background: #cc0000; color: #fff; text-align: center; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: bold;">
-                    ENQUIRE ABOUT THIS VEHICLE
-                </a>
-            </div>
-
-            <div class="vinttro-sidebar-tabs" style="margin-top: 30px;">
-                <?php 
-                if ( function_exists( 'auto_listings' ) ) {
-                    // This reaches into the plugin core to grab the tabs specifically
-                    $al_template = auto_listings()->template_listing;
-                    if ( method_exists( $al_template, 'output_tabs' ) ) {
-                        $al_template->output_tabs();
-                    }
-                }
-                ?>
-            </div>
-
         </div>
     </div>
 
-    <div class="vinttro-footer-area" style="margin-top: 40px;">
-        <?php do_action( 'auto_listings_single_lower_full_width' ); ?>
+    <div class="vinttro-sidebar-area" style="flex: 1 1 300px; background: #fafafa; padding: 30px; border-radius: 20px; border: 1px solid #eee;">
+        
+        <?php 
+        // Manually call the price and at-a-glance info
+        if ( function_exists( 'auto_listings_template_single_price' ) ) auto_listings_template_single_price();
+        if ( function_exists( 'auto_listings_template_single_at_a_glance' ) ) auto_listings_template_single_at_a_glance();
+        ?>
+
+        <div class="vinttro-cta-wrapper" style="margin: 25px 0;">
+            <a href="#vinttro-enquiry-popup" class="vinttro-button" style="display: block; background: #1a1a1a; color: #fff; text-align: center; padding: 18px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                Enquire About This Vehicle
+            </a>
+        </div>
+
+        <div class="vinttro-sidebar-tabs" style="margin-top: 30px;">
+            <?php 
+            // THE "GOLDEN NUGGET" FUNCTION from your debug
+            if ( function_exists( 'auto_listings_output_listing_tabs' ) ) {
+                auto_listings_output_listing_tabs();
+            }
+            ?>
+        </div>
+
     </div>
-</div>
+ </div>
 
 <?php do_action( 'auto_listings_after_single_listing' ); ?>

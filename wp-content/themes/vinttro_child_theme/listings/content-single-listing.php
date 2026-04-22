@@ -1,3 +1,13 @@
+
+<pre>
+<?php 
+global $wp_filter;
+if ( isset( $wp_filter['auto_listings_single_content'] ) ) {
+    print_r( $wp_filter['auto_listings_single_content'] );
+}
+?>
+</pre>
+
 <?php
 /**
  * The Template for displaying listing content in the single-listing.php template..

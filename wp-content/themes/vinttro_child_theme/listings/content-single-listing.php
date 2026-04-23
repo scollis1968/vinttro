@@ -41,20 +41,13 @@ if ( post_password_required() ) {
         
         <?php 
         // Manually call the price and at-a-glance info
+        if ( function_exists( 'auto_listings_template_single_vehicle' ) ) auto_listings_template_single_vehicle();
         if ( function_exists( 'auto_listings_template_single_price' ) ) auto_listings_template_single_price();
         if ( function_exists( 'auto_listings_template_single_at_a_glance' ) ) auto_listings_template_single_at_a_glance();
         ?>
 
-        <div class="vinttro-cta-wrapper" style="margin: 25px 0;">
-            <a href="#vinttro-enquiry-popup" class="vinttro-button" style="display: block; background: #1a1a1a; color: #fff; text-align: center; padding: 18px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                Enquire About This Vehicle
-            </a>
-        </div>
         <div class="vinttro-cta-wrapper" data-listing-id="<?php the_ID(); ?>">
-            <?php echo do_blocks( '<!-- wp:group {"layout":{"type":"flex","flexWrap":"wrap"}} -->
-                                   <div class="wp-block-group"><!-- wp:block {"ref":6496} /--></div>
-                                   <!-- /wp:group -->' 
-                                ); ?>
+            <?php echo do_blocks( '<!-- wp:block {"ref":6496} /-->'); ?>
         </div>
 
         <div class="vinttro-sidebar-tabs" style="margin-top: 30px;">

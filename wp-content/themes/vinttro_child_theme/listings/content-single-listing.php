@@ -38,6 +38,7 @@ if ( post_password_required() ) {
     </div>
 
     <div class="vinttro-sidebar-area" style="flex: 1 1 300px; background: #fafafa; padding: 30px; border-radius: 20px; border: 1px solid #eee;">
+        <h3 class="vinttro-sidebar-title"><?php the_title(); ?></h3>
         
         <?php 
         // Manually call the price and at-a-glance info

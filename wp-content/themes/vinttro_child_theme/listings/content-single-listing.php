@@ -17,8 +17,6 @@ if ( post_password_required() ) {
     echo get_the_password_form();
     return;
 }
-$listing = auto_listings_get_listing( get_the_id() ); 
-echo '<pre>'; print_r( $listing ); echo '</pre>';
 
 ?>
 

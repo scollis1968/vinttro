@@ -17,10 +17,9 @@ if ( post_password_required() ) {
     echo get_the_password_form();
     return;
 }
-?>
-<?php 
 $listing = auto_listings_get_listing( get_the_id() ); 
 echo '<pre>'; print_r( $listing ); echo '</pre>';
+
 ?>
 
 <div class="vinttro-main-grid" style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap;">

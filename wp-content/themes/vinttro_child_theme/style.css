@@ -165,3 +165,52 @@ ul#image-gallery.lightSlider img {
 .vinttro-image {
     border-radius: 20px;
 }
+
+/* 1. Ensure the listing item is a flex container to push the button to the bottom */
+.auto-listing {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Keeps all grid items equal height if using flexbox/grid */
+}
+
+.summary {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 2. Limit the description height */
+.description {
+    max-height: 120px; /* Adjust this to show as much as you want */
+    overflow: hidden;
+    position: relative;
+    transition: max-height 0.3s ease-out;
+    margin-bottom: 10px;
+}
+
+/* 3. The "Fade" effect at the bottom of the truncated text */
+.description:not(.expanded)::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
+    background: linear-gradient(transparent, white);
+    pointer-events: none;
+}
+
+/* 4. Class to be added via JS */
+.description.expanded {
+    max-height: 5000px; /* High enough to show all content */
+}
+
+/* 5. Style for the Show More link */
+.show-more-toggle {
+    color: #007bff;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9em;
+    display: inline-block;
+    margin-bottom: 15px;
+}

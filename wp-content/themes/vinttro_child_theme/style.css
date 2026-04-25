@@ -257,3 +257,44 @@ body:not(.auto-listings):not(.single-auto-listing) .vinttro-logo {
     margin-bottom: 10px;
     display: block;
 }
+
+/* ==========================================================================
+   CAR STATUS & PRICE STYLING
+   ========================================================================== */
+
+/* 1. Force Price and State onto one line */
+.auto-listing .price {
+    display: flex !important;
+    align-items: center; /* Vertical center */
+    flex-wrap: nowrap;   /* Absolute no wrapping */
+    gap: 10px;           /* Space between price and state */
+    margin-bottom: 12px;
+}
+
+/* 2. Strike-through the Price Amount */
+/* Only apply line-through if there is a 'state' sibling (optional logic) 
+   but for now, we'll target it specifically for unavailable cars */
+.auto-listing li:has(.state) .price-amount {
+    text-decoration: line-through !important;
+    color: #999 !important; /* Dim the price as it's not the active price */
+    opacity: 0.7;
+}
+
+/* 3. Style the "No Longer Available" text */
+.auto-listing .state {
+    font-size: 0.7rem !important; /* Much smaller */
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #fff8e1; /* Subtle background to make it look like a status */
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #dd9933;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+/* 4. Ensure the currency symbol is also struck through */
+.auto-listing li:has(.state) .currency-symbol {
+    text-decoration: line-through;
+}

@@ -11,7 +11,7 @@
 
 <header class="vinttro-exchange-header wp-block-template-part">
     <div class="exchange-branding-bar">
-        <figure class="wp-block-image aligncenter size-full vinttro-logo" style="margin-top:0;margin-bottom:0;margin-left:0">
+        <figure class="wp-block-image aligncenter size-full vinttro-logo">
             <img src="https://uat.vinttro.co.uk/wp-content/themes/twentytwentyfive/assets/images/vinttro_exchange_black.png"
                  alt=""
                  style="object-fit:cover">

@@ -44,12 +44,52 @@ Text Domain: vinttro_child_theme
 }
 
 /* ==========================================================================
-   2. LISTING GRID & LAYOUT (Scoped to Listing Pages)
+   CAR EXCHANGE RESULTS GRID (Scoped via Body Class)
    ========================================================================== */
 
-/* Only truncate descriptions INSIDE an auto-listing card or the results area */
-.auto-listing .description,
-.vinttro-results .description {
+/* 1. Target the column containing the cars ONLY on auto-listing pages */
+.auto-listings .wp-block-column:has(.auto-listings-items),
+.post-type-archive-auto-listing .wp-block-column:has(.auto-listings-items) {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 30px !important;
+    width: 100% !important;
+}
+
+/* 2. Bridge the gap between the two <ul> tags */
+.auto-listings ul.auto-listings-items.grid-view {
+    display: contents !important;
+}
+
+/* 3. Force the cars to behave as proper grid cells */
+.auto-listings .auto-listing.col-3 {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    list-style: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* 4. Responsive adjustments */
+@media (max-width: 1100px) {
+    .auto-listings .wp-block-column:has(.auto-listings-items) {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .auto-listings .wp-block-column:has(.auto-listings-items) {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ==========================================================================
+   DESCRIPTION TRUNCATION (Scoped)
+   ========================================================================== */
+
+/* Ensure truncation only hits the car cards */
+.auto-listing .description {
     max-height: 120px; 
     overflow: hidden;
     position: relative;
@@ -57,7 +97,6 @@ Text Domain: vinttro_child_theme
     margin-bottom: 10px;
 }
 
-/* Ensure the fade effect only happens on listing pages */
 .auto-listings .description:not(.expanded)::after,
 .single-auto-listing .description:not(.expanded)::after {
     content: "";
@@ -68,43 +107,6 @@ Text Domain: vinttro_child_theme
     height: 50px;
     background: linear-gradient(transparent, white);
     pointer-events: none;
-}
-
-.description.expanded {
-    max-height: 5000px !important;
-}
-
-/* Fix the Grid: ONLY target the columns inside the Car Exchange main container */
-.vinttro-results .wp-block-column.is-layout-flow {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 25px !important; /* Reduced from 55px to prevent horizontal overflow */
-}
-
-/* Ensure ULs only act as contents inside the results area */
-.vinttro-results ul.auto-listings-items.grid-view {
-    display: contents !important;
-}
-
-/* Reset listing items only in the car context */
-.auto-listings .auto-listing.col-3 {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    list-style: none !important;
-}
-
-/* Responsive: Scoped to car results */
-@media (max-width: 900px) {
-    .vinttro-results .wp-block-column.is-layout-flow {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-}
-
-@media (max-width: 600px) {
-    .vinttro-results .wp-block-column.is-layout-flow {
-        grid-template-columns: 1fr !important;
-    }
 }
 
 /* ==========================================================================

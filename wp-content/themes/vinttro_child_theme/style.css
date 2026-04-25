@@ -52,7 +52,7 @@ Text Domain: vinttro_child_theme
 .post-type-archive-auto-listing .wp-block-column:has(.auto-listings-items) {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 30px !important;
+    gap: 55px !important;
     width: 100% !important;
 }
 

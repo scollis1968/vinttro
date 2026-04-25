@@ -223,7 +223,7 @@ ul#image-gallery.lightSlider img {
 .wp-block-column.is-layout-flow {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr); /* Forces 3 columns */
-    gap: 40px; /* Adjust the space between cards here */
+    gap: 55px; /* Adjust the space between cards here */
 }
 
 /* 2. Tell the UL tags to stop acting like containers */

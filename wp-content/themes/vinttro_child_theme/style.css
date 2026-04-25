@@ -130,3 +130,81 @@ body:not(.auto-listings):not(.single-auto-listing) .vinttro-logo {
     margin-top: 0 !important;
     padding-top: 10px !important;
 }
+
+/* ==========================================================================
+   SINGLE LISTING PAGE REPAIR
+   ========================================================================== */
+
+/* 1. Add Page Padding (Breathing room at the edges) */
+.single-auto-listing .vinttro-showroom-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px !important; /* Adjust this for more/less side space */
+    box-sizing: border-box;
+}
+
+/* 2. Rearrange the Layout: Gallery & Sidebar on top, Description Full Width below */
+.single-auto-listing .vinttro-main-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 350px; /* Gallery takes space, Sidebar is 350px */
+    gap: 40px;
+}
+
+/* This is the secret: treat the inner content-area children as grid items */
+.single-auto-listing .vinttro-content-area {
+    display: contents !important; 
+}
+
+.single-auto-listing .vinttro-gallery-box {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.single-auto-listing .vinttro-sidebar-area {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+/* Force Description to span both columns (Full Width) */
+.single-auto-listing .vinttro-description-text {
+    grid-column: 1 / span 2; 
+    grid-row: 2;
+    margin-top: 20px;
+}
+
+/* 3. Restore Image Rounding */
+.single-auto-listing .vinttro-gallery-box,
+.single-auto-listing .lSSlideWrapper,
+.single-auto-listing .lSSlideWrapper img,
+.single-auto-listing .lSPager li img {
+    border-radius: 20px !important;
+    overflow: hidden !important;
+}
+
+/* 4. Disable "Show More" and Truncation on this page */
+.single-auto-listing .description {
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+.single-auto-listing .description:after {
+    display: none !important; /* Remove the white fade effect */
+}
+
+.single-auto-listing .show-more-toggle {
+    display: none !important; /* Hide the button entirely */
+}
+
+/* 5. Responsive: Stack them on mobile */
+@media (max-width: 1024px) {
+    .single-auto-listing .vinttro-main-grid {
+        grid-template-columns: 1fr; /* One column */
+    }
+    .single-auto-listing .vinttro-sidebar-area,
+    .single-auto-listing .vinttro-description-text {
+        grid-column: 1;
+    }
+    .single-auto-listing .vinttro-showroom-container {
+        padding: 0 20px !important;
+    }
+}

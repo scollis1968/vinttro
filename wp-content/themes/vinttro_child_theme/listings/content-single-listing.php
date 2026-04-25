@@ -50,15 +50,15 @@ if ( post_password_required() ) {
             <?php echo do_blocks( '<!-- wp:block {"ref":6496} /-->'); ?>
         </div>
 
-        <div class="vinttro-sidebar-tabs" style="margin-top: 30px;">
+       <!-- <div class="vinttro-sidebar-tabs" style="margin-top: 30px;">
             <?php 
             // THE "GOLDEN NUGGET" FUNCTION from your debug
             if ( function_exists( 'auto_listings_output_listing_tabs' ) ) {
                 auto_listings_output_listing_tabs();
             }
             ?>
-        </div>
- 
+        </div> -->
+
     </div>
  </div>
 

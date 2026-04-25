@@ -208,3 +208,52 @@ body:not(.auto-listings):not(.single-auto-listing) .vinttro-logo {
         padding: 0 20px !important;
     }
 }
+
+/* ==========================================================================
+   CAR EXCHANGE GRID CLEANUP
+   ========================================================================== */
+
+/* 1. Hide the redundant Make/Model title inside the description */
+.auto-listing .description h3:first-of-type {
+    display: none !important;
+}
+
+/* 2. Hide the "New Vehicle" tag and the "Show More" toggle */
+.auto-listing .condition,
+.auto-listing .show-more-toggle {
+    display: none !important;
+}
+
+/* 3. Shrink the Description font size and limit its height */
+.auto-listing .description {
+    font-size: 0.85rem !important; /* Reduced size */
+    line-height: 1.5 !important;
+    color: #444;
+    max-height: 90px !important; /* Limits the visible text to ~4 lines */
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+/* 4. Hide heavy content (lists, tables, quotes, images) in the GRID view */
+/* This ensures only the text intro is shown in the card */
+.auto-listing .description .detail-title,
+.auto-listing .description .detail-text,
+.auto-listing .description ul,
+.auto-listing .description blockquote,
+.auto-listing .description figure,
+.auto-listing .description hr {
+    display: none !important;
+}
+
+/* 5. Remove the "Fade" effect we added earlier since we aren't showing more */
+.auto-listing .description:after {
+    display: none !important;
+}
+
+/* 6. Adjust the Price size to look better with smaller text */
+.auto-listing .price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: block;
+}

@@ -262,12 +262,3 @@ ul.auto-listings-items.grid-view {
     margin-block-start: 15px !important; /* Reduces gap between all top-level blocks */
 }
 
-/* Remove the legacy header on Single Auto Listing pages */
-.single-auto-listing #header {
-    display: none !important;
-}
-
-/* Also remove the horizontal rule below it if needed */
-.single-auto-listing #header + hr {
-    display: none !important;
-}

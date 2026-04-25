@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         exit;
 }
 
-get_header( 'listings' );
+//get_header( 'listings' );
 
         /**
          * @hooked auto_listings_output_content_wrapper (outputs opening divs for the content)

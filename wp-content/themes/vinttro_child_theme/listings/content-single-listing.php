@@ -21,7 +21,7 @@ if ( post_password_required() ) {
 ?>
 
 <div class="vinttro-main-grid" style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap;">
-
+    <h2 class="vinttro-sidebar-title"><?php the_title(); ?></h2>
     <div class="vinttro-content-area" style="flex: 1 1 600px; min-width: 0;">
         
         <div class="vinttro-gallery-box">
@@ -38,8 +38,7 @@ if ( post_password_required() ) {
     </div>
 
     <div class="vinttro-sidebar-area" style="flex: 1 1 300px; background: #fafafa; padding: 30px; border-radius: 20px; border: 1px solid #eee;">
-        <h3 class="vinttro-sidebar-title"><?php the_title(); ?></h3>
-        
+                
         <?php 
         // Manually call the price and at-a-glance info
         if ( function_exists( 'auto_listings_template_single_vehicle' ) ) auto_listings_template_single_vehicle();

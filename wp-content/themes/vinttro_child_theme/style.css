@@ -44,152 +44,22 @@ Text Domain: vinttro_child_theme
 }
 
 /* ==========================================================================
-   2. LISTING GRID & LAYOUT
-   ========================================================================== */
-.auto-listings-single.listing {
-    max-width: 1200px;
-    margin: 40px auto;
-    padding: 0 20px;
-}
-
-.vinttro-results {
-    flex: 1;
-    min-width: 0; 
-    overflow: hidden; 
-}
-
-/* Rounded corners for the gallery box */
-.vinttro-gallery-box,
-.lSSlideWrapper, 
-.lSSlideWrapper img {
-    border-radius: 20px;
-    overflow: hidden;
-}
-
-/* Ensure title padding */
-.vinttro-header {
-    margin-bottom: 20px;
-}
-
-/* Force visibility of all core elements */
-.listing-gallery, 
-.auto-listings-single,
-.image-gallery, 
-.content, 
-.description {
-    opacity: 1 !important;
-    display: block !important;
-    visibility: visible !important;
-}
-
-/* ==========================================================================
-   3. THE SLIDER (LIGHTSLIDER) STABILITY REPAIR
+   2. LISTING GRID & LAYOUT (Scoped to Listing Pages)
    ========================================================================== */
 
-/* 1. Force the container to be sane */
-.vinttro-gallery-box, .lSSlideOuter, .lSSlideWrapper {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
-    height: auto !important;
-    min-height: 300px;
-}
-
-/* 2. Bypassing the broken JS Math:
-      We force the list to stay at 0,0 and use CSS to show/hide images */
-ul#image-gallery.lightSlider {
-    width: 100% !important;
-    transform: none !important; /* Prevents images from flying off-screen */
-    display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    position: relative;
-    height: 450px !important; /* Set a fixed height for the slider area */
-}
-
-/* 3. Hide all slides by default, only show the 'active' one */
-ul#image-gallery.lightSlider li {
-    position: absolute !important;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    opacity: 0;
-    transition: opacity 0.4s ease-in-out;
-    pointer-events: none;
-    display: block !important;
-}
-
-/* 4. Show the active slide (The one the JS selects) */
-ul#image-gallery.lightSlider li.active {
-    opacity: 1;
-    pointer-events: auto;
-    z-index: 10;
-}
-
-/* 5. Force the image to fill the frame */
-ul#image-gallery.lightSlider img {
-    width: 100% !important;
-    height: 450px !important; /* Matches the container height */
-    object-fit: cover; /* Keeps the car looking sharp, not squashed */
-}
-
-/* 6. Fix the Navigation Arrows */
-.lSAction > a {
-    z-index: 999 !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-/* ==========================================================================
-   4. SPECS TABLE STYLING
-   ========================================================================== */
-.vinttro-specs-table table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-.vinttro-specs-table th {
-    text-align: left;
-    font-size: 14px;
-    color: #666;
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.vinttro-specs-table td {
-    text-align: right;
-    font-weight: 600;
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
-}
-.vinttro-image {
-    border-radius: 20px;
-}
-
-/* 1. Ensure the listing item is a flex container to push the button to the bottom */
-.auto-listing {
-    display: flex;
-    flex-direction: column;
-    height: 100%; /* Keeps all grid items equal height if using flexbox/grid */
-}
-
-.summary {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-/* 2. Limit the description height */
-.description {
-    max-height: 120px; /* Adjust this to show as much as you want */
+/* Only truncate descriptions INSIDE an auto-listing card or the results area */
+.auto-listing .description,
+.vinttro-results .description {
+    max-height: 120px; 
     overflow: hidden;
     position: relative;
     transition: max-height 0.3s ease-out;
     margin-bottom: 10px;
 }
 
-/* 3. The "Fade" effect at the bottom of the truncated text */
-.description:not(.expanded)::after {
+/* Ensure the fade effect only happens on listing pages */
+.auto-listings .description:not(.expanded)::after,
+.single-auto-listing .description:not(.expanded)::after {
     content: "";
     position: absolute;
     bottom: 0;
@@ -200,65 +70,61 @@ ul#image-gallery.lightSlider img {
     pointer-events: none;
 }
 
-/* 4. Class to be added via JS */
 .description.expanded {
-    max-height: 5000px; /* High enough to show all content */
+    max-height: 5000px !important;
 }
 
-/* 5. Style for the Show More link */
-.show-more-toggle {
-    color: #007bff;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.9em;
-    display: inline-block;
-    margin-bottom: 15px;
-}
-
-/* 1. Events */
-.tribe-events-view--list {
-    padding: 0 20px !important;    
-}
-/* 1. Target the container and turn it into a grid */
-.wp-block-column.is-layout-flow {
+/* Fix the Grid: ONLY target the columns inside the Car Exchange main container */
+.vinttro-results .wp-block-column.is-layout-flow {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr); /* Forces 3 columns */
-    gap: 55px; /* Adjust the space between cards here */
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 25px !important; /* Reduced from 55px to prevent horizontal overflow */
 }
 
-/* 2. Tell the UL tags to stop acting like containers */
-ul.auto-listings-items.grid-view {
+/* Ensure ULs only act as contents inside the results area */
+.vinttro-results ul.auto-listings-items.grid-view {
     display: contents !important;
 }
 
-/* 3. Reset the list items to ensure they behave in the new grid */
-.auto-listing.col-3 {
-    width: 100% !important; /* Grid handles width now */
+/* Reset listing items only in the car context */
+.auto-listings .auto-listing.col-3 {
+    width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
     list-style: none !important;
 }
 
-/* 4. Responsive: Drop to 1 column on mobile */
-@media (max-width: 768px) {
-    .wp-block-column.is-layout-flow {
-        grid-template-columns: 1fr;
+/* Responsive: Scoped to car results */
+@media (max-width: 900px) {
+    .vinttro-results .wp-block-column.is-layout-flow {
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 
-/* 1. Remove the forced margin/padding on the main container */
-#wp--skip-link--target.wp-block-group {
+@media (max-width: 600px) {
+    .vinttro-results .wp-block-column.is-layout-flow {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ==========================================================================
+   3. LOGO & HEADER TWEAKS
+   ========================================================================== */
+
+/* Keep the negative margin logo fix ONLY on the homepage if that's where it's needed, 
+   or remove the negative margin if it's breaking headers elsewhere. */
+.home .vinttro-logo {
+    margin-top: -50px !important;
+}
+
+/* If you need it on all pages BUT the exchange, use: */
+body:not(.auto-listings):not(.single-auto-listing) .vinttro-logo {
+    /* Adjust as needed for standard pages */
+}
+
+/* Ensure the main container fix doesn't eat the top of standard pages */
+.auto-listings #wp--skip-link--target.wp-block-group,
+.single-auto-listing #wp--skip-link--target.wp-block-group {
     margin-top: 0 !important;
-    padding-top: 10px !important; /* Small breathing room instead of a giant gap */
+    padding-top: 10px !important;
 }
-
-/* 2. Optional: If the "Car Exchange" header still has too much gap above it */
-.entry-content h2.wp-block-heading {
-    margin-top: 0 !important;
-}
-
-/* 3. Remove default block-gap between the header and the search filter */
-.entry-content > * {
-    margin-block-start: 15px !important; /* Reduces gap between all top-level blocks */
-}
-

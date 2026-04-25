@@ -20,8 +20,8 @@ if ( post_password_required() ) {
 
 ?>
 
+<h2><?php the_title(); ?></h2>
 <div class="vinttro-main-grid" style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap;">
-    <h2><?php the_title(); ?></h2>
     <div class="vinttro-content-area" style="flex: 1 1 600px; min-width: 0;">
         
         <div class="vinttro-gallery-box">

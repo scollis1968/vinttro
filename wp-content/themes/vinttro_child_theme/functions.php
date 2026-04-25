@@ -94,3 +94,30 @@ add_action( 'wp_head', function() {
     </style>
     <?php
 }, 9999 );
+
+add_action( 'wp_footer', function() {
+    ?>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const descriptions = document.querySelectorAll('.description');
+
+        descriptions.forEach(desc => {
+            // Only add 'Show More' if the content is taller than our limit (120px)
+            if (desc.scrollHeight > 120) {
+                const toggle = document.createElement('span');
+                toggle.className = 'show-more-toggle';
+                toggle.innerText = 'Show More';
+                
+                // Insert the toggle right after the description div
+                desc.parentNode.insertBefore(toggle, desc.nextSibling);
+
+                toggle.addEventListener('click', function() {
+                    const isExpanded = desc.classList.toggle('expanded');
+                    toggle.innerText = isExpanded ? 'Show Less' : 'Show More';
+                });
+            }
+        });
+    });
+    </script>
+    <?php
+}, 100 ); // Priority 100 ensures it loads after other scripts

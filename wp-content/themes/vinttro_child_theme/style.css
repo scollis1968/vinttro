@@ -245,3 +245,19 @@ ul.auto-listings-items.grid-view {
         grid-template-columns: 1fr;
     }
 }
+
+/* 1. Remove the forced margin/padding on the main container */
+#wp--skip-link--target.wp-block-group {
+    margin-top: 0 !important;
+    padding-top: 10px !important; /* Small breathing room instead of a giant gap */
+}
+
+/* 2. Optional: If the "Car Exchange" header still has too much gap above it */
+.entry-content h2.wp-block-heading {
+    margin-top: 0 !important;
+}
+
+/* 3. Remove default block-gap between the header and the search filter */
+.entry-content > * {
+    margin-block-start: 15px !important; /* Reduces gap between all top-level blocks */
+}

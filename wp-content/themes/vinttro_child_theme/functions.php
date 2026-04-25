@@ -117,6 +117,22 @@ add_action( 'wp_footer', function() {
                 });
             }
         });
+
+        const lists = document.querySelectorAll('ul.auto-listings-items');
+        if (lists.length > 1) {
+            const firstList = lists[0];
+            lists.forEach((list, index) => {
+                if (index > 0) {
+                    // Move all list items to the first list
+                    while (list.firstChild) {
+                        firstList.appendChild(list.firstChild);
+                    }
+                    // Remove the now-empty list
+                    list.remove();
+                }
+            });
+        }
+
     });
     </script>
     <?php

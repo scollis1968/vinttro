@@ -219,3 +219,29 @@ ul#image-gallery.lightSlider img {
 .tribe-events-view--list {
     padding: 0 20px !important;    
 }
+/* 1. Target the container and turn it into a grid */
+.wp-block-column.is-layout-flow {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr); /* Forces 3 columns */
+    gap: 20px; /* Adjust the space between cards here */
+}
+
+/* 2. Tell the UL tags to stop acting like containers */
+ul.auto-listings-items.grid-view {
+    display: contents !important;
+}
+
+/* 3. Reset the list items to ensure they behave in the new grid */
+.auto-listing.col-3 {
+    width: 100% !important; /* Grid handles width now */
+    max-width: none !important;
+    margin: 0 !important;
+    list-style: none !important;
+}
+
+/* 4. Responsive: Drop to 1 column on mobile */
+@media (max-width: 768px) {
+    .wp-block-column.is-layout-flow {
+        grid-template-columns: 1fr;
+    }
+}

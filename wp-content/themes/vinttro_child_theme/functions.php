@@ -60,26 +60,20 @@ add_action( 'wp_head', function() {
 // This was previously inside the script tag - now it is in the correct PHP area.
 add_action( 'pre_get_posts', function( $query ) {
     if ( is_admin() ) return;
-
-    // 1. Only run if we have car filters in the URL
     if ( !isset($_GET['make']) && !isset($_GET['model']) ) return;
 
-    // 2. TARGETING: Match the auto-listing query
     $post_type = $query->get('post_type');
     if ( $post_type === 'auto-listing' || $post_type === 'listing' ) {
         
-        error_log("--- APPLYING META FILTERS FOR " . $_GET['make'] . " ---");
-
-        // 3. THE FIX: Clear the Page ID lock and the broken Tax Query
+        // 1. Clear the locks
         $query->set('p', '');
         $query->set('page_id', '');
         $query->set('name', '');
-        $query->set('tax_query', ''); // THIS REMOVES THE 0 = 1
+        $query->set('tax_query', ''); 
 
-        // 4. APPLY META FILTERS (Based on your SQL log)
         $meta_query = array('relation' => 'AND');
 
-        // Make Filter
+        // 2. Make Filter (Keep using = since this is working)
         if ( ! empty( $_GET['make'] ) ) {
             $meta_query[] = array(
                 'key'     => '_al_listing_make_display',
@@ -88,23 +82,28 @@ add_action( 'pre_get_posts', function( $query ) {
             );
         }
 
-        // Model Filter
+        // 3. Model Filter (Using LIKE for partial matches)
         if ( ! empty( $_GET['model'] ) ) {
+            $model_val = sanitize_text_field( $_GET['model'] );
             $meta_query[] = array(
-                'key'     => '_al_listing_model_display',
-                'value'   => sanitize_text_field( $_GET['model'] ),
-                'compare' => '=',
+                'key'     => '_al_listing_model_display', // Try this first
+                'value'   => '%' . $model_val . '%',      // Match 308 within "308 GTB"
+                'compare' => 'LIKE',
             );
         }
 
         $query->set( 'meta_query', $meta_query );
+        
+        // 4. Debug: Log what we are actually doing
+        error_log("DEBUG: Filtering for Make: " . $_GET['make'] . " and Model LIKE: " . $_GET['model']);
 
-        // 5. Correct the Query State
         $query->is_single = false;
         $query->is_page = false;
         $query->is_archive = true;
     }
 });
+
+
 // THE LOUDER SQL LOGGER
 add_filter( 'posts_request', function( $sql ) {
     // We only want to see the SQL if it's trying to find auto-listings

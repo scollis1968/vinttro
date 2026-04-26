@@ -59,47 +59,66 @@ add_action( 'wp_head', function() {
 // 5. AUTO LISTING - DATABASE/QUERY FILTER (PHP)
 // This was previously inside the script tag - now it is in the correct PHP area.
 add_action( 'pre_get_posts', function( $query ) {
-    // 1. Ignore admin area
     if ( is_admin() ) return;
 
-    // 2. Identify what we are looking at
-    $requested_url = $_SERVER['REQUEST_URI'];
+    // Only run if we have car-related parameters in the URL
+    if ( !isset($_GET['make']) && !isset($_GET['model']) && !isset($_GET['max_price']) ) {
+        return;
+    }
+
+    // TARGETING: We look for the query that is actually trying to get auto-listings
+    // Some plugins use 'auto-listing', others just 'listing'.
     $post_type = $query->get('post_type');
-
-    // 3. Only log if the URL contains 'make=' or 'model=' 
-    // (This filters out the Contact Form 7 noise)
-    if ( isset($_GET['make']) || isset($_GET['model']) ) {
-        error_log("--- TRAP TRIGGERED ---");
-        error_log("URL: " . $requested_url);
-        error_log("Query Post Type: " . (is_array($post_type) ? implode(',', $post_type) : $post_type));
-        error_log("Is Main Query? " . ($query->is_main_query() ? 'YES' : 'NO'));
+    
+    if ( $post_type === 'auto-listing' || $post_type === 'listing' ) {
         
-        // 4. Force the filter if it looks like an Auto Listing query
-        // Even if it's NOT the main query
-        if ( $post_type === 'auto-listing' || $post_type === 'listing' ) {
-            error_log("APPLYING FILTERS NOW...");
-            
-            $tax_query = array('relation' => 'AND');
+        error_log("--- APPLYING FILTERS TO CAR QUERY ---");
 
-            if ( ! empty( $_GET['make'] ) ) {
-                $tax_query[] = array(
-                    'taxonomy' => 'make',
-                    'field'    => 'slug',
-                    'terms'    => sanitize_text_field( $_GET['make'] ),
-                );
-            }
+        // 1. TAXONOMY FILTERS (Make & Model)
+        $tax_query = array('relation' => 'AND');
 
-            if ( ! empty( $_GET['model'] ) ) {
-                $tax_query[] = array(
-                    'taxonomy' => 'model',
-                    'field'    => 'slug',
-                    'terms'    => sanitize_text_field( $_GET['model'] ),
-                );
-            }
-
-            $query->set( 'tax_query', $tax_query );
-            error_log("Tax Query Set: " . print_r($tax_query, true));
+        if ( ! empty( $_GET['make'] ) ) {
+            $tax_query[] = array(
+                'taxonomy' => 'make',
+                'field'    => 'slug',
+                'terms'    => strtolower( sanitize_text_field( $_GET['make'] ) ), // Force lowercase
+            );
         }
+
+        if ( ! empty( $_GET['model'] ) ) {
+            $tax_query[] = array(
+                'taxonomy' => 'model',
+                'field'    => 'slug',
+                'terms'    => strtolower( sanitize_text_field( $_GET['model'] ) ), // Force lowercase
+            );
+        }
+
+        if ( count($tax_query) > 1 ) {
+            $query->set( 'tax_query', $tax_query );
+        }
+
+        // 2. PRICE FILTER (Meta Query)
+        // We only apply this if a price is actually sent
+        if ( ! empty( $_GET['max_price'] ) ) {
+            $max_price = intval( $_GET['max_price'] );
+            $meta_query = array(
+                array(
+                    'key'     => '_price', // Auto Listings standard. Change to 'price' if it fails.
+                    'value'   => array( 0, $max_price ),
+                    'type'    => 'numeric',
+                    'compare' => 'BETWEEN',
+                )
+            );
+            $query->set( 'meta_query', $meta_query );
+            error_log("Price Filter Applied: Up to " . $max_price);
+        }
+
+        // 3. THE ULTIMATE DEBUG: Capture the SQL
+        // This helper will log the SQL after the query is fully built
+        add_filter( 'posts_request', function( $sql ) {
+            error_log("FINAL SQL QUERY: " . $sql);
+            return $sql;
+        });
     }
 });
 

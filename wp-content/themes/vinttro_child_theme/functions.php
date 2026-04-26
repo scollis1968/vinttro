@@ -61,46 +61,50 @@ add_action( 'wp_head', function() {
 add_action( 'pre_get_posts', function( $query ) {
     if ( is_admin() ) return;
 
-    // Only run if car filters are in the URL
+    // 1. Only run if we have car filters in the URL
     if ( !isset($_GET['make']) && !isset($_GET['model']) ) return;
 
-    // TARGETING: Match the auto-listing query
-    if ( $query->get('post_type') === 'auto-listing' || $query->get('post_type') === 'listing' ) {
+    // 2. TARGETING: Match the auto-listing query
+    $post_type = $query->get('post_type');
+    if ( $post_type === 'auto-listing' || $post_type === 'listing' ) {
         
-        error_log("--- CAR QUERY DETECTED: UNBINDING ID " . $query->get('p') . " ---");
+        error_log("--- APPLYING META FILTERS FOR " . $_GET['make'] . " ---");
 
-        // 1. CLEAR THE LOCK
-        // This stops the query from looking for the Page ID 6245
+        // 3. THE FIX: Clear the Page ID lock and the broken Tax Query
         $query->set('p', '');
         $query->set('page_id', '');
         $query->set('name', '');
+        $query->set('tax_query', ''); // THIS REMOVES THE 0 = 1
+
+        // 4. APPLY META FILTERS (Based on your SQL log)
+        $meta_query = array('relation' => 'AND');
+
+        // Make Filter
+        if ( ! empty( $_GET['make'] ) ) {
+            $meta_query[] = array(
+                'key'     => '_al_listing_make_display',
+                'value'   => sanitize_text_field( $_GET['make'] ),
+                'compare' => '=',
+            );
+        }
+
+        // Model Filter
+        if ( ! empty( $_GET['model'] ) ) {
+            $meta_query[] = array(
+                'key'     => '_al_listing_model_display',
+                'value'   => sanitize_text_field( $_GET['model'] ),
+                'compare' => '=',
+            );
+        }
+
+        $query->set( 'meta_query', $meta_query );
+
+        // 5. Correct the Query State
         $query->is_single = false;
         $query->is_page = false;
         $query->is_archive = true;
-
-        // 2. APPLY FILTERS
-        $tax_query = array('relation' => 'AND');
-
-        if ( ! empty( $_GET['make'] ) ) {
-            $tax_query[] = array(
-                'taxonomy' => 'make', // If this fails, we will see it in the SQL
-                'field'    => 'slug',
-                'terms'    => sanitize_text_field( $_GET['make'] ),
-            );
-        }
-
-        if ( ! empty( $_GET['model'] ) ) {
-            $tax_query[] = array(
-                'taxonomy' => 'model',
-                'field'    => 'slug',
-                'terms'    => sanitize_text_field( $_GET['model'] ),
-            );
-        }
-
-        $query->set( 'tax_query', $tax_query );
     }
 });
-
 // THE LOUDER SQL LOGGER
 add_filter( 'posts_request', function( $sql ) {
     // We only want to see the SQL if it's trying to find auto-listings

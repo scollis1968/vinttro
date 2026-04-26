@@ -61,55 +61,65 @@ add_action( 'wp_head', function() {
 add_action( 'pre_get_posts', function( $query ) {
     if ( is_admin() ) return;
 
-    // 1. SAFETY CATCH: If the query is looking for a specific Page ID (like 6245), 
-    // leave it alone so the page actually loads!
-    if ( $query->is_main_query() && $query->get('page_id') ) return;
-    if ( $query->is_main_query() && $query->get('p') ) return;
-
-    // 2. Only proceed if we have car filters in the URL
+    // Only run if we have car filters in the URL
     if ( !isset($_GET['make']) && !isset($_GET['model']) ) return;
 
-    // 3. TARGETING: Only apply to the query that fetches car listings
-    // We check if the post_type is ALREADY 'auto-listing' or if it's a general search
-    $is_car_list = ( $query->get('post_type') === 'auto-listing' || $query->get('post_type') === 'listing' );
-
-    if ( $is_car_list ) {
+    // TARGETING: Only apply to the car listing query
+    $post_type = $query->get('post_type');
+    
+    if ( $post_type === 'auto-listing' || $post_type === 'listing' ) {
         
-        error_log("--- SURGICAL FILTER APPLIED TO CAR LIST ---");
+        error_log("--- UNBINDING PAGE ID AND APPLYING FILTERS ---");
 
+        // 1. THE FIX: Clear the specific ID restriction (6245) 
+        // that is forcing "No Listings Found"
+        $query->set('p', '');
+        $query->set('page_id', '');
+        $query->set('name', ''); 
+
+        // 2. APPLY TAXONOMY FILTERS
         $tax_query = array('relation' => 'AND');
 
-        // Make Filter
+        // Make Filter - We'll try to match whatever casing is in the database
         if ( ! empty( $_GET['make'] ) ) {
+            $make_slug = sanitize_text_field( $_GET['make'] );
             $tax_query[] = array(
                 'taxonomy' => 'make',
                 'field'    => 'slug',
-                'terms'    => sanitize_text_field( $_GET['make'] ),
+                'terms'    => array( strtolower($make_slug), $make_slug ), // Checks both Ferrari and ferrari
             );
         }
 
         // Model Filter
         if ( ! empty( $_GET['model'] ) ) {
+            $model_slug = sanitize_text_field( $_GET['model'] );
             $tax_query[] = array(
                 'taxonomy' => 'model',
                 'field'    => 'slug',
-                'terms'    => sanitize_text_field( $_GET['model'] ),
+                'terms'    => array( strtolower($model_slug), $model_slug ),
             );
         }
 
         if ( count($tax_query) > 1 ) {
             $query->set( 'tax_query', $tax_query );
         }
+        
+        // 3. Ensure we aren't looking for a single page template
+        $query->is_single = false;
+        $query->is_page = false;
+        $query->is_archive = true;
     }
 });
 
-// Keep the SQL logger active for now
+// Update the SQL logger to be more specific
 add_filter( 'posts_request', function( $sql ) {
-    if ( isset($_GET['make']) && strpos($sql, 'auto-listing') !== false && strpos($sql, 'wp_term_relationships') !== false ) {
-        error_log("!! FINAL FILTERED SQL !!: " . $sql);
+    if ( isset($_GET['make']) && strpos($sql, 'auto-listing') !== false && strpos($sql, 'term_relationships') !== false ) {
+        error_log("!! THE WINNING SQL !!: " . $sql);
     }
     return $sql;
 }, 10, 1 );
+
+
 
 
 // 6. AUTO LISTING - FRONT END UI FIXES (JavaScript)

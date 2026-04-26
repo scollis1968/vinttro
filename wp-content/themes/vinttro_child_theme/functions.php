@@ -59,30 +59,47 @@ add_action( 'wp_head', function() {
 // 5. AUTO LISTING - DATABASE/QUERY FILTER (PHP)
 // This was previously inside the script tag - now it is in the correct PHP area.
 add_action( 'pre_get_posts', function( $query ) {
-    
-    // TRAP 1: Is this function even firing?
-    // This will log for EVERY page load. If you don't see this, 
-    // we have a file-saving or caching issue.
-    error_log('DEBUG: pre_get_posts is running on page: ' . $_SERVER['REQUEST_URI']);
-
+    // 1. Ignore admin area
     if ( is_admin() ) return;
 
-    // TRAP 2: Is it the main query? 
-    // If you're using a Shortcode for the car list, is_main_query() might be FALSE.
-    if ( ! $query->is_main_query() ) {
-        // error_log('DEBUG: Skipping because this is not the main query.');
-        return;
-    }
+    // 2. Identify what we are looking at
+    $requested_url = $_SERVER['REQUEST_URI'];
+    $post_type = $query->get('post_type');
 
-    // TRAP 3: Check the Post Type
-    $current_post_type = $query->get('post_type');
-    // error_log('DEBUG: Current post type detected is: ' . $current_post_type);
+    // 3. Only log if the URL contains 'make=' or 'model=' 
+    // (This filters out the Contact Form 7 noise)
+    if ( isset($_GET['make']) || isset($_GET['model']) ) {
+        error_log("--- TRAP TRIGGERED ---");
+        error_log("URL: " . $requested_url);
+        error_log("Query Post Type: " . (is_array($post_type) ? implode(',', $post_type) : $post_type));
+        error_log("Is Main Query? " . ($query->is_main_query() ? 'YES' : 'NO'));
+        
+        // 4. Force the filter if it looks like an Auto Listing query
+        // Even if it's NOT the main query
+        if ( $post_type === 'auto-listing' || $post_type === 'listing' ) {
+            error_log("APPLYING FILTERS NOW...");
+            
+            $tax_query = array('relation' => 'AND');
 
-    if ( $current_post_type === 'auto-listing' || is_post_type_archive('auto-listing') || isset($_GET['make']) ) {
-        
-        error_log('DEBUG: Target acquired! Processing filters...');
-        
-        // ... (rest of your filter code here)
+            if ( ! empty( $_GET['make'] ) ) {
+                $tax_query[] = array(
+                    'taxonomy' => 'make',
+                    'field'    => 'slug',
+                    'terms'    => sanitize_text_field( $_GET['make'] ),
+                );
+            }
+
+            if ( ! empty( $_GET['model'] ) ) {
+                $tax_query[] = array(
+                    'taxonomy' => 'model',
+                    'field'    => 'slug',
+                    'terms'    => sanitize_text_field( $_GET['model'] ),
+                );
+            }
+
+            $query->set( 'tax_query', $tax_query );
+            error_log("Tax Query Set: " . print_r($tax_query, true));
+        }
     }
 });
 

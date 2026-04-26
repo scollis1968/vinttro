@@ -59,61 +59,30 @@ add_action( 'wp_head', function() {
 // 5. AUTO LISTING - DATABASE/QUERY FILTER (PHP)
 // This was previously inside the script tag - now it is in the correct PHP area.
 add_action( 'pre_get_posts', function( $query ) {
-    if ( is_admin() || ! $query->is_main_query() ) {
+    
+    // TRAP 1: Is this function even firing?
+    // This will log for EVERY page load. If you don't see this, 
+    // we have a file-saving or caching issue.
+    error_log('DEBUG: pre_get_posts is running on page: ' . $_SERVER['REQUEST_URI']);
+
+    if ( is_admin() ) return;
+
+    // TRAP 2: Is it the main query? 
+    // If you're using a Shortcode for the car list, is_main_query() might be FALSE.
+    if ( ! $query->is_main_query() ) {
+        // error_log('DEBUG: Skipping because this is not the main query.');
         return;
     }
 
-    if ( $query->get('post_type') === 'auto-listing' || is_post_type_archive('auto-listing') ) {
+    // TRAP 3: Check the Post Type
+    $current_post_type = $query->get('post_type');
+    // error_log('DEBUG: Current post type detected is: ' . $current_post_type);
+
+    if ( $current_post_type === 'auto-listing' || is_post_type_archive('auto-listing') || isset($_GET['make']) ) {
         
-        // --- THE TRAP: Log the incoming URL parameters ---
-        error_log('--- Auto Listings Debug Start ---');
-        error_log('URL Parameters: ' . print_r($_GET, true));
-
-        $tax_query = array();
-
-        // Make & Model (Taxonomies)
-        if ( isset( $_GET['make'] ) && ! empty( $_GET['make'] ) ) {
-            $tax_query[] = array(
-                'taxonomy' => 'make',
-                'field'    => 'slug',
-                'terms'    => sanitize_text_field( $_GET['make'] ),
-            );
-        }
-
-        if ( isset( $_GET['model'] ) && ! empty( $_GET['model'] ) ) {
-            $tax_query[] = array(
-                'taxonomy' => 'model',
-                'field'    => 'slug',
-                'terms'    => sanitize_text_field( $_GET['model'] ),
-            );
-        }
-
-        // --- NEW: Price Filter Trap (Meta Query) ---
-        // Price isn't a category; it's usually a hidden custom field (meta).
-        $meta_query = array();
-        if ( isset( $_GET['min_price'] ) || isset( $_GET['max_price'] ) ) {
-            $meta_query[] = array(
-                'key'     => '_price', // Auto Listings usually uses '_price' or '_asking_price'
-                'value'   => array( 
-                    isset($_GET['min_price']) ? $_GET['min_price'] : 0, 
-                    isset($_GET['max_price']) ? $_GET['max_price'] : 9999999 
-                ),
-                'type'    => 'numeric',
-                'compare' => 'BETWEEN',
-            );
-        }
-
-        if ( ! empty( $tax_query ) ) {
-            $query->set( 'tax_query', $tax_query );
-        }
+        error_log('DEBUG: Target acquired! Processing filters...');
         
-        if ( ! empty( $meta_query ) ) {
-            $query->set( 'meta_query', $meta_query );
-        }
-
-        // --- THE TRAP: Log the final query object ---
-        error_log('Final Tax Query: ' . print_r($tax_query, true));
-        error_log('--- Auto Listings Debug End ---');
+        // ... (rest of your filter code here)
     }
 });
 

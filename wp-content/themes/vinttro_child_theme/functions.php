@@ -146,6 +146,47 @@ add_action( 'wp_footer', function() {
             }
         }, 100);
     });
+    /**
+     * Force Car Search to respect Make and Model filters on custom pages
+     */
+    add_action( 'pre_get_posts', function( $query ) {
+        // Only run this on the front-end and for the main query
+        if ( is_admin() || ! $query->is_main_query() ) {
+            return;
+        }
+
+        // Check if we are looking for auto-listings
+        if ( $query->get('post_type') === 'auto-listing' || is_post_type_archive('auto-listing') ) {
+            
+            $tax_query = array();
+
+            // 1. Filter by Make
+            if ( ! empty( $_GET['make'] ) ) {
+                $tax_query[] = array(
+                    'taxonomy' => 'make',
+                    'field'    => 'slug',
+                    'terms'    => sanitize_text_field( $_GET['make'] ),
+                );
+            }
+
+            // 2. Filter by Model
+            if ( ! empty( $_GET['model'] ) ) {
+                $tax_query[] = array(
+                    'taxonomy' => 'model',
+                    'field'    => 'slug', // or 'name' depending on plugin settings
+                    'terms'    => sanitize_text_field( $_GET['model'] ),
+                );
+            }
+
+            // Apply the taxonomy query if filters exist
+            if ( ! empty( $tax_query ) ) {
+                $tax_query['relation'] = 'AND';
+                $query->set( 'tax_query', $tax_query );
+            }
+        }
+    }, 10 );
+
+
     </script>
     
     <?php

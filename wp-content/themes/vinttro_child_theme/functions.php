@@ -97,7 +97,7 @@ add_action( 'wp_head', function() {
 
 /**
  * AUTO LISTING GRID IMPROVEMENTS
- */
+*/
 add_action( 'wp_footer', function() {
     ?>
     <script>
@@ -124,6 +124,29 @@ add_action( 'wp_footer', function() {
             // unless you want to do character counting.
         });
     });
+    // --- NEW: Dependent Dropdown Fix ---
+    jQuery(document).on('change', 'select[name="make"]', function() {
+        var make_id = jQuery(this).val();
+        var $model_select = jQuery('select[name="model"]');
+
+        // If no make is selected, disable model and stop
+        if (!make_id) {
+            $model_select.val('').prop('disabled', true);
+            if ($model_select[0].sumo) $model_select[0].sumo.reload();
+            return;
+        }
+
+        // Trigger the plugin's native AJAX update
+        // We delay slightly to ensure the plugin's own script has a chance to start
+        setTimeout(function() {
+            if ($model_select[0].sumo) {
+                $model_select.prop('disabled', false);
+                $model_select[0].sumo.unHighlightAll();
+                $model_select[0].sumo.reload();
+            }
+        }, 100);
+    });
     </script>
+    
     <?php
 }, 100 );

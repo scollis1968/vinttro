@@ -186,7 +186,6 @@ add_action( 'wp_footer', function() {
         }
     }, 10 );
 
-
     </script>
     
     <?php

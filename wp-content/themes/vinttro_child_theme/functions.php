@@ -61,56 +61,56 @@ add_action( 'wp_head', function() {
 add_action( 'pre_get_posts', function( $query ) {
     if ( is_admin() ) return;
 
-    // Only run if we are on a search results page
+    // 1. SAFETY CATCH: If the query is looking for a specific Page ID (like 6245), 
+    // leave it alone so the page actually loads!
+    if ( $query->is_main_query() && $query->get('page_id') ) return;
+    if ( $query->is_main_query() && $query->get('p') ) return;
+
+    // 2. Only proceed if we have car filters in the URL
     if ( !isset($_GET['make']) && !isset($_GET['model']) ) return;
 
-    // Detect if this query is likely the car list
-    $is_car_query = ( $query->get('post_type') === 'auto-listing' || $query->get('post_type') === 'listing' );
-    
-    // Even if post_type isn't set yet, if it's the main query on /cars/, it's probably the one
-    if ( $is_car_query || ( $query->is_main_query() && strpos($_SERVER['REQUEST_URI'], '/cars/') !== false ) ) {
+    // 3. TARGETING: Only apply to the query that fetches car listings
+    // We check if the post_type is ALREADY 'auto-listing' or if it's a general search
+    $is_car_list = ( $query->get('post_type') === 'auto-listing' || $query->get('post_type') === 'listing' );
+
+    if ( $is_car_list ) {
         
+        error_log("--- SURGICAL FILTER APPLIED TO CAR LIST ---");
+
         $tax_query = array('relation' => 'AND');
 
-        // 1. MAKE FILTER
+        // Make Filter
         if ( ! empty( $_GET['make'] ) ) {
-            $make = sanitize_text_field( $_GET['make'] );
             $tax_query[] = array(
                 'taxonomy' => 'make',
                 'field'    => 'slug',
-                'terms'    => $make, // We will try the exact casing from the URL first
+                'terms'    => sanitize_text_field( $_GET['make'] ),
             );
         }
 
-        // 2. MODEL FILTER
+        // Model Filter
         if ( ! empty( $_GET['model'] ) ) {
-            $model = sanitize_text_field( $_GET['model'] );
             $tax_query[] = array(
                 'taxonomy' => 'model',
                 'field'    => 'slug',
-                'terms'    => $model,
+                'terms'    => sanitize_text_field( $_GET['model'] ),
             );
         }
 
         if ( count($tax_query) > 1 ) {
             $query->set( 'tax_query', $tax_query );
         }
-        
-        // Ensure the post type is forced if it was missing
-        if ( ! $query->get('post_type') ) {
-            $query->set( 'post_type', 'auto-listing' );
-        }
     }
 });
 
-// 2. GLOBAL SQL MONITOR (Outside the function to catch everything)
+// Keep the SQL logger active for now
 add_filter( 'posts_request', function( $sql ) {
-    // Only log SQL that contains our search terms to avoid Contact Form 7 noise
-    if ( isset($_GET['make']) && (strpos($sql, $_GET['make']) !== false || strpos($sql, 'auto-listing') !== false) ) {
-        error_log("!! CAR SQL DETECTED !!: " . $sql);
+    if ( isset($_GET['make']) && strpos($sql, 'auto-listing') !== false && strpos($sql, 'wp_term_relationships') !== false ) {
+        error_log("!! FINAL FILTERED SQL !!: " . $sql);
     }
     return $sql;
 }, 10, 1 );
+
 
 // 6. AUTO LISTING - FRONT END UI FIXES (JavaScript)
 add_action( 'wp_footer', function() {

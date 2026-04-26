@@ -64,8 +64,14 @@ add_action( 'pre_get_posts', function( $query ) {
     }
 
     if ( $query->get('post_type') === 'auto-listing' || is_post_type_archive('auto-listing') ) {
+        
+        // --- THE TRAP: Log the incoming URL parameters ---
+        error_log('--- Auto Listings Debug Start ---');
+        error_log('URL Parameters: ' . print_r($_GET, true));
+
         $tax_query = array();
 
+        // Make & Model (Taxonomies)
         if ( isset( $_GET['make'] ) && ! empty( $_GET['make'] ) ) {
             $tax_query[] = array(
                 'taxonomy' => 'make',
@@ -82,9 +88,32 @@ add_action( 'pre_get_posts', function( $query ) {
             );
         }
 
+        // --- NEW: Price Filter Trap (Meta Query) ---
+        // Price isn't a category; it's usually a hidden custom field (meta).
+        $meta_query = array();
+        if ( isset( $_GET['min_price'] ) || isset( $_GET['max_price'] ) ) {
+            $meta_query[] = array(
+                'key'     => '_price', // Auto Listings usually uses '_price' or '_asking_price'
+                'value'   => array( 
+                    isset($_GET['min_price']) ? $_GET['min_price'] : 0, 
+                    isset($_GET['max_price']) ? $_GET['max_price'] : 9999999 
+                ),
+                'type'    => 'numeric',
+                'compare' => 'BETWEEN',
+            );
+        }
+
         if ( ! empty( $tax_query ) ) {
             $query->set( 'tax_query', $tax_query );
         }
+        
+        if ( ! empty( $meta_query ) ) {
+            $query->set( 'meta_query', $meta_query );
+        }
+
+        // --- THE TRAP: Log the final query object ---
+        error_log('Final Tax Query: ' . print_r($tax_query, true));
+        error_log('--- Auto Listings Debug End ---');
     }
 });
 

@@ -185,6 +185,11 @@ add_action( 'wp_footer', function() {
             }
         }
     }, 10 );
+    
+    // Remove empty keyword search to prevent WP from breaking the car filter
+    jQuery('form.als').on('submit', function() {
+        jQuery(this).find('input[name="s"]').remove();
+    });
 
     </script>
     

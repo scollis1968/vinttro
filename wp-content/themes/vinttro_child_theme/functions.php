@@ -174,6 +174,26 @@ add_action( 'wp_footer', function() {
     const resetBtn = document.querySelector('.als-reset');
     if (resetBtn) {
         resetBtn.textContent = 'Clear Filters';
+        
+        // Add the auto-search behavior
+        resetBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Stop the default reset behavior
+            
+            const form = this.closest('form.als');
+            const selects = form.querySelectorAll('select');
+
+            // Clear all dropdown values
+            selects.forEach(select => {
+                select.value = '';
+                // Tell SumoSelect to update the visible UI
+                if (select.sumo) {
+                    select.sumo.reload();
+                }
+            });
+
+            // Automatically trigger the search
+            form.submit();
+        });
     }
     </script>
     <?php

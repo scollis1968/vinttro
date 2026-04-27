@@ -162,3 +162,17 @@ add_action( 'wp_footer', function() {
     </script>
     <?php
 }, 100 );
+
+// TEMPORARY: View the internal data of the first car found
+add_action('wp_head', function() {
+    if (isset($_GET['make']) && current_user_can('administrator')) {
+        $test_car = get_posts(array('post_type' => 'auto-listing', 'posts_per_page' => 1));
+        if ($test_car) {
+            $meta = get_post_meta($test_car[0]->ID);
+            echo '<pre style="background:#fff; color:#000; padding:50px; position:fixed; top:0; z-index:99999; height:50vh; overflow:scroll; border:5px solid red;">';
+            echo "--- CAR META DATA INSPECTOR ---\n";
+            print_r($meta);
+            echo '</pre>';
+        }
+    }
+});

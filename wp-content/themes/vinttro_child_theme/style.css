@@ -298,3 +298,59 @@ body:not(.auto-listings):not(.single-auto-listing) .vinttro-logo {
 .auto-listing li:has(.state) .currency-symbol {
     text-decoration: line-through;
 }
+/* 1. Hide Advanced Filter & Wrapper */
+.als-toggle, 
+.als-toggle-wrapper {
+    display: none !important;
+}
+
+/* 2. The Search Button (Gold Pill) */
+.als-submit {
+    background-color: #C5A059 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 50px !important;
+    padding: 14px 35px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%; /* Makes it a prominent pill */
+    margin-top: 10px;
+}
+
+.als-submit:hover {
+    background-color: #b38f4d !important;
+    box-shadow: 0 4px 12px rgba(197, 160, 89, 0.3);
+}
+
+/* 3. The Reset/Clear Button (Subtle Text) */
+.als-reset {
+    background: transparent !important;
+    border: none !important;
+    color: #999 !important;
+    text-decoration: underline;
+    font-size: 0.8rem !important;
+    cursor: pointer;
+    padding: 10px !important;
+    display: block;
+    margin: 0 auto; /* Centers it under the pill */
+    text-align: center;
+}
+
+.als-reset:hover {
+    color: #C5A059 !important;
+}
+
+/* 4. SumoSelect Dropdown Styling */
+.SumoSelect > .CaptionCont {
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    transition: border-color 0.3s ease;
+}
+
+.SumoSelect:focus > .CaptionCont,
+.SumoSelect:hover > .CaptionCont {
+    border-color: #C5A059 !important;
+}

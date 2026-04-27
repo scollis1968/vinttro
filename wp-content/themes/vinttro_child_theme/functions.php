@@ -196,3 +196,29 @@ add_action( 'wp_footer', function() {
     <?php
 }, 100 );
 
+// 7. BLOCK EXCHANGE PAGES ON PRODUCTION
+add_action( 'template_redirect', function() {
+    // 1. Define the 'protected' areas. 
+    // This covers a Custom Post Type called 'exchange' OR a page with the slug 'exchange'
+    $is_exchange_page = is_post_type_archive('exchange') || is_singular('exchange') || is_page('exchange') || strpos($_SERVER['REQUEST_URI'], '/exchange/') !== false;
+
+    // 2. Logic: If it's an exchange page AND the user isn't an administrator
+    if ( $is_exchange_page && !current_user_can('manage_options') ) {
+        
+        // Redirect to your "Under Construction" page
+        // Change '/under-construction/' to whatever your landing page slug is
+        wp_safe_redirect( home_url( '/under-construction/' ) );
+        exit;
+    }
+});
+
+
+
+// 8. HIDE EXCHANGE FROM SEARCH ENGINES
+add_filter( 'wp_robots', function( $robots ) {
+    if ( is_post_type_archive('exchange') || is_singular('exchange') || is_page('exchange') ) {
+        $robots['noindex'] = true;
+        $robots['nofollow'] = true;
+    }
+    return $robots;
+});

@@ -169,6 +169,12 @@ add_action( 'wp_footer', function() {
             jQuery(this).find('input[name="s"]').remove();
         }
     });
+   
+    // Rename the button from "reset" to "Clear"
+    const resetBtn = document.querySelector('.als-reset');
+    if (resetBtn) {
+        resetBtn.textContent = 'Clear Filters';
+    }
     </script>
     <?php
 }, 100 );

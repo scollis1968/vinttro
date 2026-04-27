@@ -60,20 +60,24 @@ add_action( 'wp_head', function() {
 // This was previously inside the script tag - now it is in the correct PHP area.
 add_action( 'pre_get_posts', function( $query ) {
     if ( is_admin() ) return;
-    if ( !isset($_GET['make']) && !isset($_GET['model']) ) return;
 
+    // 1. Only run if we have car filters in the URL
+    if ( !isset($_GET['make']) && !isset($_GET['model']) && !isset($_GET['max_price']) ) return;
+
+    // 2. TARGETING: Match the auto-listing query
     $post_type = $query->get('post_type');
     if ( $post_type === 'auto-listing' || $post_type === 'listing' ) {
         
-        // 1. Clear the locks
+        // 3. UNBIND THE PAGE ID
         $query->set('p', '');
         $query->set('page_id', '');
         $query->set('name', '');
         $query->set('tax_query', ''); 
 
+        // 4. APPLY META FILTERS
         $meta_query = array('relation' => 'AND');
 
-        // 2. Make Filter (Keep using = since this is working)
+        // Make Filter
         if ( ! empty( $_GET['make'] ) ) {
             $meta_query[] = array(
                 'key'     => '_al_listing_make_display',
@@ -82,27 +86,33 @@ add_action( 'pre_get_posts', function( $query ) {
             );
         }
 
-        // 3. Model Filter (Using LIKE for partial matches)
+        // Model Filter (Fixed Key: _al_listing_model_name)
         if ( ! empty( $_GET['model'] ) ) {
-            $model_val = sanitize_text_field( $_GET['model'] );
             $meta_query[] = array(
-                'key'     => '_al_listing_model_display', // Try this first
-                'value'   => '%' . $model_val . '%',      // Match 308 within "308 GTB"
-                'compare' => 'LIKE',
+                'key'     => '_al_listing_model_name',
+                'value'   => sanitize_text_field( $_GET['model'] ),
+                'compare' => '=',
+            );
+        }
+
+        // Price Filter (Fixed Key: _al_listing_price)
+        if ( ! empty( $_GET['max_price'] ) ) {
+            $meta_query[] = array(
+                'key'     => '_al_listing_price',
+                'value'   => intval( $_GET['max_price'] ),
+                'type'    => 'numeric',
+                'compare' => '<=',
             );
         }
 
         $query->set( 'meta_query', $meta_query );
-        
-        // 4. Debug: Log what we are actually doing
-        error_log("DEBUG: Filtering for Make: " . $_GET['make'] . " and Model LIKE: " . $_GET['model']);
 
+        // 5. Final State cleanup
         $query->is_single = false;
         $query->is_page = false;
         $query->is_archive = true;
     }
 });
-
 
 // THE LOUDER SQL LOGGER
 add_filter( 'posts_request', function( $sql ) {
@@ -163,16 +173,3 @@ add_action( 'wp_footer', function() {
     <?php
 }, 100 );
 
-// TEMPORARY: View the internal data of the first car found
-add_action('wp_head', function() {
-    if (isset($_GET['make']) && current_user_can('administrator')) {
-        $test_car = get_posts(array('post_type' => 'auto-listing', 'posts_per_page' => 1));
-        if ($test_car) {
-            $meta = get_post_meta($test_car[0]->ID);
-            echo '<pre style="background:#fff; color:#000; padding:50px; position:fixed; top:0; z-index:99999; height:50vh; overflow:scroll; border:5px solid red;">';
-            echo "--- CAR META DATA INSPECTOR ---\n";
-            print_r($meta);
-            echo '</pre>';
-        }
-    }
-});

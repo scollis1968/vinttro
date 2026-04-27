@@ -196,29 +196,56 @@ add_action( 'wp_footer', function() {
     <?php
 }, 100 );
 
-// 7. BLOCK EXCHANGE PAGES ON PRODUCTION
+// 7. MULTI-PATH ENVIRONMENT GATEKEEPER
 add_action( 'template_redirect', function() {
-    // 1. Define the 'protected' areas. 
-    // This covers a Custom Post Type called 'exchange' OR a page with the slug 'exchange'
-    $is_exchange_page = is_post_type_archive('exchange') || is_singular('exchange') || is_page('exchange') || strpos($_SERVER['REQUEST_URI'], '/exchange/') !== false;
+    
+    // 1. ENVIRONMENT CHECK: Only run on Production
+    $is_production = ( strpos( $_SERVER['HTTP_HOST'], 'uat.' ) === true );
+    if ( ! $is_production ) return;
 
-    // 2. Logic: If it's an exchange page AND the user isn't an administrator
-    if ( $is_exchange_page && !current_user_can('manage_options') ) {
-        
-        // Redirect to your "Under Construction" page
-        // Change '/under-construction/' to whatever your landing page slug is
-        wp_safe_redirect( home_url( '/under-construction/' ) );
-        exit;
+    // 2. ADMIN BYPASS: Don't block yourself
+    if ( current_user_can('manage_options') ) return;
+
+    // 3. THE RESTRICTED LIST: Add any path or partial path here
+    $restricted_paths = [
+        '/exchange',
+        '/exchange/watches',
+        '/dashboard',
+        '/sell-your-car', // Example of a specific page
+        '/api/v1/internal',
+    ];
+
+    // 4. GET CURRENT PATH
+    $current_path = $_SERVER['REQUEST_URI'];
+
+    // 5. SAFETY: Ensure we don't redirect the "Under Construction" page itself (Infinite Loop Fix)
+    if ( strpos($current_path, '/under-construction') !== false ) return;
+
+    // 6. CHECK FOR MATCHES
+    foreach ( $restricted_paths as $path ) {
+        if ( strpos( $current_path, $path ) !== false ) {
+            // Match found! Send them away.
+            wp_safe_redirect( home_url( '/under-construction/' ) );
+            exit;
+        }
     }
 });
-
-
-
-// 8. HIDE EXCHANGE FROM SEARCH ENGINES
+// 8. DYNAMIC SEO BLOCKER
 add_filter( 'wp_robots', function( $robots ) {
-    if ( is_post_type_archive('exchange') || is_singular('exchange') || is_page('exchange') ) {
-        $robots['noindex'] = true;
-        $robots['nofollow'] = true;
+    $is_production = ( strpos( $_SERVER['HTTP_HOST'], 'uat.' ) === true );
+    if ( ! $is_production ) return $robots;
+
+    $restricted_paths = [
+        '/exchange',
+        '/dashboard',
+    ];
+
+    foreach ( $restricted_paths as $path ) {
+        if ( strpos( $_SERVER['REQUEST_URI'], $path ) !== false ) {
+            $robots['noindex'] = true;
+            $robots['nofollow'] = true;
+        }
     }
+
     return $robots;
 });

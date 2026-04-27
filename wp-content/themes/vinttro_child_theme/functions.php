@@ -130,71 +130,68 @@ add_action( 'wp_footer', function() {
     ?>
     <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Merge UL lists
+        
+        // --- A. Merge UL lists ---
         const lists = document.querySelectorAll('ul.auto-listings-items');
         if (lists.length > 1) {
             const firstList = lists[0];
             lists.forEach((list, index) => {
                 if (index > 0) {
-                    while (list.firstChild) {
-                        firstList.appendChild(list.firstChild);
-                    }
+                    while (list.firstChild) { firstList.appendChild(list.firstChild); }
                     list.remove();
                 }
             });
         }
-    });
 
-    // Dependent Dropdown Fix
-    jQuery(document).on('change', 'select[name="make"]', function() {
-        var make_id = jQuery(this).val();
-        var $model_select = jQuery('select[name="model"]');
-        if (!make_id) {
-            $model_select.val('').prop('disabled', true);
-            if ($model_select[0].sumo) $model_select[0].sumo.reload();
-            return;
-        }
-        setTimeout(function() {
-            if ($model_select[0].sumo) {
-                $model_select.prop('disabled', false);
-                $model_select[0].sumo.unHighlightAll();
-                $model_select[0].sumo.reload();
-            }
-        }, 100);
-    });
-
-    // Remove empty search
-    jQuery('form.als').on('submit', function() {
-        if (!jQuery(this).find('input[name="s"]').val()) {
-            jQuery(this).find('input[name="s"]').remove();
-        }
-    });
-   
-    // Rename the button from "reset" to "Clear"
-    const resetBtn = document.querySelector('.als-reset');
-    if (resetBtn) {
-        resetBtn.textContent = 'Clear Filters';
+        // --- B. Clear Filters Button Logic ---
+        // We look for the button inside the DOMContentLoaded to ensure it exists
+        const resetBtn = document.querySelector('.als-reset');
         
-        // Add the auto-search behavior
-        resetBtn.addEventListener('click', function(e) {
-            e.preventDefault(); // Stop the default reset behavior
+        if (resetBtn) {
+            resetBtn.textContent = 'Clear Filters';
             
-            const form = this.closest('form.als');
-            const selects = form.querySelectorAll('select');
+            resetBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const form = this.closest('form.als');
+                if (!form) return;
 
-            // Clear all dropdown values
-            selects.forEach(select => {
-                select.value = '';
-                // Tell SumoSelect to update the visible UI
-                if (select.sumo) {
-                    select.sumo.reload();
+                const selects = form.querySelectorAll('select');
+
+                selects.forEach(select => {
+                    // 1. Reset the actual HTML value
+                    select.value = '';
+                    
+                    // 2. Clear SumoSelect specifically
+                    if (select.sumo) {
+                        // Unselect all options and then reload the UI
+                        select.sumo.unSelectAll();
+                        select.sumo.reload();
+                    }
+                });
+
+                // 3. Instead of form.submit(), we click the search button
+                // This ensures other plugin scripts (like AJAX) are triggered
+                const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.click();
+                } else {
+                    form.submit();
                 }
             });
+        }
+    });
 
-            // Automatically trigger the search
-            form.submit();
-        });
-    }
+    // Dependent Dropdown Fix (Keep as jQuery since it uses jQuery events)
+    jQuery(document).on('change', 'select[name="make"]', function() {
+        var $model_select = jQuery('select[name="model"]');
+        setTimeout(function() {
+            if ($model_select[0] && $model_select[0].sumo) {
+                $model_select.prop('disabled', false);
+                $model_select[0].sumo.reload();
+            }
+        }, 150);
+    });
     </script>
     <?php
 }, 100 );

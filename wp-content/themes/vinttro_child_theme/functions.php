@@ -200,7 +200,7 @@ add_action( 'wp_footer', function() {
 add_action( 'template_redirect', function() {
     
     // 1. ENVIRONMENT CHECK: Only run on Production
-    $is_production = ( strpos( $_SERVER['HTTP_HOST'], 'uat.' ) !== false );
+    $is_production = ( strpos( $_SERVER['HTTP_HOST'], 'uat.' ) === false );
     if ( ! $is_production ) return;
 
     // 2. ADMIN BYPASS: Don't block yourself
@@ -232,7 +232,7 @@ add_action( 'template_redirect', function() {
 });
 // 8. DYNAMIC SEO BLOCKER
 add_filter( 'wp_robots', function( $robots ) {
-    $is_production = ( strpos( $_SERVER['HTTP_HOST'], 'uat.' ) !== false );
+    $is_production = ( strpos( $_SERVER['HTTP_HOST'], 'uat.' ) === false );
     if ( ! $is_production ) return $robots;
 
     $restricted_paths = [

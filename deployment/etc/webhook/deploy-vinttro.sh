@@ -57,28 +57,25 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# --- 2. Deploy Theme (Specific Folder Sync) ---
-SOURCE_THEME="$STAGING_DIR/wp-content/themes/$THEME_NAME/"
-DEST_THEME="$LIVE_DIR/wp-content/themes/$THEME_NAME/"
-
 log "Deploying Vinttro Theme..."
+# Define the parent directory and the specific folder name
+THEME_NAME="vinttro_child_theme"
+SOURCE_DIR="$STAGING_DIR/wp-content/themes/$THEME_NAME"
+DEST_DIR="/var/www/wordpress/wp-content/themes/$THEME_NAME"
 
-if [ -d "$SOURCE_THEME" ]; then
-    # Create the destination folder if it doesn't exist
-    sudo mkdir -p "$DEST_THEME"
-    
-    # Sync CONTENTS of source to the SPECIFIC theme folder
-    # Added -z for compression and -i for itemized changes
-    sudo rsync -avi --delete "$SOURCE_THEME" "$DEST_THEME" >> "$LOG_FILE" 2>&1
-    
+# Ensure the source actually exists before trying to sync
+if [ -d "$SOURCE_DIR" ]; then
+    # Sync the directory itself (no trailing slash on source) into the parent
+    sudo rsync -av "$SOURCE_DIR/" "$DEST_DIR/" >> /var/log/vinttro-deploy.log 2>&1
+    #sudo rsync -av --delete "$SOURCE_THEME" "$DEST_PARENT"
     if [ $? -ne 0 ]; then
-        log "ERROR: Theme rsync failed."
+        log "ERROR: Deploying VINTTRO theme -> rsync -av --delete."
         exit 1
     fi    
-    
-    sudo chown -R www-data:www-data "$DEST_THEME"
+    # CRITICAL: Fix permissions so WordPress (www-data) can actually use it
+    sudo chown -R www-data:www-data "$DEST_DIR/"
 else
-    log "ERROR: Source theme directory $SOURCE_THEME not found in repo!"
+    log "ERROR: Source theme directory $SOURCE_THEME not found!"
     exit 1
 fi
 
@@ -94,6 +91,21 @@ fi
 
 log "Setting permissions on /var/www/suitecrm/vinttro2.0"
 sudo chown -R www-data:www-data /var/www/suitecrm/vinttro2.0
+if [ $? -ne 0 ]; then
+    log "Error - Setting permissions on /var/www/suitecrm/vinttro2.0"
+    exit 1
+fi
+
+SOURCE_DIR="/tmp/vinttro-repo/suitecrm/dist/extensions/vinttro-custom-ui"
+DESTINATION_DIR="/var/www/suitecrm/dist/extensions/vinttro-custom-ui"
+sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
+if [ $? -ne 0 ]; then
+    log "ERROR: Deploying SuiteCrm/vintro-custom-ui failed."
+    exit 1
+fi
+
+log "Setting permissions on /var/www/suitecrm/vinttro2.0"
+sudo chown -R www-data:www-data /var/www/suitecrm/dist/extensions/vinttro-custom-ui
 if [ $? -ne 0 ]; then
     log "Error - Setting permissions on /var/www/suitecrm/vinttro2.0"
     exit 1

@@ -24,11 +24,11 @@ $listings_archive_url = site_url( '/exchange/cars/' );
 <div class="vinttro-listing-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h2 style="margin: 0;"><?php the_title(); ?></h2>
     
-    <?php if ( $listings_archive_url ) : ?>
-        <a href="<?php echo esc_url( $listings_archive_url ); ?>" class="button return-to-listings">
-            <span class="dashicons dashicons-arrow-left-alt"></span> Return to Results
-        </a>
-    <?php endif; ?>
+    <a href="<?php echo esc_url( site_url( '/exchange/cars/' ) ); ?>" 
+       class="button return-to-listings" 
+       onclick="if(document.referrer.indexOf(window.location.host) !== -1) { history.back(); return false; }">
+        <span class="dashicons dashicons-arrow-left-alt"></span> Return to Results
+    </a>
 </div>
 
 <div class="vinttro-main-grid" style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap;">

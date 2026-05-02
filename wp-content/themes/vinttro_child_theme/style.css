@@ -119,10 +119,6 @@ Text Domain: vinttro_child_theme
     margin-top: -50px !important;
 }
 
-/* If you need it on all pages BUT the exchange, use: */
-body:not(.auto-listings):not(.single-auto-listing) .vinttro-logo {
-    /* Adjust as needed for standard pages */
-}
 
 /* Ensure the main container fix doesn't eat the top of standard pages */
 .auto-listings #wp--skip-link--target.wp-block-group,
@@ -353,4 +349,8 @@ body:not(.auto-listings):not(.single-auto-listing) .vinttro-logo {
 .SumoSelect:focus > .CaptionCont,
 .SumoSelect:hover > .CaptionCont {
     border-color: #C5A059 !important;
+}
+/* al button*/
+.al-button {
+    background-color: #916D1C !important;   
 }

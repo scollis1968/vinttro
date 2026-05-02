@@ -350,7 +350,36 @@ Text Domain: vinttro_child_theme
 .SumoSelect:hover > .CaptionCont {
     border-color: #C5A059 !important;
 }
-/* al button*/
-.al-button {
-    background-color: #916D1C !important;   
+.return-to-listings {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #333; /* Change to your brand color */
+    color: #fff !important;
+    text-decoration: none;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.3s ease;
+}
+
+.return-to-listings:hover {
+    background-color: #555;
+    color: #fff;
+}
+
+.return-to-listings .dashicons {
+    margin-right: 8px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Responsive adjustment for mobile */
+@media (max-width: 600px) {
+    .vinttro-listing-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
 }

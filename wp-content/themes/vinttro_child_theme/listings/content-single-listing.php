@@ -17,7 +17,8 @@ if ( post_password_required() ) {
 
 // Get the URL for the main listings page
 // Note: 'auto-listing' is the standard post type for this plugin
-$listings_archive_url = get_post_type_archive_link( 'auto-listing' );
+// $listings_archive_url = get_post_type_archive_link( 'auto-listing' );
+$listings_archive_url = site_url( '/exchange/cars/' );
 ?>
 
 <div class="vinttro-listing-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">

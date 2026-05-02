@@ -358,7 +358,7 @@ Text Domain: vinttro_child_theme
     color: #fff !important;
     text-decoration: none;
     border-radius: 50px;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 600;
     transition: background 0.3s ease;
 }
@@ -369,7 +369,7 @@ Text Domain: vinttro_child_theme
 }
 
 .return-to-listings .dashicons {
-    margin-right: 8px;
+    /* margin-right: 8px; */
     font-size: 18px;
     width: 18px;
     height: 18px;

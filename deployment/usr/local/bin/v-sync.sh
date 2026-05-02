@@ -16,6 +16,8 @@ UAT_URL="https://uat.vinttro.co.uk"
 
 PROD_URL="https://www.vinttro.co.uk"
 
+LOG_FILE="/var/log/v-sync.log"
+
 # Use the key we just moved
 
 KEY="/var/www/.ssh/id_ed25519"
@@ -27,8 +29,6 @@ KEY="/var/www/.ssh/id_ed25519"
 SSH_OPTS="-i $KEY -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=30"
 
 echo "🚀 Starting Secure Sync (as www-data)..."
-
-
 
 # 1. Sync Files
 
@@ -52,6 +52,7 @@ scp $SSH_OPTS $UAT_USER@$UAT_IP:/tmp/uat_dump.sql /tmp/uat_dump.sql
 
 
 # 3. Import and Replace
+log "3. Import and Replace ..."
 
 cd $PROD_PATH
 
@@ -132,9 +133,12 @@ sudo -u www-data wp option update tribe_events_single_event_slug "event" --path=
 wp rewrite flush --path=$PROD_PATH
 
 # 10. SuitCRM - CSS an styles
-UAT_CRM_PATH="/var/www/suitecrm/public"
-PROD_CRM_PATH="//var/www/suitecrm/public"
+echo "10. SuitCRM - CSS and styles"
 
-rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_CRM_PATH/dist/ettensions/vinttro-custom-ui/ $PROD_CRM_PATH/dist/ettensions/vinttro-custom-ui/
+UAT_CRM_PATH="/var/www/suitecrm"
+PROD_CRM_PATH="/var/www/suitecrm"
+
+rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_CRM_PATH/extensions/vinttro-custom-ui/ $PROD_CRM_PATH/extensions/vinttro-custom-ui/
+rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_CRM_PATH/public/dist/extensions/ $PROD_CRM_PATH/public/dist/extensions/
 
 echo "✅ Secure Sync Complete!"

@@ -350,29 +350,44 @@ Text Domain: vinttro_child_theme
 .SumoSelect:hover > .CaptionCont {
     border-color: #C5A059 !important;
 }
+/* ==========================================================================
+   RETURN TO RESULTS BUTTON REFINEMENT
+   ========================================================================== */
+
 .return-to-listings {
     display: inline-flex;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #916D1C; /* Change to your brand color */
+    /* This centers the icon and text vertically */
+    align-items: center; 
+    /* This centers them horizontally if the button has a specific width */
+    justify-content: center; 
+    
+    padding: 10px 24px;
+    background-color: #916D1C;
     color: #fff !important;
     text-decoration: none;
     border-radius: 50px;
-    font-size: 18px;
+    font-size: 16px; /* Slightly smaller looks more elegant than 18px */
     font-weight: 600;
-    transition: background 0.3s ease;
+    line-height: 1; /* Critical: prevents the text from being pushed down */
+    transition: all 0.3s ease;
+    gap: 8px; /* Clean spacing between icon and text */
 }
 
 .return-to-listings:hover {
-    background-color: #555;
+    background-color: #725616; /* A darker gold for the hover */
     color: #fff;
+    transform: translateY(-1px); /* Subtle lift effect */
 }
 
+/* Fix the Dashicon alignment */
 .return-to-listings .dashicons {
-    /* margin-right: 8px; */
     font-size: 18px;
     width: 18px;
     height: 18px;
+    /* Dashicons often sit high; this nudges it into visual alignment */
+    display: flex;
+    align-items: center;
+    margin: 0; 
 }
 
 /* Responsive adjustment for mobile */

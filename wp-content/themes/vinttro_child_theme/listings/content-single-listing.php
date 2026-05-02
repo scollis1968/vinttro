@@ -27,7 +27,7 @@ $listings_archive_url = site_url( '/exchange/cars/' );
     <a href="<?php echo esc_url( site_url( '/exchange/cars/' ) ); ?>" 
        class="button return-to-listings" 
        onclick="if(document.referrer.indexOf(window.location.host) !== -1) { history.back(); return false; }">
-        <span class="dashicons dashicons-arrow-left-alt"></span> Return to Results
+       Return to Results
     </a>
 </div>
 

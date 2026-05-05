@@ -195,6 +195,17 @@ add_action( 'wp_footer', function() {
     </script>
     <?php
 }, 100 );
+/**
+ * Prevent AutoListings from appending its automatic loop 
+ * to our custom Gutenberg Page.
+ */
+add_action( 'wp', function() {
+    // Only run on the car exchange page
+    if ( is_page('cars') || is_post_type_archive('auto-listing') ) {
+        // This removes the plugin's automatic output
+        remove_filter( 'the_content', array( 'AL_Template_Loader', 'archive_content' ) );
+    }
+}, 20 );
 
 // 7. MULTI-PATH ENVIRONMENT GATEKEEPER
 add_action( 'template_redirect', function() {

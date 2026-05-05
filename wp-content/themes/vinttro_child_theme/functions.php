@@ -80,6 +80,17 @@ add_action( 'pre_get_posts', function( $query ) {
                 $query->set( 'order', 'DESC' );
             }
         }
+        // Vehicle Type Filter (Taxonomy)
+        
+        if ( ! empty( $_GET['v_type'] ) ) {
+        $query->set( 'tax_query', array(
+            array(
+                'taxonomy' => 'vehicle_type',
+                'field'    => 'slug',
+                'terms'    => sanitize_text_field( $_GET['v_type'] ),
+            ),
+        ));
+}
         
         // IMPORTANT: We removed the lines that forced is_archive = true.
     }
@@ -135,4 +146,15 @@ add_action( 'template_redirect', function() {
             exit;
         }
     }
+});
+
+// 9. REGISTER VEHICLE TYPE TAXONOMY
+add_action( 'init', function() {
+    register_taxonomy( 'vehicle_type', 'auto-listing', array(
+        'label'        => __( 'Vehicle Type' ),
+        'rewrite'      => array( 'slug' => 'vehicle-type' ),
+        'hierarchical' => true, // Acts like a category (checkboxes)
+        'show_ui'      => true,
+        'show_in_rest' => true,
+    ));
 });

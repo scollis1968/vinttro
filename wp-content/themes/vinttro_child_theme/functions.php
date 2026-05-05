@@ -52,7 +52,12 @@ add_action( 'pre_get_posts', function( $query ) {
     if ( $query->get('post_type') === 'auto-listing' || $query->get('post_type') === 'listing' ) {
         
         $meta_query = array('relation' => 'AND');
-
+        if ( is_page('cars') || is_page('exchange/cars') ) {
+            $meta_query[] = array('key' => '_al_listing_vehicle_type', 'value' => 'car', 'compare' => '=');
+        }
+        if ( is_page('bikes') || is_page('exchange/bikes') ) {
+            $meta_query[] = array('key' => '_al_listing_vehicle_type', 'value' => 'motorbike', 'compare' => '=');
+        }
         if ( ! empty( $_GET['make'] ) ) {
             $meta_query[] = array('key' => '_al_listing_make_display', 'value' => sanitize_text_field( $_GET['make'] ), 'compare' => '=');
         }
@@ -83,15 +88,14 @@ add_action( 'pre_get_posts', function( $query ) {
         // Vehicle Type Filter (Taxonomy)
         
         if ( ! empty( $_GET['v_type'] ) ) {
-        $query->set( 'tax_query', array(
-            array(
-                'taxonomy' => 'vehicle_type',
-                'field'    => 'slug',
-                'terms'    => sanitize_text_field( $_GET['v_type'] ),
-            ),
-        ));
-}
-        
+            $query->set( 'tax_query', array(
+                array(
+                    'taxonomy' => 'vehicle_type',
+                    'field'    => 'slug',
+                    'terms'    => sanitize_text_field( $_GET['v_type'] ),
+                ),
+            ));
+        }       
         // IMPORTANT: We removed the lines that forced is_archive = true.
     }
 });

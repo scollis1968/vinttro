@@ -207,6 +207,31 @@ add_action( 'wp', function() {
     }
 }, 20 );
 
+/**
+ * THE CLEANER: Prevent AutoListings from auto-appending the archive 
+ * while keeping the search logic active for the shortcode.
+ */
+add_action( 'wp', function() {
+    // Only target your specific cars page
+    if ( is_page('cars') || is_post_type_archive('auto-listing') ) {
+        // This stops the plugin from 'injecting' its results at the bottom of the page content
+        remove_filter( 'the_content', 'auto_listings_archive_content', 10 );
+        
+        // If the above doesn't work (due to class-based hooks), use this more aggressive method:
+        global $wp_filter;
+        if ( isset( $wp_filter['the_content'] ) ) {
+            foreach ( $wp_filter['the_content']->callbacks as $priority => $callbacks ) {
+                foreach ( $callbacks as $id => $callback ) {
+                    // Look for the AutoListings archive loader and kill it
+                    if ( is_array( $callback['function'] ) && is_a( $callback['function'][0], 'AL_Template_Loader' ) ) {
+                        remove_filter( 'the_content', $callback['function'], $priority );
+                    }
+                }
+            }
+        }
+    }
+}, 20 );
+
 // 7. MULTI-PATH ENVIRONMENT GATEKEEPER
 add_action( 'template_redirect', function() {
     

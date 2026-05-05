@@ -103,6 +103,47 @@ ul.auto-listings-items.grid-view li.auto-listing:hover {
 .page-description p:empty {
     display: none !important;
 }
+/* ==========================================================================
+   CAR EXCHANGE - SHORTCODE & ARCHIVE GRID
+   ========================================================================== */
+
+/* This targets the UL whether it's from a shortcode OR the system archive */
+.vinttro-results ul.auto-listings-items.grid-view,
+.auto-listings-shortcode ul.auto-listings-items.grid-view {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 30px !important;
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 20px 0 !important;
+}
+
+/* Force items to behave as proper cards */
+.auto-listings-items.grid-view li.auto-listing {
+    width: 100% !important;
+    max-width: 100% !important;
+    float: none !important; /* Kill the plugin's old float layout */
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Responsive: 2 cols on tablets, 1 on mobile */
+@media (max-width: 1100px) {
+    .vinttro-results ul.auto-listings-items.grid-view {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .vinttro-results ul.auto-listings-items.grid-view {
+        grid-template-columns: 1fr !important;
+    }
+}
 
 /* ==========================================================================
    3. CAR CARD INTERIORS & TRUNCATION

@@ -331,3 +331,21 @@ ul.auto-listings-items.grid-view li.auto-listing:hover {
         grid-template-columns: 1fr;
     }
 }
+/* 1. Hide Advanced Filter Button & Wrapper */
+.als-toggle, 
+.als-toggle-wrapper {
+    display: none !important;
+}
+
+/* 2. Optional: Style the Reset button as simple text if it looks like a button */
+.als-reset {
+    background: transparent !important;
+    border: none !important;
+    color: #999 !important;
+    text-decoration: underline;
+    font-size: 0.85rem !important;
+    cursor: pointer;
+    display: block;
+    margin: 10px auto 0;
+    text-align: center;
+}

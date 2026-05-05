@@ -93,6 +93,7 @@ add_action( 'wp_footer', function() {
         // Clear Filters Logic
         const resetBtn = document.querySelector('.als-reset');
         if (resetBtn) {
+            resetBtn.textContent = 'Clear filter';
             resetBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const form = this.closest('form.als');

@@ -99,6 +99,61 @@ add_action( 'pre_get_posts', function( $query ) {
     }
 });
 
+// 5a. AUTO LISTING - filtering the search dropdown options (REPAIRED)
+add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
+    // Only target 'make' and 'model' fields
+    if ( $field['name'] !== 'make' && $field['name'] !== 'model' ) {
+        return $options;
+    }
+
+    $current_url = $_SERVER['REQUEST_URI'];
+    $target_type = '';
+
+    // Identify which type we are looking for
+    if ( strpos($current_url, '/exchange/cars') !== false ) {
+        $target_type = 'car';
+    } elseif ( strpos($current_url, '/exchange/bikes') !== false ) {
+        $target_type = 'motorbike';
+    }
+
+    // If we aren't on a specific page, just return the original options
+    if ( empty( $target_type ) ) {
+        return $options;
+    }
+
+    // Determine which meta key to look for based on the field name
+    $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
+
+    // We need to query the database for unique values assigned to this vehicle_type
+    global $wpdb;
+    
+    $results = $wpdb->get_col( $wpdb->prepare( "
+        SELECT DISTINCT pm.meta_value 
+        FROM {$wpdb->postmeta} pm
+        JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+        JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+        JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+        JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+        WHERE pm.meta_key = %s 
+        AND t.slug = %s 
+        AND tt.taxonomy = 'vehicle_type'
+        AND p.post_status = 'publish'
+        ORDER BY pm.meta_value ASC
+    ", $meta_key, $target_type ) );
+
+    // If we found specific makes/models, rebuild the options list
+    if ( ! empty( $results ) ) {
+        $new_options = array( '' => $options[''] ); // Keep the "All Makes" or "Select Make" empty first option
+        foreach ( $results as $value ) {
+            $new_options[$value] = $value;
+        }
+        return $new_options;
+    }
+
+    return $options;
+}, 10, 2 );
+
+
 // 6. UI FIXES (JavaScript)
 add_action( 'wp_footer', function() {
     ?>

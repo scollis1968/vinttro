@@ -350,27 +350,22 @@ ul.auto-listings-items.grid-view li.auto-listing:hover {
     text-align: center;
 }
 /* ==========================================================================
-   8. COVER BLOCK CTA OVERRIDES
+   8. COVER BLOCK CTA OVERRIDES (Specific Targeting)
    ========================================================================== */
 
-/* Target links inside the specific cover class */
-.vinttro-cover-cta a, 
-.vinttro-cover-cta .wp-block-button__link {
-    color: #ffffff !important; /* Force white text */
-    text-decoration: underline; /* Optional: adds visibility on images */
+/* 1. Target the link inside the inner container of your specific class */
+.vinttro-cover-cta .wp-block-cover__inner-container a {
+    color: #ffffff !important;
+    text-decoration: none !important; /* Optional: cleans up the look */
 }
 
-/* Hover state for links on images */
-.vinttro-cover-cta a:hover, 
-.vinttro-cover-cta .wp-block-button__link:hover {
-    color: #ffd700 !important; /* Bright gold for contrast */
-    text-decoration: none;
+/* 2. Target the hover state specifically */
+.vinttro-cover-cta .wp-block-cover__inner-container a:hover {
+    color: #B28324 !important; /* Your branding Gold */
+    text-decoration: underline !important;
 }
 
-/* If you have regular text (non-links) in that pattern that needs to be white */
-.vinttro-cover-cta p, 
-.vinttro-cover-cta h1, 
-.vinttro-cover-cta h2, 
-.vinttro-cover-cta h3 {
+/* 3. Ensure the paragraph text (if any) is also white */
+.vinttro-cover-cta .wp-block-cover__inner-container p {
     color: #ffffff !important;
 }

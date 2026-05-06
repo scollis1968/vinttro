@@ -349,3 +349,28 @@ ul.auto-listings-items.grid-view li.auto-listing:hover {
     margin: 10px auto 0;
     text-align: center;
 }
+/* ==========================================================================
+   8. COVER BLOCK CTA OVERRIDES
+   ========================================================================== */
+
+/* Target links inside the specific cover class */
+.vinttro-cover-cta a, 
+.vinttro-cover-cta .wp-block-button__link {
+    color: #ffffff !important; /* Force white text */
+    text-decoration: underline; /* Optional: adds visibility on images */
+}
+
+/* Hover state for links on images */
+.vinttro-cover-cta a:hover, 
+.vinttro-cover-cta .wp-block-button__link:hover {
+    color: #ffd700 !important; /* Bright gold for contrast */
+    text-decoration: none;
+}
+
+/* If you have regular text (non-links) in that pattern that needs to be white */
+.vinttro-cover-cta p, 
+.vinttro-cover-cta h1, 
+.vinttro-cover-cta h2, 
+.vinttro-cover-cta h3 {
+    color: #ffffff !important;
+}

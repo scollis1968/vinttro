@@ -46,31 +46,43 @@ add_action( 'wp_head', function() {
 // 5. AUTO LISTING - SEARCH & SORT FILTER (REPAIRED)
 // This version ONLY filters the cars and DOES NOT break the page layout.
 add_action( 'pre_get_posts', function( $query ) {
-    if ( is_admin() || ! $query->is_main_query() ) return;
+    // Never run in admin
+    if ( is_admin() ) return;
 
     // Only target the auto-listing post type
+    // We REMOVED is_main_query() because shortcodes run sub-queries
     if ( $query->get('post_type') === 'auto-listing' || $query->get('post_type') === 'listing' ) {
         
-        $meta_query = array('relation' => 'AND');
-        $tax_query  = array('relation' => 'AND');
+        $current_url = $_SERVER['REQUEST_URI'];
+        $tax_query = $query->get('tax_query') ?: array();
+        if ( ! is_array($tax_query) ) $tax_query = array();
 
-        // 1. HARD-CODED TAXONOMY LOGIC
-        // This checks the page slug and forces the vehicle_type taxonomy
-        if ( is_page('cars') ) {
+        // 1. HARD-CODED TAXONOMY LOGIC (Based on URL Path)
+        if ( strpos($current_url, '/exchange/cars') !== false ) {
             $tax_query[] = array(
                 'taxonomy' => 'vehicle_type',
                 'field'    => 'slug',
-                'terms'    => 'car', 
+                'terms'    => 'car', // Double check this slug in Admin -> Auto Listings -> Vehicle Type
+                'operator' => 'IN',
             );
-        } elseif ( is_page('bikes') ) {
+        } elseif ( strpos($current_url, '/exchange/bikes') !== false ) {
             $tax_query[] = array(
                 'taxonomy' => 'vehicle_type',
                 'field'    => 'slug',
-                'terms'    => 'motorbike',
+                'terms'    => 'motorbike', // Double check this slug in Admin -> Auto Listings -> Vehicle Type
+                'operator' => 'IN',
             );
         }
 
-        // 2. DYNAMIC FILTERS (From your Search Form)
+        // Apply the tax_query if we added something
+        if ( ! empty( $tax_query ) ) {
+            $query->set( 'tax_query', $tax_query );
+        }
+
+        // 2. DYNAMIC FILTERS (Meta Query)
+        $meta_query = $query->get('meta_query') ?: array();
+        if ( ! is_array($meta_query) ) $meta_query = array('relation' => 'AND');
+
         if ( ! empty( $_GET['make'] ) ) {
             $meta_query[] = array('key' => '_al_listing_make_display', 'value' => sanitize_text_field( $_GET['make'] ), 'compare' => '=');
         }
@@ -81,33 +93,8 @@ add_action( 'pre_get_posts', function( $query ) {
             $meta_query[] = array('key' => '_al_listing_price', 'value' => intval( $_GET['max_price'] ), 'type' => 'numeric', 'compare' => '<=');
         }
 
-        // Apply Meta Query if not empty
         if ( count($meta_query) > 1 ) {
             $query->set( 'meta_query', $meta_query );
-        }
-
-        // 3. APPLY TAX QUERY
-        // This handles both your hard-coded logic AND the dropdown if it's used
-        if ( ! empty( $_GET['v_type'] ) ) {
-            $tax_query[] = array(
-                'taxonomy' => 'vehicle_type',
-                'field'    => 'slug',
-                'terms'    => sanitize_text_field( $_GET['v_type'] ),
-            );
-        }
-
-        if ( ! empty( $tax_query ) ) {
-            $query->set( 'tax_query', $tax_query );
-        }
-
-        // 4. SORTING LOGIC
-        if ( ! empty( $_GET['orderby'] ) ) {
-            $orderby = sanitize_text_field( $_GET['orderby'] );
-            if ( $orderby == 'price' || $orderby == 'price-high' ) {
-                $query->set( 'meta_key', '_al_listing_price' );
-                $query->set( 'orderby', 'meta_value_num' );
-                $query->set( 'order', ( $orderby == 'price' ) ? 'ASC' : 'DESC' );
-            }
         }
     }
 });

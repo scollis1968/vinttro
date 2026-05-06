@@ -100,19 +100,22 @@ add_action( 'pre_get_posts', function( $query ) {
 });
 
 // 5a. AUTO LISTING - filtering the search dropdown options (REPAIRED)
+// 5a. AUTO LISTING - filtering the search dropdown options (REPAIRED)
 add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
     // Only target 'make' and 'model' fields
-    if ( $field['name'] !== 'make' && $field['name'] !== 'model' ) {
+    if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
         return $options;
     }
 
+    // 1. DETECT CONTEXT (Check both URI and Referer for AJAX support)
     $current_url = $_SERVER['REQUEST_URI'];
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    
     $target_type = '';
 
-    // Identify which type we are looking for
-    if ( strpos($current_url, '/exchange/cars') !== false ) {
+    if ( strpos($current_url, '/exchange/cars') !== false || strpos($referer, '/exchange/cars') !== false ) {
         $target_type = 'car';
-    } elseif ( strpos($current_url, '/exchange/bikes') !== false ) {
+    } elseif ( strpos($current_url, '/exchange/bikes') !== false || strpos($referer, '/exchange/bikes') !== false ) {
         $target_type = 'motorbike';
     }
 
@@ -121,10 +124,11 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
         return $options;
     }
 
-    // Determine which meta key to look for based on the field name
+    // 2. DETERMINE META KEY
+    // Note: Ensure these match the keys used in your section 5 query
     $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
 
-    // We need to query the database for unique values assigned to this vehicle_type
+    // 3. DATABASE QUERY
     global $wpdb;
     
     $results = $wpdb->get_col( $wpdb->prepare( "
@@ -138,12 +142,20 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
         AND t.slug = %s 
         AND tt.taxonomy = 'vehicle_type'
         AND p.post_status = 'publish'
+        AND pm.meta_value != ''
         ORDER BY pm.meta_value ASC
     ", $meta_key, $target_type ) );
 
-    // If we found specific makes/models, rebuild the options list
+    // 4. REBUILD OPTIONS
     if ( ! empty( $results ) ) {
-        $new_options = array( '' => $options[''] ); // Keep the "All Makes" or "Select Make" empty first option
+        // Find the "placeholder" (e.g., 'All Makes' or 'Select Model') 
+        // usually the first item in the $options array
+        $first_key = key($options);
+        $first_val = reset($options);
+        
+        $new_options = array();
+        $new_options[$first_key] = $first_val; // Keep the empty/default choice at the top
+
         foreach ( $results as $value ) {
             $new_options[$value] = $value;
         }
@@ -151,7 +163,7 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
     }
 
     return $options;
-}, 10, 2 );
+}, 20, 2 ); // Higher priority to ensure it runs after plugin defaults
 
 
 // 6. UI FIXES (JavaScript)

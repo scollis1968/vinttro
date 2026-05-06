@@ -53,7 +53,7 @@ add_action( 'pre_get_posts', function( $query ) {
         
         $meta_query = array('relation' => 'AND');
         //if ( is_page('cars') || is_page('exchange/cars') ) {
-        //    $meta_query[] = array('key' => '_al_listing_vehicle_type', 'value' => 'car', 'compare' => '=');
+            $meta_query[] = array('key' => '_al_listing_vehicle_type', 'value' => 'car', 'compare' => '=');
         //}
         //if ( is_page('bikes') || is_page('exchange/bikes') ) {
         //    $meta_query[] = array('key' => '_al_listing_v_type', 'value' => 'motorbike', 'compare' => '=');

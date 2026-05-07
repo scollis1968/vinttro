@@ -1,41 +1,42 @@
 
+console.log("VINTTRO Script Initialized - Version 1.1");
 jQuery(document).ready(function($) {
-function updatePageContext() {
-    // 1. Get the URL and normalize it to lowercase for easier searching
-    const currentURL = window.location.href.toLowerCase();
-    
-    // We still keep sourcePage for the form field, but let's strip query params
-    // so things like ?fbclid don't end up in your "Page Name" field.
-    const cleanPath = window.location.pathname.replace(/\/$/, ""); // remove trailing slash
-    const sourcePage = cleanPath.split('/').pop().replace(/-/g, ' ');
+    function updatePageContext() {
+        // 1. Get the URL and normalize it to lowercase for easier searching
+        const currentURL = window.location.href.toLowerCase();
+        
+        // We still keep sourcePage for the form field, but let's strip query params
+        // so things like ?fbclid don't end up in your "Page Name" field.
+        const cleanPath = window.location.pathname.replace(/\/$/, ""); // remove trailing slash
+        const sourcePage = cleanPath.split('/').pop().replace(/-/g, ' ');
 
-    // Update CF7 fields
-    $('.cf7-page-url').val(window.location.href).trigger('change');
-    $('.cf7-page-name').val(sourcePage).trigger('change');
+        // Update CF7 fields
+        $('.cf7-page-url').val(window.location.href).trigger('change');
+        $('.cf7-page-name').val(sourcePage).trigger('change');
 
-    const headerElement = $('#dynamic-message-header');
-    let message = "Custom Quote"; // Default fallback
+        const headerElement = $('#dynamic-message-header');
+        let message = "Custom Quote"; // Default fallback
 
-    // 2. Logic: Keyword matching (Order matters! Specific matches first)
-    
-    if (currentURL.includes('fleet')) {
-        message = "Multi-Vehicle Fleet Rates";
-    } 
-    else if (currentURL.includes('motor-trade') || currentURL.includes('motor%20trade')) {
-        message = "Professional Cover for Your Motor Trade Business";
+        // 2. Logic: Keyword matching (Order matters! Specific matches first)
+        
+        if (currentURL.includes('fleet')) {
+            message = "Multi-Vehicle Fleet Rates";
+        } 
+        else if (currentURL.includes('motor-trade') || currentURL.includes('motor%20trade')) {
+            message = "Professional Cover for Your Motor Trade Business";
+        }
+        // Check for "car" AND "performance" (or "prestige")
+        else if (currentURL.includes('car') && (currentURL.includes('performance') || currentURL.includes('prestige') || currentURL.includes('luxury'))) {
+            message = "Tailored Cover for Your High-Performance Vehicle";
+        }
+        // General "car" match
+        else if (currentURL.includes('car')) {
+            message = "Here at VINTTRO we understand what specialist car insurance means";
+        }
+
+        // 3. Apply the message
+        headerElement.html(`${message}, please provide some basic information and our expert team will be in touch.`);
     }
-    // Check for "car" AND "performance" (or "prestige")
-    else if (currentURL.includes('car') && (currentURL.includes('performance') || currentURL.includes('prestige') || currentURL.includes('luxury'))) {
-        message = "Tailored Cover for Your High-Performance Vehicle";
-    }
-    // General "car" match
-    else if (currentURL.includes('car')) {
-        message = "Here at VINTTRO we understand what specialist car insurance means";
-    }
-
-    // 3. Apply the message
-    headerElement.html(`${message}, please provide some basic information and our expert team will be in touch.`);
-}
 
     // Run context update immediately AND when popup opens (Popup Builder event)
     updatePageContext();
@@ -121,7 +122,14 @@ function updatePageContext() {
             console.error("ERROR: Could not find the associated file input within the clicked upload area.");
         }
     });
-
+    
+    // Target the reset button
+    $('.als-reset').on('click', function(e) {
+        console.log("DOM is ready. jQuery is active.");
+        // Stop the plugin's 'e.preventDefault()' from just clearing boxes
+        // and force the page to reload to the clean URL
+        window.location.href = window.location.pathname; 
+    });
     // (extractLastUrlSegment function is fine and should be placed after document.ready)
 });
 
@@ -399,11 +407,3 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 */
-jQuery(document).ready(function($) {
-    // Target the reset button
-    $('.als-reset').on('click', function(e) {
-        // Stop the plugin's 'e.preventDefault()' from just clearing boxes
-        // and force the page to reload to the clean URL
-        window.location.href = window.location.pathname; 
-    });
-});

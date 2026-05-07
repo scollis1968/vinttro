@@ -125,6 +125,7 @@ jQuery(document).ready(function($) {
     
     // Target the reset button
     $('.als-reset').on('click', function(e) {
+        console.log("DOM is ready. jQuery is active.");
         // Stop the plugin's 'e.preventDefault()' from just clearing boxes
         // and force the page to reload to the clean URL
         window.location.href = window.location.pathname; 

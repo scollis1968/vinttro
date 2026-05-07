@@ -285,3 +285,31 @@ function vinttro_force_unique_terms($args, $taxonomies) {
     }
     return $args;
 }
+/**
+ * FORCE AUTO LISTINGS SEARCH REFRESH
+ * This simulates clicking "Update" on a listing every time you load the exchange pages.
+ */
+add_action( 'template_redirect', 'vinttro_force_als_search_sync' );
+
+function vinttro_force_als_search_sync() {
+    // Only run on the search pages to prevent slowing down the rest of the site
+    if ( is_page('exchange-cars') || is_page('exchange-bikes') ) {
+        
+        // 1. Clear the specific Auto Listings Transients
+        // The plugin uses these names specifically to store dropdown data
+        delete_transient( 'als_search_data' );
+        delete_transient( 'als_search_filters' );
+        
+        // 2. Trigger the Auto Listings internal update class if it exists
+        // This is the "Update Button" logic in code form
+        if ( class_exists( 'Auto_Listings_Search_Data' ) ) {
+            $search_data = new Auto_Listings_Search_Data();
+            $search_data->update(); 
+            // error_log('VINTTRO: Auto Listings Search Data Force Updated');
+        }
+
+        // 3. Clear the WP Term Cache for the dropdown taxonomies
+        clean_term_cache( '', 'make' );
+        clean_term_cache( '', 'model' );
+    }
+}

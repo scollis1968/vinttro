@@ -239,3 +239,13 @@ function vinttro_clear_listing_cache() {
         $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_als_%'");
     }
 }
+// Prevent AutoListing from using cached terms for dropdowns
+add_filter('pre_get_posts', 'vinttro_disable_als_caching');
+function vinttro_disable_als_caching($query) {
+    if (isset($query->query_vars['post_type']) && $query->query_vars['post_type'] == 'listing') {
+        $query->set('cache_results', false);
+        $query->set('update_post_meta_cache', false);
+        $query->set('update_post_term_cache', false);
+    }
+    return $query;
+}

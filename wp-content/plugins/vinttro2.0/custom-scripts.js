@@ -101,4 +101,11 @@ jQuery(document).ready(function($) {
         console.log("Reset clicked. Reloading clean page.");
         window.location.href = window.location.pathname; 
     });
+    
+});
+// Force AJAX requests to be unique so they can't be cached
+jQuery(document).ajaxSend(function(event, jqXHR, settings) {
+    if (settings.url.indexOf('admin-ajax.php') !== -1) {
+        settings.url += (settings.url.indexOf('?') === -1 ? '?' : '&') + 'vinttro_refresh=' + new Date().getTime();
+    }
 });

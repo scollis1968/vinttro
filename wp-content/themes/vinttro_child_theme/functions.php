@@ -277,3 +277,11 @@ function vinttro_force_clear_term_cache() {
         error_log('VINTTRO: Term cache manually cleared for AutoListing');
     }
 }
+add_filter('get_terms_args', 'vinttro_force_unique_terms', 10, 2);
+function vinttro_force_unique_terms($args, $taxonomies) {
+    if (in_array('make', (array)$taxonomies) || in_array('model', (array)$taxonomies)) {
+        // This makes the "Cache Key" unique every single second
+        $args['cache_domain'] = 'vinttro_' . time();
+    }
+    return $args;
+}

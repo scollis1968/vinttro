@@ -228,3 +228,14 @@ add_action( 'init', function() {
         'show_in_rest' => true,
     ));
 });
+
+// Clear AutoListing transients when the search page loads
+add_action('template_redirect', 'vinttro_clear_listing_cache');
+function vinttro_clear_listing_cache() {
+    if (is_page('exchange-bikes') || is_page('exchange-cars')) {
+        // This is a 'sledgehammer' approach to clear common transient patterns
+        global $wpdb;
+        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_%'");
+        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_als_%'");
+    }
+}

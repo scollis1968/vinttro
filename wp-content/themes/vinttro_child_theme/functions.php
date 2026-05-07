@@ -313,3 +313,5 @@ function vinttro_force_als_search_sync() {
         clean_term_cache( '', 'model' );
     }
 }
+// Disable the internal cache for the Search Form itself
+add_filter( 'als_search_form_cache_filters', '__return_false' );

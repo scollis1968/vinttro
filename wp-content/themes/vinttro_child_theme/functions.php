@@ -249,3 +249,31 @@ function vinttro_disable_als_caching($query) {
     }
     return $query;
 }
+/**
+ * FORCE AUTO-LISTING TO CLEAR TERM CACHE ON EXCHANGE PAGES
+ * This mimics the "Adding a Listing" action that fixes your dropdowns.
+ */
+add_action('template_redirect', 'vinttro_force_clear_term_cache');
+
+function vinttro_force_clear_term_cache() {
+    // Only run this on your search/exchange pages to save server power
+    if ( is_page('exchange-cars') || is_page('exchange-bikes') || is_post_type_archive('listing') ) {
+        
+        // 1. Clear the standard WordPress Term Cache for Makes and Models
+        clean_term_cache([], 'make');
+        clean_term_cache([], 'model');
+        
+        // 2. If the site is using a Persistent Object Cache (like Redis), this clears it
+        if ( function_exists('wp_cache_flush_group') ) {
+            wp_cache_flush_group('terms');
+        }
+
+        // 3. Delete the "Sticky" Transients that AutoListing likely creates
+        // We use a wildcard approach to kill any saved 'makes' or 'models' data
+        global $wpdb;
+        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_terms_%'");
+        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_als_terms_%'");
+        
+        error_log('VINTTRO: Term cache manually cleared for AutoListing');
+    }
+}

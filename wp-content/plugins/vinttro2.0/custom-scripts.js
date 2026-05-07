@@ -3,6 +3,13 @@ console.log("VINTTRO Script Initialized - Version 1.2");
 jQuery(document).ready(function($) {
     console.log("DOM is ready. jQuery is active and running logic.");
 
+    // Force clear AutoListing session storage on page load
+    if (window.location.href.includes('bikes')) {
+        localStorage.removeItem('als_search_params'); // Common name for storage
+        sessionStorage.clear();
+        console.log("Bike page detected: Attempted to clear session storage.");
+    }
+
     // ==========================================================
     // 🚗 1. AUTOLISTING: LINK VEHICLE TYPE -> MAKE -> MODEL
     // ==========================================================

@@ -117,48 +117,44 @@ add_action( 'init', function() {
 }, 999 );
 
 // ==========================================================
-// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (SURGICAL)
+// 🚗 5a. AUTO LISTING - LOW-LEVEL FIELD OVERRIDE
 // ==========================================================
-add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
-    // Only target 'make' and 'model'
-    if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
-        return $options;
+add_filter( 'auto_listings_search_form_fields', function( $fields, $form_id ) {
+    // Target your specific forms
+    error_logs("auto_listings_search_form_fields - 1");
+
+    $target_forms = [6619 => 'car', 6625 => 'motorbike'];
+    if ( ! isset( $target_forms[$form_id] ) ) {
+        error_logs("auto_listings_search_form_fields - 1");
+        return $fields;
     }
 
-    // THIS LOG MUST APPEAR IF THE CACHE IS BROKEN
-    error_log("VINTTRO SUCCESS: Filter 5a is REBUILDING dropdown for: " . $field['name']);
-
-    $current_url = $_SERVER['REQUEST_URI'];
-    $target_type = '';
-    if ( strpos($current_url, '/cars') !== false ) { $target_type = 'car'; } 
-    elseif ( strpos($current_url, '/bikes') !== false ) { $target_type = 'motorbike'; }
-
-    if ( empty( $target_type ) ) return $options;
+    $type = $target_forms[$form_id];
+    error_log("VINTTRO ATTEMPT: Overriding Fields for Form $form_id as $type");
 
     global $wpdb;
-    $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
+    foreach ( $fields as &$field ) {
+        if ( $field['name'] === 'make' || $field['name'] === 'model' ) {
+            $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
+            
+            $results = $wpdb->get_col( $wpdb->prepare( "
+                SELECT DISTINCT pm.meta_value FROM {$wpdb->postmeta} pm
+                JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+                JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+                JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+                JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+                WHERE pm.meta_key = %s AND t.slug = %s AND tt.taxonomy = 'vehicle_type' AND p.post_status = 'publish'
+            ", $meta_key, $type ) );
 
-    $results = $wpdb->get_col( $wpdb->prepare( "
-        SELECT DISTINCT pm.meta_value 
-        FROM {$wpdb->postmeta} pm
-        JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-        JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-        JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-        JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-        WHERE pm.meta_key = %s 
-        AND t.slug = %s 
-        AND tt.taxonomy = 'vehicle_type'
-        AND p.post_status = 'publish'
-        ORDER BY pm.meta_value ASC
-    ", $meta_key, $target_type ) );
-
-    if ( ! empty( $results ) ) {
-        $placeholder = reset($options); 
-        $new_options = array('' => $placeholder);
-        foreach ( $results as $value ) { $new_options[$value] = $value; }
-        return $new_options;
+            if ( ! empty( $results ) ) {
+                $new_options = [ '' => $field['placeholder'] ];
+                foreach ( $results as $val ) { $new_options[$val] = $val; }
+                $field['options'] = $new_options;
+                error_log("VINTTRO SUCCESS: Injected " . count($results) . " options into $form_id");
+            }
+        }
     }
-    return $options;
+    return $fields;
 }, 9999, 2 );
 
 // ==========================================================

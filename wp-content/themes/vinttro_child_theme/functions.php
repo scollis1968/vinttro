@@ -331,3 +331,28 @@ add_action('set_transient', function($transient, $value, $expiration) {
         error_log("VINTTRO DETECTED TRANSIENT SET: " . $transient);
     }
 }, 10, 3);
+
+
+// 4. The "Brute Force" Sync (Try this now)
+add_action( 'template_redirect', 'vinttro_emergency_als_sync' );
+function vinttro_emergency_als_sync() {
+    // Only run on the exchange pages
+    if ( is_page('exchange-cars') || is_page('exchange-bikes') ) {
+        
+        error_log('VINTTRO: Attempting Emergency Sync for ' . get_the_title());
+
+        // 1. Force Auto Listings to rebuild its search data
+        if ( class_exists( 'Auto_Listings_Search_Data' ) ) {
+            $search_data = new Auto_Listings_Search_Data();
+            $search_data->update(); // This is the 'Update Button' logic
+        }
+
+        // 2. Clear the specific search cache key
+        // Some versions of ALS use this specific naming convention
+        global $wpdb;
+        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '%als_search%'");
+        
+        // 3. Force standard term cache clear
+        wp_cache_flush(); 
+    }
+}

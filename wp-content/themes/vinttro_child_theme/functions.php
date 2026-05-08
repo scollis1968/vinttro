@@ -175,6 +175,8 @@ add_action( 'template_redirect', function() {
     error_log("VINTTRO: Virtual Cache Bypass Active for Exchange Page.");
     wp_cache_flush(); // Final nudge to the RAM cache
 }, 1 );
+
+
 // ==========================================================
 // 6. UI FIXES (JavaScript)
 // ==========================================================
@@ -213,20 +215,41 @@ add_action( 'wp_footer', function() {
 
     // Force the dropdowns to hide options that don't belong
     document.addEventListener("DOMContentLoaded", function() {
-        const isBikePage = window.location.pathname.includes('bikes');
-        const isCarPage = window.location.pathname.includes('cars');
+        const isCarPage = window.location.pathname.includes('/cars/');
+        const isBikePage = window.location.pathname.includes('/bikes/');
         
-        // If we are on bikes, and the dropdown is full of cars, 
-        // we can't easily filter with JS without the data, 
-        // BUT we can trigger a click on the 'Clear' button automatically 
-        // the very first time the page loads if the 'make' is wrong.
-        
-        if (isBikePage && document.body.innerHTML.indexOf('BMW') > -1 && document.body.innerHTML.indexOf('Ducati') === -1) {
-            console.log("VINTTRO: Detected wrong data on Bike page. Forcing refresh...");
-            // You could trigger a location.reload() or click the reset button here
+        // Check the 'Make' dropdown for signs of the "Ghost"
+        const makeSelect = document.querySelector('select[name="make"]');
+        if (!makeSelect) return;
+
+        const htmlContent = makeSelect.innerHTML;
+        let cacheIsCorrupt = false;
+
+        if (isCarPage && (htmlContent.includes('MOTO GUZZI') || htmlContent.includes('Yamaha'))) {
+            console.warn("VINTTRO: Stale BIKE data detected on CAR page. Purging UI...");
+            cacheIsCorrupt = true;
+        } 
+        else if (isBikePage && (htmlContent.includes('Porsche') || htmlContent.includes('Ford'))) {
+            console.warn("VINTTRO: Stale CAR data detected on BIKE page. Purging UI...");
+            cacheIsCorrupt = true;
+        }
+
+        if (cacheIsCorrupt) {
+            // 1. Clear browser session storage
+            sessionStorage.clear();
+            localStorage.clear();
+
+            // 2. Force the plugin's Reset button to click
+            const resetBtn = document.querySelector('.als-reset');
+            if (resetBtn) {
+                console.log("VINTTRO: Triggering plugin reset...");
+                resetBtn.click();
+            } else {
+                // Fallback: Reload the page with a cache-buster
+                window.location.href = window.location.pathname + '?vinttro_refresh=' + Date.now();
+            }
         }
     });
-
     </script>
     <?php
 }, 100 );

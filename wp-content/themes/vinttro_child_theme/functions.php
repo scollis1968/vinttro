@@ -320,17 +320,15 @@ add_filter( 'als_search_form_cache_filters', '__return_false' );
 
 
 // THE BROAD TRAP: Catch any update to any AutoListing data
-add_action('updated_option', function($option, $old_value, $value) {
-    if (strpos($option, 'als_') !== false || strpos($option, 'auto_listings') !== false) {
-        error_log("VINTTRO DETECTED OPTION UPDATE: " . $option);
-    }
-}, 10, 3);
-
-add_action('set_transient', function($transient, $value, $expiration) {
-    if (strpos($transient, 'als_') !== false || strpos($transient, 'listing') !== false) {
-        error_log("VINTTRO DETECTED TRANSIENT SET: " . $transient);
-    }
-}, 10, 3);
+add_action('wp', function() {
+    if (is_admin()) return;
+    global $post;
+    $page_id = $post ? $post->ID : 'N/A';
+    $slug = $post ? $post->post_name : 'N/A';
+    $type = get_post_type();
+    
+    error_log("VINTTRO DEBUG: ID: $page_id | Slug: $slug | Type: $type | URL: " . $_SERVER['REQUEST_URI']);
+});
 
 
 // 4. The "Brute Force" Sync (Try this now)

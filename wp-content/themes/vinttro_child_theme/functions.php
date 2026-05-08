@@ -117,16 +117,15 @@ add_action( 'init', function() {
 }, 999 );
 
 // ==========================================================
-// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (HI-PRIORITY)
+// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (ULTIMATE)
 // ==========================================================
 add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
-    // Target only make/model
     if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
         return $options;
     }
 
-    // IF THIS APPEARS IN YOUR LOG, THE BATTLE IS WON.
-    error_log("VINTTRO SUCCESS: Filter 5a is now REBUIDING data for: " . $field['name']);
+    // IF YOU SEE THIS LOG, THE CACHE IS BROKEN AND WE HAVE WON.
+    error_log("VINTTRO SUCCESS: Filter 5a is now REBUILDING data for: " . $field['name']);
 
     $current_url = $_SERVER['REQUEST_URI'];
     $target_type = '';
@@ -162,35 +161,45 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
 }, 9999, 2 );
 
 // ==========================================================
-// 🔄 10. THE "POST META" PURGE (THE FINAL SOLUTION)
+// 🔄 10. THE "GHOST" KILLER (TARGETING THE HTML BLOCKS)
 // ==========================================================
-add_action( 'template_redirect', 'vinttro_post_meta_purge_sync', 1 );
+add_action( 'template_redirect', 'vinttro_search_form_cache_killer', 1 );
 
-function vinttro_post_meta_purge_sync() {
+function vinttro_search_form_cache_killer() {
     if ( is_admin() || strpos($_SERVER['REQUEST_URI'], '/exchange/') === false ) return;
 
     global $wpdb;
-    error_log("VINTTRO: Exchange detected. Purging Search Form Meta...");
+    error_log("VINTTRO: Exchange page detected. Executing Sledgehammer Sync...");
 
-    // 1. Wipe the "Saved" Search Data from the Database
-    // This is the "Ghost" that survives NGINX restarts and Cache flushes.
-    $wpdb->query( "DELETE FROM $wpdb->postmeta WHERE meta_key LIKE '%_search_data%'" );
-    $wpdb->query( "DELETE FROM $wpdb->postmeta WHERE meta_key LIKE '%als_search_data%'" );
-
-    // 2. Wipe the Form HTML Transients (Wildcard)
+    // 1. Delete the "Frozen" HTML blocks from the database
+    // The plugin saves the whole form HTML under these names
     $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_sf_%'" );
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_%'" );
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_auto_listings_sf_%'" );
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_sf_%'" );
 
-    // 3. Force AutoListings to forget its internal objects
+    // 2. Wipe the search data index
+    delete_transient( 'auto_listings_search_data' );
+    delete_option( 'auto_listings_search_data' );
+
+    // 3. Clear the Object Cache (Redis/Memcached)
+    // This is the most important step for UAT environments
     wp_cache_flush();
     
-    error_log("VINTTRO: Database Purge Complete. Form should now rebuild.");
+    // 4. Force a Re-index (This is the "Update Button" logic)
+    if ( class_exists( '\AutoListings\SearchQuery' ) ) {
+        $sq = new \AutoListings\SearchQuery();
+        if ( method_exists($sq, 'update_data') ) { $sq->update_data(); }
+    }
+    
+    error_log("VINTTRO: Sledgehammer Complete. Dropdowns should refresh.");
 }
 
-// 11. SHUT OFF THE INTERNAL CACHE ENTIRELY
-add_filter( 'auto_listings_search_form_cache_results', '__return_false', 999 );
-add_filter( 'auto_listings_search_form_cache_form', '__return_false', 999 );
-
+// ==========================================================
+// 🧪 11. DISABLE SHORTCODE CACHING
+// ==========================================================
+// These filters tell the plugin NEVER to save the form HTML
+add_filter( 'auto_listings_search_form_cache_form', '__return_false', 100 );
+add_filter( 'auto_listings_search_form_cache_results', '__return_false', 100 );
 
 // ==========================================================
 // 6. UI FIXES (JavaScript)

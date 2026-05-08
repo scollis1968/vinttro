@@ -315,9 +315,18 @@ function vinttro_force_als_search_sync() {
 }
 // Disable the internal cache for the Search Form itself
 add_filter( 'als_search_form_cache_filters', '__return_false' );
-// THE TRAP: Logs every transient being updated/deleted to find the AutoListing cache name
-add_action('deleted_transient', function($transient) {
-    if (strpos($transient, 'als') !== false || strpos($transient, 'listing') !== false) {
-        error_log('VINTTRO DETECTED CACHE DELETE: ' . $transient);
+
+
+
+// THE BROAD TRAP: Catch any update to any AutoListing data
+add_action('updated_option', function($option, $old_value, $value) {
+    if (strpos($option, 'als_') !== false || strpos($option, 'auto_listings') !== false) {
+        error_log("VINTTRO DETECTED OPTION UPDATE: " . $option);
     }
-});
+}, 10, 3);
+
+add_action('set_transient', function($transient, $value, $expiration) {
+    if (strpos($transient, 'als_') !== false || strpos($transient, 'listing') !== false) {
+        error_log("VINTTRO DETECTED TRANSIENT SET: " . $transient);
+    }
+}, 10, 3);

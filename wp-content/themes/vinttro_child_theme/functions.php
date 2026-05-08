@@ -117,63 +117,49 @@ add_action( 'init', function() {
 }, 999 );
 
 // ==========================================================
-// 🚗 5a. AUTO LISTING - LOW-LEVEL FIELD OVERRIDE
+// 🚗 5a. AUTO LISTING - SHORTCODE ATTRIBUTE HIJACK
 // ==========================================================
-add_filter( 'auto_listings_search_form_fields', function( $fields, $form_id ) {
-    // Target your specific forms
-    error_logs("auto_listings_search_form_fields - 1");
+add_filter( 'shortcode_atts_auto_listings_search', 'vinttro_shortcode_hijack', 10, 3 );
+add_filter( 'shortcode_atts_als', 'vinttro_shortcode_hijack', 10, 3 );
 
-    $target_forms = [6619 => 'car', 6625 => 'motorbike'];
-    if ( ! isset( $target_forms[$form_id] ) ) {
-        error_logs("auto_listings_search_form_fields - 1");
-        return $fields;
-    }
-
-    $type = $target_forms[$form_id];
-    error_log("VINTTRO ATTEMPT: Overriding Fields for Form $form_id as $type");
+function vinttro_shortcode_hijack( $out, $pairs, $atts ) {
+    $form_id = isset($atts['id']) ? $atts['id'] : '';
+    
+    // Log this - if this shows up, we have finally found the door!
+    error_log("VINTTRO: Shortcode Hijack triggered for Form ID: " . $form_id);
 
     global $wpdb;
-    foreach ( $fields as &$field ) {
-        if ( $field['name'] === 'make' || $field['name'] === 'model' ) {
-            $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
-            
-            $results = $wpdb->get_col( $wpdb->prepare( "
-                SELECT DISTINCT pm.meta_value FROM {$wpdb->postmeta} pm
-                JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-                JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-                JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-                JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-                WHERE pm.meta_key = %s AND t.slug = %s AND tt.taxonomy = 'vehicle_type' AND p.post_status = 'publish'
-            ", $meta_key, $type ) );
+    
+    // Map IDs to Vehicle Types
+    $map = ['6619' => 'car', '6625' => 'motorbike'];
+    if ( !isset($map[$form_id]) ) return $out;
 
-            if ( ! empty( $results ) ) {
-                $new_options = [ '' => $field['placeholder'] ];
-                foreach ( $results as $val ) { $new_options[$val] = $val; }
-                $field['options'] = $new_options;
-                error_log("VINTTRO SUCCESS: Injected " . count($results) . " options into $form_id");
-            }
-        }
-    }
-    return $fields;
-}, 9999, 2 );
+    $type = $map[$form_id];
+
+    // 1. We force the plugin to forget any "Search Data" for this specific request
+    // This is the "Amnesia" move
+    add_filter( 'pre_option_auto_listings_search_data', '__return_false' );
+    add_filter( 'pre_transient_auto_listings_search_data', '__return_false' );
+
+    // 2. We manually clear the HTML cache for this specific form ID right now
+    $wpdb->query( $wpdb->prepare("DELETE FROM $wpdb->options WHERE option_name = %s", '_transient_auto_listings_sf_' . $form_id) );
+    
+    return $out;
+}
 
 // ==========================================================
-// 🔄 10. THE VIRTUAL CACHE KILLER (BYPASSING REDIS/SQL)
+// 🔄 10. THE "MANUAL SYNC" (CALLING THE ENGINE DIRECTLY)
 // ==========================================================
-
-// 1. Force the plugin to think the HTML cache for Form 6619 and 6625 is ALWAYS empty
-add_filter( 'pre_transient_auto_listings_search_form_6619', '__return_false', 9999 );
-add_filter( 'pre_transient_auto_listings_search_form_6625', '__return_false', 9999 );
-
-// 2. Force the plugin to think the Global Search Index is ALWAYS empty (Forces a rebuild)
-add_filter( 'pre_option_auto_listings_search_data', '__return_false', 9999 );
-add_filter( 'pre_transient_auto_listings_search_data', '__return_false', 9999 );
-
-// 3. Log that the bypass is active
-add_action( 'template_redirect', function() {
+add_action( 'wp', function() {
     if ( is_admin() || strpos($_SERVER['REQUEST_URI'], '/exchange/') === false ) return;
-    error_log("VINTTRO: Virtual Cache Bypass Active for Exchange Page.");
-    wp_cache_flush(); // Final nudge to the RAM cache
+
+    // This is the exact code that runs when you hit the "Update" button
+    // We run it every time the page is loaded to ensure the index is fresh
+    if ( class_exists( 'AutoListings\Listing\SearchData' ) ) {
+        $sd = new \AutoListings\Listing\SearchData();
+        $sd->update_all_search_data();
+        error_log("VINTTRO: Update Button logic triggered via SearchData class.");
+    }
 }, 1 );
 
 
@@ -213,43 +199,7 @@ add_action( 'wp_footer', function() {
         }, 150);
     });
 
-    // Force the dropdowns to hide options that don't belong
-    document.addEventListener("DOMContentLoaded", function() {
-        const isCarPage = window.location.pathname.includes('/cars/');
-        const isBikePage = window.location.pathname.includes('/bikes/');
-        
-        // Check the 'Make' dropdown for signs of the "Ghost"
-        const makeSelect = document.querySelector('select[name="make"]');
-        if (!makeSelect) return;
 
-        const htmlContent = makeSelect.innerHTML;
-        let cacheIsCorrupt = false;
-
-        if (isCarPage && (htmlContent.includes('MOTO GUZZI') || htmlContent.includes('Yamaha'))) {
-            console.warn("VINTTRO: Stale BIKE data detected on CAR page. Purging UI...");
-            cacheIsCorrupt = true;
-        } 
-        else if (isBikePage && (htmlContent.includes('Porsche') || htmlContent.includes('Ford'))) {
-            console.warn("VINTTRO: Stale CAR data detected on BIKE page. Purging UI...");
-            cacheIsCorrupt = true;
-        }
-
-        if (cacheIsCorrupt) {
-            // 1. Clear browser session storage
-            sessionStorage.clear();
-            localStorage.clear();
-
-            // 2. Force the plugin's Reset button to click
-            const resetBtn = document.querySelector('.als-reset');
-            if (resetBtn) {
-                console.log("VINTTRO: Triggering plugin reset...");
-                resetBtn.click();
-            } else {
-                // Fallback: Reload the page with a cache-buster
-                window.location.href = window.location.pathname + '?vinttro_refresh=' + Date.now();
-            }
-        }
-    });
     </script>
     <?php
 }, 100 );

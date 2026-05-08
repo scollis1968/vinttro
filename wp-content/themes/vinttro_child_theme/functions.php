@@ -117,81 +117,82 @@ add_action( 'init', function() {
 }, 999 );
 
 // ==========================================================
-// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (ULTIMATE)
+// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (ALL-HOOKS)
 // ==========================================================
-add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
-    if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
+$hooks = ['auto_listings_search_field_options', 'als_search_field_options', 'auto_listings_search_field_data'];
+
+foreach ( $hooks as $hook ) {
+    add_filter( $hook, function( $options, $field ) {
+        // Target only make/model
+        if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
+            return $options;
+        }
+
+        // IF THIS APPEARS, THE GHOST IS DEAD.
+        error_log("VINTTRO SUCCESS: Filter 5a triggered via hook: $hook for " . $field['name']);
+
+        $current_url = $_SERVER['REQUEST_URI'];
+        $target_type = '';
+        if ( strpos($current_url, '/cars') !== false ) { $target_type = 'car'; } 
+        elseif ( strpos($current_url, '/bikes') !== false ) { $target_type = 'motorbike'; }
+
+        if ( empty( $target_type ) ) return $options;
+
+        global $wpdb;
+        $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
+
+        // We check for 'car' OR 'cars' and 'motorbike' OR 'motorbikes' to be safe
+        $results = $wpdb->get_col( $wpdb->prepare( "
+            SELECT DISTINCT pm.meta_value 
+            FROM {$wpdb->postmeta} pm
+            JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+            JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+            JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+            JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+            WHERE pm.meta_key = %s 
+            AND (t.slug = %s OR t.slug = %s)
+            AND tt.taxonomy = 'vehicle_type'
+            AND p.post_status = 'publish'
+            ORDER BY pm.meta_value ASC
+        ", $meta_key, $target_type, $target_type . 's' ) );
+
+        if ( ! empty( $results ) ) {
+            $placeholder = reset($options); 
+            $new_options = array('' => $placeholder);
+            foreach ( $results as $value ) { $new_options[$value] = $value; }
+            return $new_options;
+        }
         return $options;
-    }
-
-    // IF YOU SEE THIS LOG, THE CACHE IS BROKEN AND WE HAVE WON.
-    error_log("VINTTRO SUCCESS: Filter 5a is now REBUILDING data for: " . $field['name']);
-
-    $current_url = $_SERVER['REQUEST_URI'];
-    $target_type = '';
-    if ( strpos($current_url, '/cars') !== false ) { $target_type = 'car'; } 
-    elseif ( strpos($current_url, '/bikes') !== false ) { $target_type = 'motorbike'; }
-
-    if ( empty( $target_type ) ) return $options;
-
-    global $wpdb;
-    $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
-
-    $results = $wpdb->get_col( $wpdb->prepare( "
-        SELECT DISTINCT pm.meta_value 
-        FROM {$wpdb->postmeta} pm
-        JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-        JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-        JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-        JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-        WHERE pm.meta_key = %s 
-        AND t.slug = %s 
-        AND tt.taxonomy = 'vehicle_type'
-        AND p.post_status = 'publish'
-        ORDER BY pm.meta_value ASC
-    ", $meta_key, $target_type ) );
-
-    if ( ! empty( $results ) ) {
-        $placeholder = reset($options); 
-        $new_options = array('' => $placeholder);
-        foreach ( $results as $value ) { $new_options[$value] = $value; }
-        return $new_options;
-    }
-    return $options;
-}, 9999, 2 );
-
+    }, 9999, 2 );
+}
 // ==========================================================
-// 🔄 10. THE "GHOST" KILLER (TARGETING THE HTML BLOCKS)
+// 🔄 10. THE "UPDATE BUTTON" CLONE (NAMESPACED)
 // ==========================================================
-add_action( 'template_redirect', 'vinttro_search_form_cache_killer', 1 );
+add_action( 'template_redirect', 'vinttro_clone_update_button_logic', 1 );
 
-function vinttro_search_form_cache_killer() {
+function vinttro_clone_update_button_logic() {
     if ( is_admin() || strpos($_SERVER['REQUEST_URI'], '/exchange/') === false ) return;
 
-    global $wpdb;
-    error_log("VINTTRO: Exchange page detected. Executing Sledgehammer Sync...");
+    error_log("VINTTRO: Exchange detected. Running Namespaced Sync...");
 
-    // 1. Delete the "Frozen" HTML blocks from the database
-    // The plugin saves the whole form HTML under these names
+    // 1. Manually trigger the Search Data Rebuild
+    // This is exactly what the "Update" button calls internally
+    if ( class_exists( '\AutoListings\Listing\SearchData' ) ) {
+        $search_data = new \AutoListings\Listing\SearchData();
+        $search_data->update_all_search_data(); 
+        error_log("VINTTRO: \AutoListings\Listing\SearchData->update_all_search_data() called.");
+    }
+
+    // 2. Wipe the HTML cache keys from the DB
+    global $wpdb;
     $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_sf_%'" );
     $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_auto_listings_sf_%'" );
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_sf_%'" );
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_%'" );
 
-    // 2. Wipe the search data index
-    delete_transient( 'auto_listings_search_data' );
-    delete_option( 'auto_listings_search_data' );
-
-    // 3. Clear the Object Cache (Redis/Memcached)
-    // This is the most important step for UAT environments
+    // 3. Nuke the RAM cache (Redis/Memcached)
     wp_cache_flush();
     
-    // 4. Force a Re-index (This is the "Update Button" logic)
-    if ( class_exists( '\AutoListings\SearchQuery' ) ) {
-        $sq = new \AutoListings\SearchQuery();
-        if ( method_exists($sq, 'update_data') ) { $sq->update_data(); }
-    }
-    
-    error_log("VINTTRO: Sledgehammer Complete. Dropdowns should refresh.");
+    error_log("VINTTRO: Namespaced Sync Complete.");
 }
 
 // ==========================================================

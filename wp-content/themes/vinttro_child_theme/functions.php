@@ -230,127 +230,44 @@ add_action( 'init', function() {
     ));
 });
 
-// Clear AutoListing transients when the search page loads
-add_action('template_redirect', 'vinttro_clear_listing_cache');
-function vinttro_clear_listing_cache() {
-    if (is_page('exchange-bikes') || is_page('exchange-cars')) {
-        // This is a 'sledgehammer' approach to clear common transient patterns
-        global $wpdb;
-        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_%'");
-        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_als_%'");
-    }
-}
-// Prevent AutoListing from using cached terms for dropdowns
-add_filter('pre_get_posts', 'vinttro_disable_als_caching');
-function vinttro_disable_als_caching($query) {
-    if (isset($query->query_vars['post_type']) && $query->query_vars['post_type'] == 'listing') {
-        $query->set('cache_results', false);
-        $query->set('update_post_meta_cache', false);
-        $query->set('update_post_term_cache', false);
-    }
-    return $query;
-}
 /**
- * FORCE AUTO-LISTING TO CLEAR TERM CACHE ON EXCHANGE PAGES
- * This mimics the "Adding a Listing" action that fixes your dropdowns.
+ * VINTTRO: THE FINAL SYNC
+ * This simulates clicking the "Update" button on a listing automatically.
  */
-add_action('template_redirect', 'vinttro_force_clear_term_cache');
+add_action( 'wp', 'vinttro_automated_als_sync' );
 
-function vinttro_force_clear_term_cache() {
-    // Only run this on your search/exchange pages to save server power
-    if ( is_page('exchange-cars') || is_page('exchange-bikes') || is_post_type_archive('listing') ) {
-        
-        // 1. Clear the standard WordPress Term Cache for Makes and Models
-        clean_term_cache([], 'make');
-        clean_term_cache([], 'model');
-        
-        // 2. If the site is using a Persistent Object Cache (like Redis), this clears it
-        if ( function_exists('wp_cache_flush_group') ) {
-            wp_cache_flush_group('terms');
-        }
+function vinttro_automated_als_sync() {
+    if ( is_admin() ) return;
 
-        // 3. Delete the "Sticky" Transients that AutoListing likely creates
-        // We use a wildcard approach to kill any saved 'makes' or 'models' data
-        global $wpdb;
-        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_terms_%'");
-        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_als_terms_%'");
-        
-        error_log('VINTTRO: Term cache manually cleared for AutoListing');
-    }
-}
-add_filter('get_terms_args', 'vinttro_force_unique_terms', 10, 2);
-function vinttro_force_unique_terms($args, $taxonomies) {
-    if (in_array('make', (array)$taxonomies) || in_array('model', (array)$taxonomies)) {
-        // This makes the "Cache Key" unique every single second
-        $args['cache_domain'] = 'vinttro_' . time();
-    }
-    return $args;
-}
-/**
- * FORCE AUTO LISTINGS SEARCH REFRESH
- * This simulates clicking "Update" on a listing every time you load the exchange pages.
- */
-add_action( 'template_redirect', 'vinttro_force_als_search_sync' );
+    global $post;
+    if ( ! $post ) return;
 
-function vinttro_force_als_search_sync() {
-    // Only run on the search pages to prevent slowing down the rest of the site
-    if ( is_page('exchange-cars') || is_page('exchange-bikes') ) {
+    // We target ID 6245 (Cars) and look for the 'bikes' slug (usually adjacent ID)
+    if ( $post->ID == 6245 || $post->post_name == 'bikes' || strpos($_SERVER['REQUEST_URI'], '/exchange/') !== false ) {
         
-        // 1. Clear the specific Auto Listings Transients
-        // The plugin uses these names specifically to store dropdown data
-        delete_transient( 'als_search_data' );
-        delete_transient( 'als_search_filters' );
-        
-        // 2. Trigger the Auto Listings internal update class if it exists
-        // This is the "Update Button" logic in code form
+        error_log("VINTTRO: Target Page Detected. Forcing Search Data Sync...");
+
+        // 1. Trigger the specific Class method that "Update" button uses
         if ( class_exists( 'Auto_Listings_Search_Data' ) ) {
             $search_data = new Auto_Listings_Search_Data();
             $search_data->update(); 
-            // error_log('VINTTRO: Auto Listings Search Data Force Updated');
+            error_log("VINTTRO: Auto_Listings_Search_Data->update() executed.");
         }
 
-        // 3. Clear the WP Term Cache for the dropdown taxonomies
-        clean_term_cache( '', 'make' );
-        clean_term_cache( '', 'model' );
+        // 2. Kill the exact transients used by the Auto Listings Search engine
+        // These are the "Sticky Notes" that hold the wrong Car/Bike lists
+        delete_transient( 'als_all_search_data' );
+        delete_transient( 'als_search_data' );
+        delete_transient( 'als_search_filters' );
+        
+        // 3. Clear the specific HTML cache for THIS page's search form
+        // Auto Listings caches the HTML of the form itself based on the Page ID
+        delete_transient( 'als_search_form_' . $post->ID );
+
+        // 4. Force a fresh database pull for this request
+        wp_cache_flush();
     }
 }
-// Disable the internal cache for the Search Form itself
-add_filter( 'als_search_form_cache_filters', '__return_false' );
 
-
-
-// THE BROAD TRAP: Catch any update to any AutoListing data
-add_action('wp', function() {
-    if (is_admin()) return;
-    global $post;
-    $page_id = $post ? $post->ID : 'N/A';
-    $slug = $post ? $post->post_name : 'N/A';
-    $type = get_post_type();
-    
-    error_log("VINTTRO DEBUG: ID: $page_id | Slug: $slug | Type: $type | URL: " . $_SERVER['REQUEST_URI']);
-});
-
-
-// 4. The "Brute Force" Sync (Try this now)
-add_action( 'template_redirect', 'vinttro_emergency_als_sync' );
-function vinttro_emergency_als_sync() {
-    // Only run on the exchange pages
-    if ( is_page('exchange-cars') || is_page('exchange-bikes') ) {
-        
-        error_log('VINTTRO: Attempting Emergency Sync for ' . get_the_title());
-
-        // 1. Force Auto Listings to rebuild its search data
-        if ( class_exists( 'Auto_Listings_Search_Data' ) ) {
-            $search_data = new Auto_Listings_Search_Data();
-            $search_data->update(); // This is the 'Update Button' logic
-        }
-
-        // 2. Clear the specific search cache key
-        // Some versions of ALS use this specific naming convention
-        global $wpdb;
-        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '%als_search%'");
-        
-        // 3. Force standard term cache clear
-        wp_cache_flush(); 
-    }
-}
+// 5. NUCLEAR: Disable the internal Search Form Cache filter entirely
+add_filter( 'als_search_form_cache_filters', '__return_false', 999 );

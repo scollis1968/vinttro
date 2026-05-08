@@ -117,26 +117,20 @@ add_action( 'init', function() {
 }, 999 );
 
 // ==========================================================
-// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (NAMESPACED)
+// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (FORCE)
 // ==========================================================
-// We use a high priority (999) to ensure we override the plugin's cached options
 add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
-    
     if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
         return $options;
     }
 
-    // This log WILL show up once we kill the cache in Section 10
-    error_log("VINTTRO: Filter 5a firing for " . $field['name']);
+    // If this shows up, we've successfully broken the HTML cache!
+    error_log("VINTTRO SUCCESS: Filter 5a is now running for " . $field['name']);
 
     $current_url = $_SERVER['REQUEST_URI'];
     $target_type = '';
-
-    if ( strpos($current_url, '/cars') !== false ) {
-        $target_type = 'car'; 
-    } elseif ( strpos($current_url, '/bikes') !== false ) {
-        $target_type = 'motorbike'; 
-    }
+    if ( strpos($current_url, '/cars') !== false ) { $target_type = 'car'; } 
+    elseif ( strpos($current_url, '/bikes') !== false ) { $target_type = 'motorbike'; }
 
     if ( empty( $target_type ) ) return $options;
 
@@ -163,47 +157,47 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
         foreach ( $results as $value ) { $new_options[$value] = $value; }
         return $new_options;
     }
-
     return $options;
-}, 999, 2 );
+}, 20, 2 );
 
 // ==========================================================
-// 🔄 10. THE NAMESPACED SYNC (THE REAL FIX)
+// 🔄 10. THE "TOTAL AMNESIA" RESET
 // ==========================================================
-add_action( 'template_redirect', 'vinttro_namespaced_sync', 1 );
+add_action( 'template_redirect', 'vinttro_total_amnesia_sync', 1 );
 
-function vinttro_namespaced_sync() {
+function vinttro_total_amnesia_sync() {
     if ( is_admin() || strpos($_SERVER['REQUEST_URI'], '/exchange/') === false ) return;
 
     global $wpdb;
-    error_log("VINTTRO: Exchange detected. Wiping Namespaced Cache...");
+    error_log("VINTTRO: Exchange detected. Running Total Amnesia Wipe...");
 
-    // 1. Delete ALL transients with the new naming convention
-    // This targets the HTML form cache AND the search data index
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_%'" );
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_auto_listings_%'" );
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_%'" );
+    // 1. Wipe standard Options (not just transients)
+    // The "Update" button often saves to these
+    delete_option( 'auto_listings_search_data' );
+    delete_option( 'auto_listings_all_search_data' );
+    delete_option( 'auto_listings_search_filters' );
 
-    // 2. Clear WP Cache for these groups
-    wp_cache_delete( 'search_data', 'auto-listings' );
-    wp_cache_delete( 'search_form', 'auto-listings' );
-
-    // 3. Force the SearchQuery class to think it's fresh
-    if ( class_exists( '\AutoListings\SearchQuery' ) ) {
-        error_log("VINTTRO: Found \AutoListings\SearchQuery - Resetting...");
-        // Some versions of the plugin allow a hard reset via the constructor or a static call
-        // But the transient wipe above is usually the most effective for namespaced versions
-    }
+    // 2. Kill the HTML Form Cache Wildcard
+    // This targets every single cached form in the database
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_%'" );
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_auto_listings_search_form_%'" );
     
+    // 3. Trigger the internal Search Data Update if the function exists
+    if ( function_exists('auto_listings_update_search_data') ) {
+        auto_listings_update_search_data();
+        error_log("VINTTRO: Internal auto_listings_update_search_data() called.");
+    }
+
     wp_cache_flush();
 }
 
 // ==========================================================
-// 🧪 11. THE "AMNESIA" FILTER
+// 🧪 11. KILL THE HTML SHORTCODE CACHE
 // ==========================================================
-// This forces the plugin to NEVER find its cached search data in the DB
-add_filter( 'pre_transient_auto_listings_search_data', '__return_false' );
-add_filter( 'pre_transient_auto_listings_search_form', '__return_false' );
+// This is the most likely culprit. It stops the shortcode from saving its HTML.
+add_filter( 'auto_listings_search_form_cache_results', '__return_false', 999 );
+add_filter( 'auto_listings_search_form_cache_form', '__return_false', 999 );
+
 
 // ==========================================================
 // 6. UI FIXES (JavaScript)

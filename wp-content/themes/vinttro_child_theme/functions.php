@@ -117,30 +117,23 @@ add_action( 'init', function() {
 }, 999 );
 
 // ==========================================================
-// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (AJAX AWARE)
+// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (HI-PRIORITY)
 // ==========================================================
 add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
-    // Only target 'make' and 'model'
+    // Target only make/model
     if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
         return $options;
     }
 
-    // DETECT CONTEXT: Check URL and Referer (for AJAX support)
+    // IF THIS APPEARS IN YOUR LOG, THE BATTLE IS WON.
+    error_log("VINTTRO SUCCESS: Filter 5a is now REBUIDING data for: " . $field['name']);
+
     $current_url = $_SERVER['REQUEST_URI'];
-    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
-    
     $target_type = '';
-    if ( strpos($current_url, '/cars') !== false || strpos($referer, '/cars') !== false ) {
-        $target_type = 'car'; 
-    } elseif ( strpos($current_url, '/bikes') !== false || strpos($referer, '/bikes') !== false ) {
-        $target_type = 'motorbike'; 
-    }
+    if ( strpos($current_url, '/cars') !== false ) { $target_type = 'car'; } 
+    elseif ( strpos($current_url, '/bikes') !== false ) { $target_type = 'motorbike'; }
 
-    // If no context found, don't interfere
     if ( empty( $target_type ) ) return $options;
-
-    // LOGGING: This will now appear in your log!
-    error_log("VINTTRO SUCCESS: Filter 5a is running for {$field['name']} on $target_type");
 
     global $wpdb;
     $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
@@ -160,44 +153,38 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
     ", $meta_key, $target_type ) );
 
     if ( ! empty( $results ) ) {
-        $placeholder = reset($options); // e.g. "All Makes"
+        $placeholder = reset($options); 
         $new_options = array('' => $placeholder);
         foreach ( $results as $value ) { $new_options[$value] = $value; }
         return $new_options;
     }
     return $options;
-}, 999, 2 );
+}, 9999, 2 );
 
 // ==========================================================
-// 🔄 10. THE "TOTAL AMNESIA" RESET (OBJECT CACHE COMPATIBLE)
+// 🔄 10. THE "POST META" PURGE (THE FINAL SOLUTION)
 // ==========================================================
-add_action( 'template_redirect', 'vinttro_total_amnesia_sync', 1 );
+add_action( 'template_redirect', 'vinttro_post_meta_purge_sync', 1 );
 
-function vinttro_total_amnesia_sync() {
+function vinttro_post_meta_purge_sync() {
     if ( is_admin() || strpos($_SERVER['REQUEST_URI'], '/exchange/') === false ) return;
 
-    error_log("VINTTRO: Exchange detected. Wiping Persistent Cache...");
+    global $wpdb;
+    error_log("VINTTRO: Exchange detected. Purging Search Form Meta...");
 
-    // 1. Delete standard Transients using the API (Compatible with Redis)
-    delete_transient( 'auto_listings_all_search_data' );
-    delete_transient( 'auto_listings_search_data' );
-    delete_transient( 'auto_listings_search_filters' );
+    // 1. Wipe the "Saved" Search Data from the Database
+    // This is the "Ghost" that survives NGINX restarts and Cache flushes.
+    $wpdb->query( "DELETE FROM $wpdb->postmeta WHERE meta_key LIKE '%_search_data%'" );
+    $wpdb->query( "DELETE FROM $wpdb->postmeta WHERE meta_key LIKE '%als_search_data%'" );
 
-    // 2. Kill the HTML Form Cache using the API
-    // Since we don't have the hash, we must flush the entire object cache
-    if ( function_exists('wp_cache_flush') ) {
-        wp_cache_flush();
-        error_log("VINTTRO: Object Cache Flushed.");
-    }
+    // 2. Wipe the Form HTML Transients (Wildcard)
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_sf_%'" );
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_%'" );
 
-    // 3. Trigger the internal sync logic
-    if ( class_exists( '\AutoListings\SearchQuery' ) ) {
-        $search_query = new \AutoListings\SearchQuery();
-        if ( method_exists( $search_query, 'update_data' ) ) {
-            $search_query->update_data();
-            error_log("VINTTRO: \AutoListings\SearchQuery->update_data() triggered.");
-        }
-    }
+    // 3. Force AutoListings to forget its internal objects
+    wp_cache_flush();
+    
+    error_log("VINTTRO: Database Purge Complete. Form should now rebuild.");
 }
 
 // 11. SHUT OFF THE INTERNAL CACHE ENTIRELY

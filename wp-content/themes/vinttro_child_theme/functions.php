@@ -230,3 +230,68 @@ add_action( 'init', function() {
     ));
 });
 
+// ==========================================================
+// 🚀 CUSTOM SEARCH FORM (Replaces AutoListings [als] shortcode)
+// ==========================================================
+add_shortcode( 'vinttro_search', function() {
+    global $wpdb;
+
+    // 1. Identify where we are
+    $current_url = $_SERVER['REQUEST_URI'];
+    $target_type = ( strpos($current_url, '/bikes') !== false ) ? 'motorbike' : 'car';
+    $placeholder = ( $target_type === 'car' ) ? 'Car' : 'Bike';
+
+    // 2. Fetch only the Makes that actually exist for this Vehicle Type
+    $makes = $wpdb->get_col( $wpdb->prepare( "
+        SELECT DISTINCT pm.meta_value FROM {$wpdb->postmeta} pm
+        JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+        JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+        JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+        JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+        WHERE pm.meta_key = '_al_listing_make_display' 
+        AND t.slug = %s 
+        AND tt.taxonomy = 'vehicle_type'
+        AND p.post_status = 'publish'
+        AND pm.meta_value != ''
+        ORDER BY pm.meta_value ASC
+    ", $target_type ) );
+
+    // 3. Start building the HTML Form
+    ob_start();
+    ?>
+    <form class="vinttro-custom-search als" method="GET" action="<?php echo esc_url( strtok($_SERVER["REQUEST_URI"], '?') ); ?>">
+        
+        <div class="als-field">
+            <label class="als-field__label">Make</label>
+            <select name="make" class="vinttro-select">
+                <option value=""><?php echo "All $placeholder Makes"; ?></option>
+                <?php foreach ( $makes as $make ) : ?>
+                    <option value="<?php echo esc_attr($make); ?>" <?php selected( $_GET['make'] ?? '', $make ); ?>>
+                        <?php echo esc_html($make); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="als-field">
+            <label class="als-field__label">Max Price</label>
+            <select name="max_price" class="vinttro-select">
+                <option value="">Any Price</option>
+                <?php 
+                $prices = [5000, 10000, 20000, 30000, 50000, 75000, 100000, 150000];
+                foreach ($prices as $p) {
+                    printf('<option value="%d" %s>£%s</option>', $p, selected($_GET['max_price'] ?? '', $p, false), number_format($p));
+                }
+                ?>
+            </select>
+        </div>
+
+        <div class="als-actions" style="margin-top:20px; display:flex; gap:10px;">
+            <button type="submit" class="als-submit">Search</button>
+            <a href="<?php echo esc_url( strtok($_SERVER["REQUEST_URI"], '?') ); ?>" class="als-reset" style="text-decoration:none; line-height:40px;">Clear</a>
+        </div>
+
+    </form>
+    <?php
+    return ob_get_clean();
+});

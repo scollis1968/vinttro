@@ -105,7 +105,10 @@ add_action( 'pre_get_posts', function( $query ) {
 // ==========================================================
 add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
     // Only target 'make' and 'model'
+    error_log("auto_listings_search_field_options - 1");
+
     if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
+        error_log("auto_listings_search_field_options - 2");
         return $options;
     }
 
@@ -119,7 +122,10 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
         $target_type = 'motorbike'; 
     }
 
-    if ( empty( $target_type ) ) return $options;
+    if ( empty( $target_type ) ) {
+        error_log("auto_listings_search_field_options - 3: No target vehicle type detected in URL. Returning default options.");
+        return $options;
+    }
 
     global $wpdb;
     $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';

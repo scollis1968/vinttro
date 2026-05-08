@@ -100,38 +100,34 @@ add_action( 'pre_get_posts', function( $query ) {
     }
 });
 
-// 5a. AUTO LISTING - filtering the search dropdown options (REPAIRED)
-// 5a. AUTO LISTING - filtering the search dropdown options (REPAIRED)
+// ==========================================================
+// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (REPAIRED)
+// ==========================================================
 add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
-    // Only target 'make' and 'model' fields
+    // Only target 'make' and 'model'
     if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
         return $options;
     }
 
-    // 1. DETECT CONTEXT (Check both URI and Referer for AJAX support)
     $current_url = $_SERVER['REQUEST_URI'];
-    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
-    
     $target_type = '';
 
-    if ( strpos($current_url, '/exchange/cars') !== false || strpos($referer, '/exchange/cars') !== false ) {
-        $target_type = 'car';
-    } elseif ( strpos($current_url, '/exchange/bikes') !== false || strpos($referer, '/exchange/bikes') !== false ) {
-        $target_type = 'motorbike';
+    // Detect if we are on Cars or Bikes
+    if ( strpos($current_url, '/cars') !== false ) {
+        $target_type = 'car'; 
+    } elseif ( strpos($current_url, '/bikes') !== false ) {
+        $target_type = 'motorbike'; 
     }
 
-    // If we aren't on a specific page, just return the original options
-    if ( empty( $target_type ) ) {
-        return $options;
-    }
+    if ( empty( $target_type ) ) return $options;
 
-    // 2. DETERMINE META KEY
-    // Note: Ensure these match the keys used in your section 5 query
+    global $wpdb;
     $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
 
-    // 3. DATABASE QUERY
-    global $wpdb;
-    
+    // DEBUG: Log the attempt
+    error_log("VINTTRO: Filtering {$field['name']} for vehicle_type: $target_type");
+
+    // We use a broader query that doesn't rely on the plugin's internal "Sync"
     $results = $wpdb->get_col( $wpdb->prepare( "
         SELECT DISTINCT pm.meta_value 
         FROM {$wpdb->postmeta} pm
@@ -143,29 +139,51 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
         AND t.slug = %s 
         AND tt.taxonomy = 'vehicle_type'
         AND p.post_status = 'publish'
-        AND pm.meta_value != ''
         ORDER BY pm.meta_value ASC
     ", $meta_key, $target_type ) );
 
-    // 4. REBUILD OPTIONS
     if ( ! empty( $results ) ) {
-        // Find the "placeholder" (e.g., 'All Makes' or 'Select Model') 
-        // usually the first item in the $options array
-        $first_key = key($options);
-        $first_val = reset($options);
-        
-        $new_options = array();
-        $new_options[$first_key] = $first_val; // Keep the empty/default choice at the top
-
+        error_log("VINTTRO: Found " . count($results) . " results for $target_type");
+        $new_options = array('' => reset($options)); // Keep the "All Makes" placeholder
         foreach ( $results as $value ) {
             $new_options[$value] = $value;
         }
         return $new_options;
+    } else {
+        error_log("VINTTRO: SQL found 0 results. Check if slug '$target_type' matches your 'Vehicle Type' taxonomy slug.");
     }
 
     return $options;
-}, 20, 2 ); // Higher priority to ensure it runs after plugin defaults
+}, 999, 2 );
 
+// ==========================================================
+// 🔄 10. THE "UPDATE BUTTON" AUTOMATOR (REFINED)
+// ==========================================================
+add_action( 'wp', 'vinttro_automated_als_sync' );
+function vinttro_automated_als_sync() {
+    if ( is_admin() ) return;
+    
+    $url = $_SERVER['REQUEST_URI'];
+    if ( strpos($url, '/exchange/') !== false ) {
+        
+        // This is the functional equivalent of the "Update" button
+        // It clears the transient that holds the "Global" list of makes
+        delete_transient( 'als_all_search_data' );
+        delete_transient( 'als_search_data' );
+        
+        // Force the search form to NOT cache its HTML
+        global $post;
+        if ( isset($post->ID) ) {
+            delete_transient( 'als_search_form_' . $post->ID );
+        }
+        
+        // This clears the "Search Index" internal to Auto Listings
+        if ( function_exists( 'als_get_search_data' ) ) {
+            als_get_search_data( true ); // The 'true' forces a refresh
+            error_log("VINTTRO: als_get_search_data(true) refresh called.");
+        }
+    }
+}
 
 // 6. UI FIXES (JavaScript)
 add_action( 'wp_footer', function() {

@@ -117,78 +117,68 @@ add_action( 'init', function() {
 }, 999 );
 
 // ==========================================================
-// 🚗 5a. AUTO LISTING - SURGICAL FIELD INJECTION (BY FORM ID)
+// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (SURGICAL)
 // ==========================================================
-add_filter( 'auto_listings_search_form_fields', function( $fields, $form_id ) {
-    
-    // Define which Form ID gets which Vehicle Type slug
-    $form_map = [
-        6619 => 'car',
-        6625 => 'motorbike'
-    ];
-
-    if ( ! isset( $form_map[$form_id] ) ) {
-        return $fields;
+add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
+    // Only target 'make' and 'model'
+    if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
+        return $options;
     }
 
-    $target_type = $form_map[$form_id];
-    error_log("VINTTRO: Injecting surgical data for Form $form_id (Type: $target_type)");
+    // THIS LOG MUST APPEAR IF THE CACHE IS BROKEN
+    error_log("VINTTRO SUCCESS: Filter 5a is REBUILDING dropdown for: " . $field['name']);
+
+    $current_url = $_SERVER['REQUEST_URI'];
+    $target_type = '';
+    if ( strpos($current_url, '/cars') !== false ) { $target_type = 'car'; } 
+    elseif ( strpos($current_url, '/bikes') !== false ) { $target_type = 'motorbike'; }
+
+    if ( empty( $target_type ) ) return $options;
 
     global $wpdb;
+    $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
 
-    foreach ( $fields as $key => &$field ) {
-        if ( $field['name'] === 'make' || $field['name'] === 'model' ) {
-            
-            $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
+    $results = $wpdb->get_col( $wpdb->prepare( "
+        SELECT DISTINCT pm.meta_value 
+        FROM {$wpdb->postmeta} pm
+        JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+        JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+        JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+        JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+        WHERE pm.meta_key = %s 
+        AND t.slug = %s 
+        AND tt.taxonomy = 'vehicle_type'
+        AND p.post_status = 'publish'
+        ORDER BY pm.meta_value ASC
+    ", $meta_key, $target_type ) );
 
-            $results = $wpdb->get_col( $wpdb->prepare( "
-                SELECT DISTINCT pm.meta_value 
-                FROM {$wpdb->postmeta} pm
-                JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-                JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-                JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-                JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-                WHERE pm.meta_key = %s 
-                AND t.slug = %s 
-                AND tt.taxonomy = 'vehicle_type'
-                AND p.post_status = 'publish'
-                ORDER BY pm.meta_value ASC
-            ", $meta_key, $target_type ) );
-
-            if ( ! empty( $results ) ) {
-                error_log("VINTTRO: Form $form_id - Found " . count($results) . " items for " . $field['name']);
-                
-                $new_options = array( '' => $field['placeholder'] );
-                foreach ( $results as $val ) {
-                    $new_options[$val] = $val;
-                }
-                $field['options'] = $new_options;
-            }
-        }
+    if ( ! empty( $results ) ) {
+        $placeholder = reset($options); 
+        $new_options = array('' => $placeholder);
+        foreach ( $results as $value ) { $new_options[$value] = $value; }
+        return $new_options;
     }
-    return $fields;
+    return $options;
 }, 9999, 2 );
 
 // ==========================================================
-// 🔄 10. THE SPECIFIC CACHE WIPE (BY FORM ID)
+// 🔄 10. THE VIRTUAL CACHE KILLER (BYPASSING REDIS/SQL)
 // ==========================================================
-add_action( 'template_redirect', 'vinttro_clear_specific_form_caches', 1 );
-function vinttro_clear_specific_form_caches() {
-    if ( is_admin() ) return;
 
-    global $wpdb;
-    
-    // Wipe the HTML cache for these two specific forms only
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_6619%'" );
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_6625%'" );
-    
-    // Clear the standard WP Object Cache
-    wp_cache_flush();
-}
+// 1. Force the plugin to think the HTML cache for Form 6619 and 6625 is ALWAYS empty
+add_filter( 'pre_transient_auto_listings_search_form_6619', '__return_false', 9999 );
+add_filter( 'pre_transient_auto_listings_search_form_6625', '__return_false', 9999 );
 
-// 11. RE-ESTABLISH THE "NO CACHE" RULE
-add_filter( 'auto_listings_search_form_cache_results', '__return_false', 9999 );
+// 2. Force the plugin to think the Global Search Index is ALWAYS empty (Forces a rebuild)
+add_filter( 'pre_option_auto_listings_search_data', '__return_false', 9999 );
+add_filter( 'pre_transient_auto_listings_search_data', '__return_false', 9999 );
 
+// 3. Log that the bypass is active
+add_action( 'template_redirect', function() {
+    if ( is_admin() || strpos($_SERVER['REQUEST_URI'], '/exchange/') === false ) return;
+    error_log("VINTTRO: Virtual Cache Bypass Active for Exchange Page.");
+    wp_cache_flush(); // Final nudge to the RAM cache
+}, 1 );
 // ==========================================================
 // 6. UI FIXES (JavaScript)
 // ==========================================================

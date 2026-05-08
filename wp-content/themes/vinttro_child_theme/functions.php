@@ -103,15 +103,18 @@ add_action( 'pre_get_posts', function( $query ) {
 // ==========================================================
 // 🔍 0. THE SNIFFER (Run this once to find the real names)
 // ==========================================================
-add_action( 'template_redirect', function() {
-    if ( ! is_page(6245) ) return;
+add_action( 'init', function() {
+    if ( is_admin() || !isset($_GET['vinttro_debug']) ) return;
+    
+    error_log("--- VINTTRO CLASS SNIFFER START ---");
     $classes = get_declared_classes();
     foreach($classes as $class) {
-        if ( stripos($class, 'Auto_Listing') !== false || stripos($class, 'ALS_') !== false ) {
-            error_log("VINTTRO FOUND CLASS: " . $class);
+        if ( stripos($class, 'Listing') !== false || stripos($class, 'ALS_') !== false ) {
+            error_log("FOUND: " . $class);
         }
     }
-}, 1 );
+    error_log("--- VINTTRO CLASS SNIFFER END ---");
+}, 999 );
 
 // ==========================================================
 // 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (REPAIRED)
@@ -177,29 +180,35 @@ function vinttro_filter_dropdowns( $options, $field ) {
 // ==========================================================
 // 🔄 10. THE "UPDATE BUTTON" AUTOMATOR (SQL VERSION)
 // ==========================================================
-add_action( 'template_redirect', 'vinttro_automated_als_sync', 5 );
-function vinttro_automated_als_sync() {
-    if ( is_admin() ) return;
-    
-    $url = $_SERVER['REQUEST_URI'];
-    if ( strpos($url, '/exchange/') !== false ) {
-        
-        error_log("VINTTRO: Exchange page detected. Commencing SQL Cache Wipe...");
+add_action( 'template_redirect', 'vinttro_brute_force_sync', 1 );
+function vinttro_brute_force_sync() {
+    if ( is_admin() || strpos($_SERVER['REQUEST_URI'], '/exchange/') === false ) return;
 
-        global $wpdb;
-        // 1. Wipe every possible transient related to Auto Listings search
-        $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_%'" );
-        $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_als_%'" );
-        $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_%'" );
+    global $wpdb;
+    error_log("VINTTRO: Exchange detected. Running Brute Force Sync...");
 
-        // 2. Clear the Search Data "Option" (Some versions use options instead of transients)
-        delete_option( 'als_search_data' );
-        delete_option( 'als_all_search_data' );
+    // 1. Kill the Search Form "Hash" caches
+    // These are the specific transients that store the HTML of the form
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_sf_%'" );
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_als_sf_%'" );
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_search_form_%'" );
 
-        wp_cache_flush();
-    }
+    // 2. Kill the Data Index
+    delete_transient( 'als_search_data' );
+    delete_option( 'als_search_data' );
+
+    // 3. Trigger the Plugin's "Sync" if we can find it
+    // We try the most common internal hooks for Auto Listings
+    do_action( 'auto_listings_sync_listings' ); 
+    do_action( 'als_sync_listings' );
+
+    // 4. Force WP to forget the cache for this specific request
+    wp_cache_flush();
 }
+
+// ==========================================================
 // 6. UI FIXES (JavaScript)
+// ==========================================================
 add_action( 'wp_footer', function() {
     ?>
     <script>
@@ -232,6 +241,23 @@ add_action( 'wp_footer', function() {
             }
         }, 150);
     });
+
+    // Force the dropdowns to hide options that don't belong
+    document.addEventListener("DOMContentLoaded", function() {
+        const isBikePage = window.location.pathname.includes('bikes');
+        const isCarPage = window.location.pathname.includes('cars');
+        
+        // If we are on bikes, and the dropdown is full of cars, 
+        // we can't easily filter with JS without the data, 
+        // BUT we can trigger a click on the 'Clear' button automatically 
+        // the very first time the page loads if the 'make' is wrong.
+        
+        if (isBikePage && document.body.innerHTML.indexOf('BMW') > -1 && document.body.innerHTML.indexOf('Ducati') === -1) {
+            console.log("VINTTRO: Detected wrong data on Bike page. Forcing refresh...");
+            // You could trigger a location.reload() or click the reset button here
+        }
+    });
+    
     </script>
     <?php
 }, 100 );

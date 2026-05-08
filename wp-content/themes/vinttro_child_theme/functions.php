@@ -105,35 +105,27 @@ add_action( 'pre_get_posts', function( $query ) {
 // ==========================================================
 add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
     // Only target 'make' and 'model'
-    error_log("auto_listings_search_field_options - 1");
-
     if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
-        error_log("auto_listings_search_field_options - 2");
         return $options;
     }
+
+    // LOGGING: This will now show up because we are clearing the cache below
+    error_log("VINTTRO: Filter 5a is now running for: " . $field['name']);
 
     $current_url = $_SERVER['REQUEST_URI'];
     $target_type = '';
 
-    // Detect if we are on Cars or Bikes
     if ( strpos($current_url, '/cars') !== false ) {
         $target_type = 'car'; 
     } elseif ( strpos($current_url, '/bikes') !== false ) {
         $target_type = 'motorbike'; 
     }
 
-    if ( empty( $target_type ) ) {
-        error_log("auto_listings_search_field_options - 3: No target vehicle type detected in URL. Returning default options.");
-        return $options;
-    }
+    if ( empty( $target_type ) ) return $options;
 
     global $wpdb;
     $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
 
-    // DEBUG: Log the attempt
-    error_log("VINTTRO: Filtering {$field['name']} for vehicle_type: $target_type");
-
-    // We use a broader query that doesn't rely on the plugin's internal "Sync"
     $results = $wpdb->get_col( $wpdb->prepare( "
         SELECT DISTINCT pm.meta_value 
         FROM {$wpdb->postmeta} pm
@@ -149,48 +141,58 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
     ", $meta_key, $target_type ) );
 
     if ( ! empty( $results ) ) {
-        error_log("VINTTRO: Found " . count($results) . " results for $target_type");
-        $new_options = array('' => reset($options)); // Keep the "All Makes" placeholder
+        $new_options = array('' => reset($options)); 
         foreach ( $results as $value ) {
             $new_options[$value] = $value;
         }
         return $new_options;
-    } else {
-        error_log("VINTTRO: SQL found 0 results. Check if slug '$target_type' matches your 'Vehicle Type' taxonomy slug.");
     }
 
     return $options;
 }, 999, 2 );
 
 // ==========================================================
-// 🔄 10. THE "UPDATE BUTTON" AUTOMATOR (REFINED)
+// 🔄 10. THE "UPDATE BUTTON" AUTOMATOR (RELOADED)
 // ==========================================================
-add_action( 'wp', 'vinttro_automated_als_sync' );
+// We use template_redirect because 'wp' is too early for plugin functions
+add_action( 'template_redirect', 'vinttro_automated_als_sync', 5 );
+
 function vinttro_automated_als_sync() {
     if ( is_admin() ) return;
     
     $url = $_SERVER['REQUEST_URI'];
     if ( strpos($url, '/exchange/') !== false ) {
         
-        // This is the functional equivalent of the "Update" button
-        // It clears the transient that holds the "Global" list of makes
+        error_log("VINTTRO: Exchange page detected. Commencing cache wipe...");
+
+        // 1. Delete ALL search form HTML caches (Standard and Hashed)
+        global $wpdb;
+        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_als_search_form_%'");
+        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_als_search_form_%'");
+        
+        // 2. Kill the Global Data Transients
         delete_transient( 'als_all_search_data' );
         delete_transient( 'als_search_data' );
+        delete_transient( 'als_search_filters' );
         
-        // Force the search form to NOT cache its HTML
-        global $post;
-        if ( isset($post->ID) ) {
-            delete_transient( 'als_search_form_' . $post->ID );
+        // 3. Trigger the actual Sync Function (Using the correct prefix)
+        if ( function_exists( 'auto_listings_get_search_data' ) ) {
+            auto_listings_get_search_data( true ); 
+            error_log("VINTTRO: auto_listings_get_search_data(true) SUCCESSFUL.");
+        } elseif ( class_exists( 'Auto_Listings_Search_Data' ) ) {
+            $search_data = new Auto_Listings_Search_Data();
+            $search_data->update();
+            error_log("VINTTRO: Search_Data Class Update SUCCESSFUL.");
+        } else {
+            error_log("VINTTRO ERROR: Could not find any Auto Listings sync functions!");
         }
-        
-        // This clears the "Search Index" internal to Auto Listings
-        if ( function_exists( 'als_get_search_data' ) ) {
-            als_get_search_data( true ); // The 'true' forces a refresh
-            error_log("VINTTRO: als_get_search_data(true) refresh called.");
-        }
+
+        wp_cache_flush();
     }
 }
 
+// 11. Disable the form cache entirely
+add_filter( 'auto_listings_search_form_cache_results', '__return_false', 999 );
 // 6. UI FIXES (JavaScript)
 add_action( 'wp_footer', function() {
     ?>

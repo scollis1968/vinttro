@@ -1,4 +1,5 @@
 <?php
+error_log('VINTTRO: functions.php is definitely loading!');
 /**
  * VINTTRO Custom Theme Functions - REPAIRED
  */

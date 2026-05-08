@@ -117,22 +117,30 @@ add_action( 'init', function() {
 }, 999 );
 
 // ==========================================================
-// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (FORCE)
+// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (AJAX AWARE)
 // ==========================================================
 add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
+    // Only target 'make' and 'model'
     if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
         return $options;
     }
 
-    // If this shows up, we've successfully broken the HTML cache!
-    error_log("VINTTRO SUCCESS: Filter 5a is now running for " . $field['name']);
-
+    // DETECT CONTEXT: Check URL and Referer (for AJAX support)
     $current_url = $_SERVER['REQUEST_URI'];
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    
     $target_type = '';
-    if ( strpos($current_url, '/cars') !== false ) { $target_type = 'car'; } 
-    elseif ( strpos($current_url, '/bikes') !== false ) { $target_type = 'motorbike'; }
+    if ( strpos($current_url, '/cars') !== false || strpos($referer, '/cars') !== false ) {
+        $target_type = 'car'; 
+    } elseif ( strpos($current_url, '/bikes') !== false || strpos($referer, '/bikes') !== false ) {
+        $target_type = 'motorbike'; 
+    }
 
+    // If no context found, don't interfere
     if ( empty( $target_type ) ) return $options;
+
+    // LOGGING: This will now appear in your log!
+    error_log("VINTTRO SUCCESS: Filter 5a is running for {$field['name']} on $target_type");
 
     global $wpdb;
     $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
@@ -152,49 +160,47 @@ add_filter( 'auto_listings_search_field_options', function( $options, $field ) {
     ", $meta_key, $target_type ) );
 
     if ( ! empty( $results ) ) {
-        $placeholder = reset($options);
+        $placeholder = reset($options); // e.g. "All Makes"
         $new_options = array('' => $placeholder);
         foreach ( $results as $value ) { $new_options[$value] = $value; }
         return $new_options;
     }
     return $options;
-}, 20, 2 );
+}, 999, 2 );
 
 // ==========================================================
-// 🔄 10. THE "TOTAL AMNESIA" RESET
+// 🔄 10. THE "TOTAL AMNESIA" RESET (OBJECT CACHE COMPATIBLE)
 // ==========================================================
 add_action( 'template_redirect', 'vinttro_total_amnesia_sync', 1 );
 
 function vinttro_total_amnesia_sync() {
     if ( is_admin() || strpos($_SERVER['REQUEST_URI'], '/exchange/') === false ) return;
 
-    global $wpdb;
-    error_log("VINTTRO: Exchange detected. Running Total Amnesia Wipe...");
+    error_log("VINTTRO: Exchange detected. Wiping Persistent Cache...");
 
-    // 1. Wipe standard Options (not just transients)
-    // The "Update" button often saves to these
-    delete_option( 'auto_listings_search_data' );
-    delete_option( 'auto_listings_all_search_data' );
-    delete_option( 'auto_listings_search_filters' );
+    // 1. Delete standard Transients using the API (Compatible with Redis)
+    delete_transient( 'auto_listings_all_search_data' );
+    delete_transient( 'auto_listings_search_data' );
+    delete_transient( 'auto_listings_search_filters' );
 
-    // 2. Kill the HTML Form Cache Wildcard
-    // This targets every single cached form in the database
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_%'" );
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_auto_listings_search_form_%'" );
-    
-    // 3. Trigger the internal Search Data Update if the function exists
-    if ( function_exists('auto_listings_update_search_data') ) {
-        auto_listings_update_search_data();
-        error_log("VINTTRO: Internal auto_listings_update_search_data() called.");
+    // 2. Kill the HTML Form Cache using the API
+    // Since we don't have the hash, we must flush the entire object cache
+    if ( function_exists('wp_cache_flush') ) {
+        wp_cache_flush();
+        error_log("VINTTRO: Object Cache Flushed.");
     }
 
-    wp_cache_flush();
+    // 3. Trigger the internal sync logic
+    if ( class_exists( '\AutoListings\SearchQuery' ) ) {
+        $search_query = new \AutoListings\SearchQuery();
+        if ( method_exists( $search_query, 'update_data' ) ) {
+            $search_query->update_data();
+            error_log("VINTTRO: \AutoListings\SearchQuery->update_data() triggered.");
+        }
+    }
 }
 
-// ==========================================================
-// 🧪 11. KILL THE HTML SHORTCODE CACHE
-// ==========================================================
-// This is the most likely culprit. It stops the shortcode from saving its HTML.
+// 11. SHUT OFF THE INTERNAL CACHE ENTIRELY
 add_filter( 'auto_listings_search_form_cache_results', '__return_false', 999 );
 add_filter( 'auto_listings_search_form_cache_form', '__return_false', 999 );
 

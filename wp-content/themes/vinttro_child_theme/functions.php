@@ -237,8 +237,9 @@ add_action( 'init', function() {
 add_action( 'wp', 'vinttro_automated_als_sync' );
 
 function vinttro_automated_als_sync() {
+    error_log("VINTTRO: vinttro_automated_als_sync -1 ");
     if ( is_admin() ) return;
-
+    error_log("VINTTRO: vinttro_automated_als_sync -2 ");
     global $post;
     if ( ! $post ) return;
 

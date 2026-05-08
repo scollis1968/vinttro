@@ -117,90 +117,77 @@ add_action( 'init', function() {
 }, 999 );
 
 // ==========================================================
-// 🚗 5a. AUTO LISTING - DYNAMIC DROPDOWN FILTER (ALL-HOOKS)
+// 🚗 5a. AUTO LISTING - SURGICAL FIELD INJECTION (BY FORM ID)
 // ==========================================================
-$hooks = ['auto_listings_search_field_options', 'als_search_field_options', 'auto_listings_search_field_data'];
+add_filter( 'auto_listings_search_form_fields', function( $fields, $form_id ) {
+    
+    // Define which Form ID gets which Vehicle Type slug
+    $form_map = [
+        6619 => 'car',
+        6625 => 'motorbike'
+    ];
 
-foreach ( $hooks as $hook ) {
-    add_filter( $hook, function( $options, $field ) {
-        // Target only make/model
-        if ( ! isset( $field['name'] ) || ( $field['name'] !== 'make' && $field['name'] !== 'model' ) ) {
-            return $options;
-        }
-
-        // IF THIS APPEARS, THE GHOST IS DEAD.
-        error_log("VINTTRO SUCCESS: Filter 5a triggered via hook: $hook for " . $field['name']);
-
-        $current_url = $_SERVER['REQUEST_URI'];
-        $target_type = '';
-        if ( strpos($current_url, '/cars') !== false ) { $target_type = 'car'; } 
-        elseif ( strpos($current_url, '/bikes') !== false ) { $target_type = 'motorbike'; }
-
-        if ( empty( $target_type ) ) return $options;
-
-        global $wpdb;
-        $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
-
-        // We check for 'car' OR 'cars' and 'motorbike' OR 'motorbikes' to be safe
-        $results = $wpdb->get_col( $wpdb->prepare( "
-            SELECT DISTINCT pm.meta_value 
-            FROM {$wpdb->postmeta} pm
-            JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-            JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-            JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-            JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-            WHERE pm.meta_key = %s 
-            AND (t.slug = %s OR t.slug = %s)
-            AND tt.taxonomy = 'vehicle_type'
-            AND p.post_status = 'publish'
-            ORDER BY pm.meta_value ASC
-        ", $meta_key, $target_type, $target_type . 's' ) );
-
-        if ( ! empty( $results ) ) {
-            $placeholder = reset($options); 
-            $new_options = array('' => $placeholder);
-            foreach ( $results as $value ) { $new_options[$value] = $value; }
-            return $new_options;
-        }
-        return $options;
-    }, 9999, 2 );
-}
-// ==========================================================
-// 🔄 10. THE "UPDATE BUTTON" CLONE (NAMESPACED)
-// ==========================================================
-add_action( 'template_redirect', 'vinttro_clone_update_button_logic', 1 );
-
-function vinttro_clone_update_button_logic() {
-    if ( is_admin() || strpos($_SERVER['REQUEST_URI'], '/exchange/') === false ) return;
-
-    error_log("VINTTRO: Exchange detected. Running Namespaced Sync...");
-
-    // 1. Manually trigger the Search Data Rebuild
-    // This is exactly what the "Update" button calls internally
-    if ( class_exists( '\AutoListings\Listing\SearchData' ) ) {
-        $search_data = new \AutoListings\Listing\SearchData();
-        $search_data->update_all_search_data(); 
-        error_log("VINTTRO: \AutoListings\Listing\SearchData->update_all_search_data() called.");
+    if ( ! isset( $form_map[$form_id] ) ) {
+        return $fields;
     }
 
-    // 2. Wipe the HTML cache keys from the DB
-    global $wpdb;
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_sf_%'" );
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_auto_listings_sf_%'" );
-    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_%'" );
+    $target_type = $form_map[$form_id];
+    error_log("VINTTRO: Injecting surgical data for Form $form_id (Type: $target_type)");
 
-    // 3. Nuke the RAM cache (Redis/Memcached)
-    wp_cache_flush();
+    global $wpdb;
+
+    foreach ( $fields as $key => &$field ) {
+        if ( $field['name'] === 'make' || $field['name'] === 'model' ) {
+            
+            $meta_key = ( $field['name'] === 'make' ) ? '_al_listing_make_display' : '_al_listing_model_name';
+
+            $results = $wpdb->get_col( $wpdb->prepare( "
+                SELECT DISTINCT pm.meta_value 
+                FROM {$wpdb->postmeta} pm
+                JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+                JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+                JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+                JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+                WHERE pm.meta_key = %s 
+                AND t.slug = %s 
+                AND tt.taxonomy = 'vehicle_type'
+                AND p.post_status = 'publish'
+                ORDER BY pm.meta_value ASC
+            ", $meta_key, $target_type ) );
+
+            if ( ! empty( $results ) ) {
+                error_log("VINTTRO: Form $form_id - Found " . count($results) . " items for " . $field['name']);
+                
+                $new_options = array( '' => $field['placeholder'] );
+                foreach ( $results as $val ) {
+                    $new_options[$val] = $val;
+                }
+                $field['options'] = $new_options;
+            }
+        }
+    }
+    return $fields;
+}, 9999, 2 );
+
+// ==========================================================
+// 🔄 10. THE SPECIFIC CACHE WIPE (BY FORM ID)
+// ==========================================================
+add_action( 'template_redirect', 'vinttro_clear_specific_form_caches', 1 );
+function vinttro_clear_specific_form_caches() {
+    if ( is_admin() ) return;
+
+    global $wpdb;
     
-    error_log("VINTTRO: Namespaced Sync Complete.");
+    // Wipe the HTML cache for these two specific forms only
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_6619%'" );
+    $wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '_transient_auto_listings_search_form_6625%'" );
+    
+    // Clear the standard WP Object Cache
+    wp_cache_flush();
 }
 
-// ==========================================================
-// 🧪 11. DISABLE SHORTCODE CACHING
-// ==========================================================
-// These filters tell the plugin NEVER to save the form HTML
-add_filter( 'auto_listings_search_form_cache_form', '__return_false', 100 );
-add_filter( 'auto_listings_search_form_cache_results', '__return_false', 100 );
+// 11. RE-ESTABLISH THE "NO CACHE" RULE
+add_filter( 'auto_listings_search_form_cache_results', '__return_false', 9999 );
 
 // ==========================================================
 // 6. UI FIXES (JavaScript)

@@ -1,0 +1,227 @@
+/* ==========================================================================
+   AUTO LISTINGS - CORE GRID & CONTAINER
+   ========================================================================== */
+
+/* Fix the main container split (Filter on left, Cars on right) */
+.vinttro-results .wp-block-columns {
+    display: flex !important;
+    gap: 40px !important;
+    align-items: flex-start !important;
+}
+
+/* Ensure the column holding the cars takes up the available space */
+.vinttro-results .wp-block-column:has(.auto-listings-items) {
+    flex: 1 !important;
+}
+
+/* The Grid System */
+.vinttro-results ul.auto-listings-items.grid-view,
+.auto-listings-shortcode ul.auto-listings-items.grid-view {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 30px !important;
+    padding: 0 !important;
+    margin: 20px 0 !important;
+    list-style: none !important;
+}
+
+/* ==========================================================================
+   CARD DESIGN (The Listing Item)
+   ========================================================================== */
+
+ul.auto-listings-items.grid-view li.auto-listing {
+    width: 100% !important; 
+    max-width: 100% !important;
+    margin: 0 !important;
+    float: none !important; /* Kill the plugin's old float layout */
+    display: flex !important;
+    flex-direction: column !important;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 0; /* Changed from 10 to 0 to allow image to hit edges */
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+ul.auto-listings-items.grid-view li.auto-listing:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+    border-color: #e0e0e0;
+}
+
+/* ==========================================================================
+   IMAGES & HOVER EFFECTS
+   ========================================================================== */
+
+.auto-listings-items .image {
+    width: 100%;
+    position: relative;
+    overflow: hidden;   
+    background-color: #f0f0f0;
+}
+
+.auto-listings-items .image img {
+    display: block;
+    width: 100% !important;
+    aspect-ratio: 16 / 10 !important;
+    height: 200px !important;
+    object-fit: cover !important;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Zoom effect on hover */
+.auto-listings-items li:hover .image img {
+    transform: scale(1.08);
+}
+
+/* ==========================================================================
+   CARD CONTENT & TYPOGRAPHY
+   ========================================================================== */
+
+.auto-listing .summary {
+    padding: 20px !important;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.auto-listings-items.grid-view h1,
+.auto-listing .summary h3.title a {
+    color: #916D1C; /* Vinttro Gold */
+    font-size: 1.3rem !important;
+    text-decoration: none;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* Modern Truncation: Cut description at exactly 3 lines */
+.auto-listing .description {
+    font-size: 0.85rem !important;
+    line-height: 1.5 !important;
+    color: #555;
+    margin-bottom: 15px;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+
+/* ==========================================================================
+   PRICING & STATUS
+   ========================================================================== */
+
+.auto-listing .price {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Strike-through price if "Sold" or specific state exists */
+.auto-listing li:has(.state) .price-amount,
+.auto-listing li:has(.state) .currency-symbol {
+    text-decoration: line-through !important;
+    color: #999 !important;
+    opacity: 0.7;
+}
+
+.auto-listing .state {
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    background: #fff8e1;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #916D1C;
+}
+
+/* ==========================================================================
+   BUTTONS (Gold Pill Style)
+   ========================================================================== */
+
+/* Item Button & Search Submit */
+.auto-listings-items li .al-button,
+.als-submit,
+.return-to-listings {
+    background-color: #916d1c !important;
+    color: #ffffff !important;
+    border-radius: 50px !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    text-transform: uppercase;
+    text-decoration: none !important;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease !important;
+    border: none !important;
+}
+
+.auto-listings-items li .al-button:hover,
+.als-submit:hover {
+    background-color: #A98357 !important;
+    transform: translateY(-2px);
+}
+
+.als-reset {
+    background: transparent !important;
+    color: #999 !important;
+    text-decoration: underline;
+    font-size: 0.85rem !important;
+    display: block;
+    margin: 10px auto 0;
+    text-align: center;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   SINGLE LISTING PAGE REPAIR
+   ========================================================================== */
+
+.single-auto-listing .vinttro-showroom-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px !important;
+}
+
+.single-auto-listing .vinttro-main-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 350px;
+    gap: 40px;
+}
+
+.single-auto-listing .vinttro-gallery-box,
+.single-auto-listing .lSSlideWrapper,
+.single-auto-listing .lSSlideWrapper img {
+    border-radius: 20px !important;
+    overflow: hidden !important;
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+    .vinttro-results ul.auto-listings-items.grid-view,
+    .auto-listings-shortcode ul.auto-listings-items.grid-view {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 800px) {
+    .vinttro-results .wp-block-columns {
+        flex-direction: column !important;
+    }
+    .vinttro-results ul.auto-listings-items.grid-view,
+    .auto-listings-shortcode ul.auto-listings-items.grid-view {
+        grid-template-columns: 1fr !important;
+    }
+    .single-auto-listing .vinttro-main-grid {
+        grid-template-columns: 1fr;
+    }
+}

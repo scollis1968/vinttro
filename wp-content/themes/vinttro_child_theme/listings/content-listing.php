@@ -24,7 +24,7 @@ $template_path = locate_template( 'listings/' . $template_to_load );
 
 // 3. Load the design or fallback
 ?>
-<li <?php post_class('auto-listing-item-wrap'); ?>>
+<li <?php post_class('auto-listing'); ?>>
     <?php
     if ( $template_path ) {
         include( $template_path );

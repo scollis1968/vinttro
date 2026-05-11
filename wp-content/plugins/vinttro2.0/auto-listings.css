@@ -24,7 +24,7 @@
 
 /* 2. THE GOLD PILL BUTTON */
 .auto-listings-items li .al-button {
-    background-color: #C19A6B !important; /* Vinttro Gold - adjust HEX if needed */
+    background-color: #916d1c !important; /* Vinttro Gold - adjust HEX if needed */
     color: #ffffff !important;
     border-radius: 50px !important; /* High value creates the pill shape */
     padding: 12px 24px !important;

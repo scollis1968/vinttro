@@ -369,6 +369,9 @@ ul.auto-listings-items.grid-view li.auto-listing:hover {
 .vinttro-cover-cta .wp-block-cover__inner-container p {
     color: #ffffff !important;
 }
+.auto-listings-items.grid-view{
+        padding: 10px;
+}
 .auto-listings-items.grid-view h1{
         color: #916D1C; /* Your branding Gold */
         font-size: 1.5rem !important;

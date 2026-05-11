@@ -245,17 +245,33 @@ add_action( 'init', function() {
 });
 
 // ==========================================================
-// 🚀 CUSTOM SEARCH FORM (Replaces AutoListings [als] shortcode)
+// 🚀 CUSTOM SEARCH FORM (Cars, Bikes, Daily, Watches)
 // ==========================================================
 add_shortcode( 'vinttro_search', function() {
     global $wpdb;
 
-    // 1. Identify where we are
+    // 1. Identify where we are based on URL
     $current_url = $_SERVER['REQUEST_URI'];
-    $target_type = ( strpos($current_url, '/bikes') !== false ) ? 'motorbike' : 'car';
-    $placeholder = ( $target_type === 'car' ) ? 'Car' : 'Bike';
+    
+    if ( strpos($current_url, '/bikes') !== false ) {
+        $target_type = 'motorbike';
+        $placeholder = 'Bike';
+        $prices      = [1000, 3000, 5000, 10000, 15000, 20000, 30000, 50000];
+    } elseif ( strpos($current_url, '/daily') !== false ) {
+        $target_type = 'daily'; // Ensure this matches your 'vehicle_type' slug in WP
+        $placeholder = 'Daily Driver';
+        $prices      = [5000, 10000, 20000, 30000, 40000, 50000, 75000, 100000];
+    } elseif ( strpos($current_url, '/watches') !== false ) {
+        $target_type = 'watches'; // Ensure this matches your 'vehicle_type' slug in WP
+        $placeholder = 'Watch';
+        $prices      = [500, 1000, 2500, 5000, 10000, 20000, 50000, 100000];
+    } else {
+        $target_type = 'car';
+        $placeholder = 'Car';
+        $prices      = [5000, 10000, 20000, 30000, 50000, 75000, 100000, 150000];
+    }
 
-    // 2. Fetch only the Makes that actually exist for this Vehicle Type
+    // 2. Fetch only the Makes that exist for this Specific Type
     $makes = $wpdb->get_col( $wpdb->prepare( "
         SELECT DISTINCT pm.meta_value FROM {$wpdb->postmeta} pm
         JOIN {$wpdb->posts} p ON p.ID = pm.post_id
@@ -292,9 +308,12 @@ add_shortcode( 'vinttro_search', function() {
             <select name="max_price" class="vinttro-select">
                 <option value="">Any Price</option>
                 <?php 
-                $prices = [5000, 10000, 20000, 30000, 50000, 75000, 100000, 150000];
                 foreach ($prices as $p) {
-                    printf('<option value="%d" %s>£%s</option>', $p, selected($_GET['max_price'] ?? '', $p, false), number_format($p));
+                    printf('<option value="%d" %s>£%s</option>', 
+                        $p, 
+                        selected($_GET['max_price'] ?? '', $p, false), 
+                        number_format($p)
+                    );
                 }
                 ?>
             </select>

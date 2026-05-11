@@ -1,6 +1,9 @@
 #!/bin/bash
 
-
+# ----------------------------------------------------------------
+# tip :- run the following command to execute this script and see the logs in real-time: 
+#    journalctl -u webhook -f
+# ----------------------------------------------------------------
 
 # --- CONFIGURATION ---
 
@@ -38,8 +41,15 @@ rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/uploads/ $P
 rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/plugins/ $PROD_PATH/wp-content/plugins/
 rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/themes/ $PROD_PATH/wp-content/themes/
 
+# 1. Sync Files
+# We use --no-p --no-g --no-o to stop preserving UAT ownership
+# and --chmod to force correct permissions so sed can work later.
+#rsync -avz --no-p --no-g --no-o --chmod=D2775,F664 -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/uploads/ $PROD_PATH/wp-content/uploads/
+#rsync -avz --no-p --no-g --no-o --chmod=D2775,F664 -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/plugins/ $PROD_PATH/wp-content/plugins/
+#rsync -avz --no-p --no-g --no-o --chmod=D2775,F664 -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/themes/ $PROD_PATH/wp-content/themes/
 
-# 2. Database Transfer
+# 2. Database Export and Transfer
+echo "2. 🗂️ Database Transfer"
 ssh $SSH_OPTS $UAT_USER@$UAT_IP "wp db export --path=$UAT_PATH /tmp/uat_dump.sql"
 scp $SSH_OPTS $UAT_USER@$UAT_IP:/tmp/uat_dump.sql /tmp/uat_dump.sql
 
@@ -63,10 +73,10 @@ echo "3.5📂 Updating URLs inside CSS and JS files..."
 find $PROD_PATH/wp-content -type f \( -name "*.css" -o -name "*.js" -o -name "*.map" \) -exec sed -i "s|$UAT_URL|$PROD_URL|g" {} +
 find $PROD_PATH/wp-content -type f \( -name "*.css" -o -name "*.js" -o -name "*.map" -o -name "*.json" \) -exec sed -i "s|uat.vinttro.co.uk|www.vinttro.co.uk|g" {} +
 #
-# Force Elementor to regenerate CSS files with the new URLs
-if wp post-type exists elementor_library --allow-root; then
-    echo "🎨 Regenerating Elementor CSS..."
-    wp elementor flush-css --allow-root
+# Corrected Elementor Check (checks if plugin is active instead of post-type)
+if wp plugin is-active elementor --allow-root --path=$PROD_PATH; then
+    log "🎨 Regenerating Elementor CSS..."
+    wp elementor flush-css --allow-root --path=$PROD_PATH
 fi
 
 # 4 Production-Specific Sanitization

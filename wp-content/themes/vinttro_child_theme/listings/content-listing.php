@@ -1,30 +1,37 @@
 <?php
 /**
- * The template for displaying listing content within loops
+ * The template for displaying listing content within loops.
+ * This version detects the type via the URL to choose the layout.
  */
-if ( ! defined( 'ABSPATH' ) ) exit; 
+if ( ! defined( 'ABSPATH' ) ) exit;
 
-// Identify the vehicle type
-$vehicle_type = auto_listings_get_listing_type(); // Returns the slug (car, motorbike, watches, etc.)
+// 1. Identify the type from the URL (same logic as your search script)
+$current_url = $_SERVER['REQUEST_URI'];
 
-// Load a specific template part based on the type
-switch ( $vehicle_type ) {
-    case 'motorbike':
-        // Looks for auto-listings/content-listing-bike.php in your child theme
-        auto_listings_get_template( 'content-listing-bike.php' );
-        break;
+if ( strpos($current_url, '/bikes') !== false ) {
+    $template_to_load = 'content-listing-bike.php';
+} elseif ( strpos($current_url, '/watches') !== false ) {
+    $template_to_load = 'content-listing-watch.php';
+} elseif ( strpos($current_url, '/daily') !== false ) {
+    $template_to_load = 'content-listing-daily.php';
+} else {
+    $template_to_load = 'content-listing-car.php';
+}
 
-    case 'watches':
-        // Looks for auto-listings/content-listing-watch.php in your child theme
-        auto_listings_get_template( 'content-listing-watch.php' );
-        break;
+// 2. Find the file path
+// Note: Your error log shows you are using the 'listings' folder in your theme
+$template_path = locate_template( 'listings/' . $template_to_load );
 
-    case 'daily':
-        auto_listings_get_template( 'content-listing-daily.php' );
-        break;
-
-    default:
-        // Fallback to the standard car layout
-        auto_listings_get_template( 'content-listing-car.php' );
-        break;
+// 3. Load the design or fallback
+if ( $template_path ) {
+    include( $template_path );
+} else {
+    // If the specific file is missing, we need a fallback so the site doesn't go blank.
+    // This will try to load the standard car layout as a safety net.
+    $fallback = locate_template( 'listings/content-listing-car.php' );
+    if ( $fallback ) {
+        include( $fallback );
+    } else {
+        echo '';
+    }
 }

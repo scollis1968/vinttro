@@ -80,7 +80,7 @@ ul.auto-listings-items.grid-view li.auto-listing {
     background: #fff;
     border: 1px solid #eee;
     border-radius: 12px;
-    padding: 0;
+    padding: 10;
     overflow: hidden;
     transition: transform 0.2s ease;
 }
@@ -369,9 +369,7 @@ ul.auto-listings-items.grid-view li.auto-listing:hover {
 .vinttro-cover-cta .wp-block-cover__inner-container p {
     color: #ffffff !important;
 }
-.auto-listings-items.grid-view{
-        padding: 10px;
-}
+
 .auto-listings-items.grid-view h1{
         color: #916D1C; /* Your branding Gold */
         font-size: 1.5rem !important;

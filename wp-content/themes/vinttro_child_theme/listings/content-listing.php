@@ -23,15 +23,15 @@ if ( strpos($current_url, '/bikes') !== false ) {
 $template_path = locate_template( 'listings/' . $template_to_load );
 
 // 3. Load the design or fallback
-if ( $template_path ) {
-    include( $template_path );
-} else {
-    // If the specific file is missing, we need a fallback so the site doesn't go blank.
-    // This will try to load the standard car layout as a safety net.
-    $fallback = locate_template( 'listings/content-listing-car.php' );
-    if ( $fallback ) {
-        include( $fallback );
+?>
+<li <?php post_class('auto-listing-item-wrap'); ?>>
+    <?php
+    if ( $template_path ) {
+        include( $template_path );
     } else {
-        echo '';
+        // Fallback to car if specific file missing
+        $fallback = locate_template( 'listings/content-listing-car.php' );
+        if ( $fallback ) include( $fallback );
     }
-}
+    ?>
+</li>

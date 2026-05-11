@@ -73,6 +73,20 @@ add_action( 'pre_get_posts', function( $query ) {
                 'terms'    => 'motorbike', // Double check this slug in Admin -> Auto Listings -> Vehicle Type
                 'operator' => 'IN',
             );
+        } elseif ( strpos($current_url, '/exchange/daily') !== false ) {
+            $tax_query[] = array(
+                'taxonomy' => 'vehicle_type',
+                'field'    => 'slug',
+                'terms'    => 'daily', // Double check this slug in Admin -> Auto Listings -> Vehicle Type
+                'operator' => 'IN',
+            );
+        } elseif ( strpos($current_url, '/exchange/watches') !== false ) {
+            $tax_query[] = array(
+                'taxonomy' => 'vehicle_type',
+                'field'    => 'slug',
+                'terms'    => 'watches', // Double check this slug in Admin -> Auto Listings -> Vehicle Type
+                'operator' => 'IN',
+            );
         }
 
         // Apply the tax_query if we added something

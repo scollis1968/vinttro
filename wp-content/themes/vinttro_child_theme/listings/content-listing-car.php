@@ -3,7 +3,7 @@
         <?php auto_listings_template_loop_image(); ?>
     </div>
     <div class="car-details">
-        <h3><?php the_title(); ?></h3>
+        <h1><?php the_title(); ?></h1>
         <span class="price"><?php auto_listings_template_loop_price(); ?></span>
         
         <div class="car-meta">

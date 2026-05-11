@@ -35,40 +35,42 @@ echo "🚀 Starting Secure Sync (as www-data)..."
 # This will now work perfectly because www-data owns the destination folders
 
 rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/uploads/ $PROD_PATH/wp-content/uploads/
-
 rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/plugins/ $PROD_PATH/wp-content/plugins/
-
 rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/themes/ $PROD_PATH/wp-content/themes/
 
 
 # 2. Database Transfer
-
-# No --allow-root needed, as we are running as the web user
-
 ssh $SSH_OPTS $UAT_USER@$UAT_IP "wp db export --path=$UAT_PATH /tmp/uat_dump.sql"
-
 scp $SSH_OPTS $UAT_USER@$UAT_IP:/tmp/uat_dump.sql /tmp/uat_dump.sql
 
 
 
 # 3. Import and Replace
-log "3. Import and Replace ..."
-
+echo "3.📂 Import and Replace ..."
 cd $PROD_PATH
-
 wp db import /tmp/uat_dump.sql
 
+wp search-replace "https://wwww.vinttro.co.uk" "https://www.vinttro.co.uk" --all-tables
+wp search-replace "uat.vinttro.co.uk" "www.vinttro.co.uk" --all-tables
 wp search-replace "$UAT_URL" "$PROD_URL" --all-tables
-
+wp search-replace "uat.vinttro.co.uk" "www.vinttro.co.uk" --all-tables
 wp search-replace ".uat@" "@" --all-tables
 
 
-
-
+# --- THE FIX FOR YOUR FONT ISSUE ---
+echo "3.5📂 Updating URLs inside CSS and JS files..."
+# This finds all css/js/map files in wp-content and replaces the UAT URL with the PROD URL
+find $PROD_PATH/wp-content -type f \( -name "*.css" -o -name "*.js" -o -name "*.map" \) -exec sed -i "s|$UAT_URL|$PROD_URL|g" {} +
+find $PROD_PATH/wp-content -type f \( -name "*.css" -o -name "*.js" -o -name "*.map" -o -name "*.json" \) -exec sed -i "s|uat.vinttro.co.uk|www.vinttro.co.uk|g" {} +
+#
+# Force Elementor to regenerate CSS files with the new URLs
+if wp post-type exists elementor_library --allow-root; then
+    echo "🎨 Regenerating Elementor CSS..."
+    wp elementor flush-css --allow-root
+fi
 
 # 4 Production-Specific Sanitization
-
-echo "🛠️ Hardening Production Settings..."
+echo "4. 🛠️ Hardening Production Settings..."
 
 
 
@@ -100,8 +102,6 @@ echo "✅ Production site unlocked and public."
 
 # Fix any lingering typos from the migration (like the wwww issue)
 
-wp search-replace "https://wwww.vinttro.co.uk" "https://www.vinttro.co.uk" --all-tables
-wp search-replace "uat.vinttro.co.uk" "www.vinttro.co.uk" --all-tables
 
 # In v-sync.sh
 echo "🔍 Performing deep domain replacement..."
@@ -138,7 +138,7 @@ echo "10. SuitCRM - CSS and styles"
 UAT_CRM_PATH="/var/www/suitecrm"
 PROD_CRM_PATH="/var/www/suitecrm"
 
-rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_CRM_PATH/extensions/vinttro-custom-ui/ $PROD_CRM_PATH/extensions/vinttro-custom-ui/
+rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_CRM_PATH/extensions/ $PROD_CRM_PATH/extensions/
 rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_CRM_PATH/public/dist/extensions/ $PROD_CRM_PATH/public/dist/extensions/
 
 echo "✅ Secure Sync Complete!"

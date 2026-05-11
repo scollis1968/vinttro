@@ -11,6 +11,10 @@ function vinttro_child_enqueue_styles() {
     wp_enqueue_style( 'child-style', get_stylesheet_uri(), array( 'parent-style' ), wp_get_theme()->get('Version') );
 }
 
+add_action( 'wp_enqueue_scripts', function() {
+    wp_enqueue_style( 'vinttro-auto-listings', get_stylesheet_directory_uri() . '/auto-listings.css', array(), '1.0.0' );
+}, 20 ); // Priority 20 ensures it loads after the main styles
+
 // 2. SUITECRM V8 API INTEGRATION
 add_action('user_register', 'suitecrm_store_user_id_after_registration', 10, 1);
 function suitecrm_store_user_id_after_registration($user_id) {

@@ -370,5 +370,6 @@ ul.auto-listings-items.grid-view li.auto-listing:hover {
     color: #ffffff !important;
 }
 .auto-listings-items.grid-view h1{
-        color: #916D1C !important; /* Your branding Gold */
+        color: #916D1C; /* Your branding Gold */
+        font-size: 1.5rem !important;
 }

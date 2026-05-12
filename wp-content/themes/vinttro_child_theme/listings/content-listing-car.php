@@ -2,7 +2,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // 1. Fetch the data from Auto Listings meta keys
-$year    = get_post_meta( get_the_ID(), '_al_listing_year', true );
+$year    = get_post_meta( get_the_ID(), '_al_listing_model_year', true );
 $mileage = get_post_meta( get_the_ID(), '_al_listing_mileage', true );
 $bhp     = get_post_meta( get_the_ID(), '_al_listing_engine_power', true ); // Auto Listings uses engine_power for BHP
 $make    = get_post_meta( get_the_ID(), '_al_listing_make_display', true );

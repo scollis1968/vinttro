@@ -11,9 +11,20 @@ function vinttro_child_enqueue_styles() {
     wp_enqueue_style( 'child-style', get_stylesheet_uri(), array( 'parent-style' ), wp_get_theme()->get('Version') );
 }
 
+// 1.a CONDITIONAL CSS (Only load on relevant pages)
 add_action( 'wp_enqueue_scripts', function() {
-    wp_enqueue_style( 'vinttro-auto-listings', get_stylesheet_directory_uri() . '/auto-listings.css', array(), '1.0.0' );
-}, 20 ); // Priority 20 ensures it loads after the main styles
+    $current_url = $_SERVER['REQUEST_URI'];
+
+    // Load only if URL contains /exchange/ OR if we are on a single listing page
+    if ( strpos($current_url, '/exchange') !== false || is_singular('auto-listing') ) {
+        wp_enqueue_style( 
+            'vinttro-auto-listings', 
+            get_stylesheet_directory_uri() . '/auto-listings.css', 
+            array(), 
+            '1.0.1' // Increment this version number to clear browser cache when you update the CSS
+        );
+    }
+}, 20 );
 
 // 2. SUITECRM V8 API INTEGRATION
 add_action('user_register', 'suitecrm_store_user_id_after_registration', 10, 1);

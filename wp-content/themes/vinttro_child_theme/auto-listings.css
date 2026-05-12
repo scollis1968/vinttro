@@ -14,9 +14,8 @@
     flex: 1 !important;
 }
 
-/* The Grid System */
-.vinttro-results ul.auto-listings-items.grid-view,
-.auto-listings-shortcode ul.auto-listings-items.grid-view {
+/* The Grid System - Target the UL directly so it works everywhere */
+ul.auto-listings-items.grid-view {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 30px !important;
@@ -26,10 +25,11 @@
 }
 
 /* ==========================================================================
-   CARD DESIGN (The Listing Item)
+   CARD DESIGN (The Listing Item Wrapper)
    ========================================================================== */
 
-ul.auto-listings-items.grid-view li.auto-listing {
+/* 1. Target the actual <li> wrapper we created in content-listing.php */
+ul.auto-listings-items.grid-view li.auto-listing-item-wrap {
     width: 100% !important; 
     max-width: 100% !important;
     margin: 0 !important;
@@ -39,17 +39,29 @@ ul.auto-listings-items.grid-view li.auto-listing {
     background: #fff;
     border: 1px solid #eee;
     border-radius: 12px;
-    padding: 0; /* Changed from 10 to 0 to allow image to hit edges */
+    padding: 0 !important; /* Force 0 so the image hits the edges */
     overflow: hidden;
+    list-style: none !important;
     transition: transform 0.2s ease, box-shadow 0.3s ease;
 }
 
-ul.auto-listings-items.grid-view li.auto-listing:hover {
+/* 2. Hover Effect */
+ul.auto-listings-items.grid-view li.auto-listing-item-wrap:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.06);
-    border-color: #e0e0e0;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+    border-color: #d0d0d0;
 }
 
+/* 3. The Text Container (Internal Padding) 
+   This puts the space back around your text without gapping the image */
+.vinttro-car-card, 
+.vinttro-watch-card,
+.vinttro-daily-card {
+    padding: 20px !important;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
 /* ==========================================================================
    IMAGES & HOVER EFFECTS
    ========================================================================== */
@@ -79,6 +91,9 @@ ul.auto-listings-items.grid-view li.auto-listing:hover {
    CARD CONTENT & TYPOGRAPHY
    ========================================================================== */
 
+/* This targets the text area inside your new <li> wrapper */
+.vinttro-car-card, 
+.vinttro-watch-card,
 .auto-listing .summary {
     padding: 20px !important;
     display: flex;
@@ -86,14 +101,14 @@ ul.auto-listings-items.grid-view li.auto-listing:hover {
     flex-grow: 1;
 }
 
-.auto-listings-items.grid-view h1,
+/* Ensure the title inside your new cards matches the gold style */
+.vinttro-car-card h1, 
+.vinttro-watch-card h3,
 .auto-listing .summary h3.title a {
-    color: #916D1C; /* Vinttro Gold */
-    font-size: 1.3rem !important;
-    text-decoration: none;
-    font-weight: 700;
-    margin-bottom: 10px;
-    display: block;
+    color: #916D1C !important;
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 10px !important;
 }
 
 /* Modern Truncation: Cut description at exactly 3 lines */

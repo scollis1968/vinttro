@@ -100,7 +100,9 @@ ul.auto-listings-items.grid-view li.auto-listing-item-wrap:hover {
     flex-direction: column;
     flex-grow: 1;
 }
-
+.vinttro-car-card image {
+    border-radius: 4px;
+}
 /* Ensure the title inside your new cards matches the gold style */
 .vinttro-car-card h1, 
 .vinttro-watch-card h3,

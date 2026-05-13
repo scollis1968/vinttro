@@ -100,8 +100,19 @@ ul.auto-listings-items.grid-view li.auto-listing-item-wrap:hover {
     flex-direction: column;
     flex-grow: 1;
 }
-.vinttro-car-card image {
-    border-radius: 4px;
+/* Target the container and the image specifically */
+.vinttro-car-card .image {
+    border-radius: 8px; /* Adjust to 4px if you prefer, but 8px-12px fits your theme better */
+    overflow: hidden;    /* This "clips" the image corners to the radius */
+    display: block;
+    line-height: 0;      /* Removes tiny ghost gap at the bottom of images */
+}
+
+/* Ensure the actual <img> tag fills the rounded container */
+.vinttro-car-card .image img {
+    border-radius: 8px;
+    width: 100%;
+    display: block;
 }
 /* Ensure the title inside your new cards matches the gold style */
 .vinttro-car-card h1, 

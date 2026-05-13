@@ -32,8 +32,23 @@ while (($row = fgetcsv($handle)) !== FALSE) {
         'last_name' => $record['Last Name'],
         'email1' => $record['Email Address'],    
     ];
-    // TODO - Code a robust import of phone number into the correct field, ie 07,7,+447 all go into mobile field.
-    if ($record['Phone Number']) {$contact['phone_work'] = $record['Phone Number']; };
+    
+    // 2.5 Robust Phone Mapping (Mobile vs Work)
+    $raw_phone = trim($record['Phone Number']);
+
+    if (!empty($raw_phone)) {
+        // Pattern logic: 
+        // ^      = Start of the string
+        // (07|7|\\+447) = Matches '07' OR '7' OR '+447'
+        // Note: UK mobiles always have a '7' after the country code
+        if (preg_match('/^(07|7|\+447)/', $raw_phone)) {
+            $contact['phone_mobile'] = $raw_phone;
+            echo "📱 Mapping $raw_phone to Mobile\n";
+        } else {
+            $contact['phone_work'] = $raw_phone;
+            echo "📞 Mapping $raw_phone to Work Phone\n";
+        }
+    }
 
     $r = insertUpdateContact($suitecrm_url,$access_token,$contact);
 

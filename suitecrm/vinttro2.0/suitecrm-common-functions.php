@@ -14,8 +14,7 @@ $dotenv->load();
 $suitecrm_url = $_ENV['SUITECRM_URL'];
 $username = $_ENV['USERNAME'];
 $password = $_ENV['PASSWORD'];
-$client_id = $_ENV['CLIENT_ID'];
-$client_secret = $_ENV['CLIENT_SECRET'];
+$client_id = $_ENV['CLIENT_ID'];s
 
 
 // ---- AUTHENTICATION ----

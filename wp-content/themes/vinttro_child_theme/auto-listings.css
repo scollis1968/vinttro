@@ -234,22 +234,36 @@ ul.auto-listings-items.grid-view li.auto-listing-item-wrap:hover {
    RESPONSIVE BREAKPOINTS
    ========================================================================== */
 
-@media (max-width: 1200px) {
-    .vinttro-results ul.auto-listings-items.grid-view,
-    .auto-listings-shortcode ul.auto-listings-items.grid-view {
+/* Tablet: 2 columns */
+@media (max-width: 1100px) {
+    ul.auto-listings-items.grid-view {
         grid-template-columns: repeat(2, 1fr) !important;
+        gap: 20px !important;
     }
 }
 
-@media (max-width: 800px) {
-    .vinttro-results .wp-block-columns {
+/* Mobile: 1 column (Stacked) */
+@media (max-width: 768px) {
+    /* 1. Fix the main layout container if using columns */
+    .vinttro-results .wp-block-columns,
+    .wp-block-columns {
         flex-direction: column !important;
     }
-    .vinttro-results ul.auto-listings-items.grid-view,
-    .auto-listings-shortcode ul.auto-listings-items.grid-view {
+
+    /* 2. Force the grid to a single column */
+    ul.auto-listings-items.grid-view {
         grid-template-columns: 1fr !important;
+        gap: 25px !important;
+        padding: 0 10px !important; /* Adds a tiny bit of breathing room on small screens */
     }
+
+    /* 3. Adjust image height for mobile so they don't look too tall */
+    .auto-listings-items .image img {
+        height: 220px !important;
+    }
+
+    /* 4. Fix single listing page grid */
     .single-auto-listing .vinttro-main-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }

@@ -195,6 +195,8 @@ function insertRawData($api_url,$access_token,$source_system,$raw_data ){
         ]
     ];
     $method = 'POST';
+
+    $r = callApi($api_url, $access_token, $method, $payload);
     
     return $r;
 }

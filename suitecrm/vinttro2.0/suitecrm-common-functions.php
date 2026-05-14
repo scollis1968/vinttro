@@ -179,3 +179,31 @@ function insertUpdateContact($api_url,$access_token,$contact_data){
     
     return $r;
 }
+
+function insertRawData($api_url,$access_token,$source_system,$raw_data ){
+ 
+    // Prepare the data for the API request
+
+    $payload = [
+        'data' => [
+            'type' => 'visp_data_staging',
+            'attributes' => [
+                'source_system' => $source_system,
+                'raw_data' => $raw_data,
+                'status' => 'pending',
+            ]   
+        ]
+    ];
+    $method = 'POST';
+
+    $existingContact = findContactByEmail($api_url,$access_token,$contact_data['email1']);
+    
+    if ($existingContact) {
+        $payload['data']['id'] = $existingContact['id'];
+        $method = 'PATCH';
+    };
+
+    $r = callApi($api_url, $access_token, $method, $payload);
+    
+    return $r;
+}

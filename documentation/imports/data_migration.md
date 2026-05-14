@@ -16,14 +16,14 @@ For legacy or retiring systems it is acceptable to have manual processes to migr
 1. Mondays
 1. MailChimp
 
-| Source Field	              | SuiteCRM Destination      | Status |
-|-----------------------------|---------------------------|:------:|
-| First Name		          | contact.first_name        | 👌     |
-| Last Name		              | conatct.last_name         | 👌     |
-| Email Address	              | conatct.email1            | 👌     |	
-| Phone Number		          | contact.  
+| Source Field	              | SuiteCRM Destination            | Status |
+|-----------------------------|---------------------------------|:------:|
+| First Name		          | contact.first_name              | 👌     |
+| Last Name		              | conatct.last_name               | 👌     |
+| Email Address	              | conatct.email1                  | 👌     |	
+| Phone Number		          | contact.phone_mobile/phone_work | 👌     | 
 | Address		
-| Car Insurance Renewal Date		
+| Car Insurance Renewal Date   		
 | Active		
 | Membership ID		
 | Username		

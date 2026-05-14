@@ -33,11 +33,12 @@ while (($row = fgetcsv($handle)) !== FALSE) {
 
     $r = insertRawData($suitecrm_url,$access_token,$source_system,$record);
     // Log the result
-    if (empty($r)) {
-        echo "❌ Error importing record #$row_count.";
+    if (empty($r) || isset($r['errors'])) {
+        echo "❌ Error importing record #$row_count.\n";
+        echo "Response Details: " . json_encode($r, JSON_PRETTY_PRINT) . "\n";
         continue;
     }
-    echo "$r\n";
+ 
     echo "✅ Record #$row_count imported successfully.\n";
  
 }

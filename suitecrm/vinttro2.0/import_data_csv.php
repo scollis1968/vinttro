@@ -37,7 +37,7 @@ while (($row = fgetcsv($handle)) !== FALSE) {
         echo "❌ Error importing record #$row_count.";
         continue;
     }
-
+    echo "$r\n";
     echo "✅ Record #$row_count imported successfully.\n";
  
 }

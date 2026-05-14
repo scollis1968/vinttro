@@ -180,22 +180,26 @@ function insertUpdateContact($api_url,$access_token,$contact_data){
     return $r;
 }
 
-function insertRawData($api_url,$access_token,$source_system,$raw_data ){
- 
-    // Prepare the data for the API request
+function insertRawData($api_url, $access_token, $source_system, $raw_data) {
+    
+    // 1. Convert the array into a JSON string so SuiteCRM can store it in a text field
+    $json_raw_data = json_encode($raw_data);
 
+    // 2. Prepare the payload
     $payload = [
         'data' => [
             'type' => 'visp_data_staging',
             'attributes' => [
                 'source_system' => $source_system,
-                'raw_data' => $raw_data,
-                'status' => 'pending',
+                'raw_data'     => $json_raw_data, // Now a string, not an array
+                'status'       => 'pending',
             ]   
         ]
     ];
+
     $method = 'POST';
 
+    // 3. Send to API
     $r = callApi($api_url, $access_token, $method, $payload);
     
     return $r;

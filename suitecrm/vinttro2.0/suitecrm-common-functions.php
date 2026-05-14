@@ -195,15 +195,6 @@ function insertRawData($api_url,$access_token,$source_system,$raw_data ){
         ]
     ];
     $method = 'POST';
-
-    $existingContact = findContactByEmail($api_url,$access_token,$contact_data['email1']);
-    
-    if ($existingContact) {
-        $payload['data']['id'] = $existingContact['id'];
-        $method = 'PATCH';
-    };
-
-    $r = callApi($api_url, $access_token, $method, $payload);
     
     return $r;
 }

@@ -31,7 +31,7 @@ while (($row = fgetcsv($handle)) !== FALSE) {
 
 
 
-    $r = insertRawData($suitecrm_url,$access_token,$source_system,$record;
+    $r = insertRawData($suitecrm_url,$access_token,$source_system,$record);
     // Log the result
     if (empty($r)) {
         echo "❌ Error importing record #$row_count.";

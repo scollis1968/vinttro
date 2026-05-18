@@ -123,20 +123,20 @@ if [ $? -ne 0 ]; then
 fi
 
 ##-------------------------------------------------------------------------
-    # VINTTRO  SuiteCRM  public/legacy/custom (Using Relative Overlay).
+    # VINTTRO  SuiteCRM  public/legacy (Using Relative Overlay).
     
     # 1. Move to the root of your cloned repository
     cd /tmp/vinttro-repo
     
     # 2. Define the path relative to where you are standing
     # Note: NO trailing slash here!
-    RELATIVE_SOURCE="suitecrm/public/legacy/custom"
+    RELATIVE_SOURCE="suitecrm/public/legacy"
     TARGET_ROOT="/var/www"
 
     log "Deploying SuiteCRM custom overlay..."
 
     # 3. Use -aR (archive + relative)
-    # This will automatically create any missing folders under /var/www/suitecrm/public/legacy/custom/
+    # This will automatically create any missing folders under /var/www/suitecrm/public/legacy/
     sudo rsync -aR "$RELATIVE_SOURCE" "$TARGET_ROOT/" >> "$LOG_FILE" 2>&1
     
     if [ $? -ne 0 ]; then

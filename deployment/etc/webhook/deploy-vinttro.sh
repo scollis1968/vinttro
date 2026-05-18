@@ -106,10 +106,10 @@
         exit 1
     fi
 
-    log "Setting permissions on /var/www/suitecrm/vinttro2.0"
-    sudo chown -R www-data:www-data /var/www/suitecrm/public/dist/extensions/vinttro-custom-ui
+    log "Setting permissions on  $DESTINATION_DIR "
+    sudo chown -R www-data:www-data $DESTINATION_DIR
     if [ $? -ne 0 ]; then
-        log "Error - Setting permissions on /var/www/suitecrm/vinttro2.0"
+        log "Error - Setting permissions on $DESTINATION_DIR"
         exit 1
     fi
 
@@ -119,17 +119,16 @@
     DESTINATION_DIR="/var/www/suitecrm/public/legacy/custom/"
     sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
     if [ $? -ne 0 ]; then
-        log "ERROR: Deploying $DESINATION_DIR failed."
+        log "ERROR: Deploying $DESTINATION_DIR failed."
         exit 1
     fi
 
-    log "Setting permissions on $DESTINATION_DIR"
+    log "Setting permissions on  $DESTINATION_DIR "
     sudo chown -R www-data:www-data $DESTINATION_DIR
     if [ $? -ne 0 ]; then
-        log "Error - Setting permissions on /var/www/suitecrm/vinttro2.0"
+        log "Error - Setting permissions on $DESTINATION_DIR"
         exit 1
     fi
-
 
 
     log "Deployment successful for custom files."

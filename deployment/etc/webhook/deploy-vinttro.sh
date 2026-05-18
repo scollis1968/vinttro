@@ -96,6 +96,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+##-------------------------------------------------------------------------
+# VINTTRO  SuietCRM custom UI
 SOURCE_DIR="/tmp/vinttro-repo/suitecrm/dist/extensions/vinttro-custom-ui"
 DESTINATION_DIR="/var/www/suitecrm/dist/extensions/vinttro-custom-ui"
 sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
@@ -110,6 +112,25 @@ if [ $? -ne 0 ]; then
     log "Error - Setting permissions on /var/www/suitecrm/vinttro2.0"
     exit 1
 fi
+
+##-------------------------------------------------------------------------
+# VINTTRO  SuietCRM  public/lecacy/custom
+SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/legacy/custom"
+DESTINATION_DIR="/var/www/suitecrm/public/legacy/custom"
+sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
+if [ $? -ne 0 ]; then
+    log "ERROR: Deploying $DESINATION_DIR failed."
+    exit 1
+fi
+
+log "Setting permissions on $DESTINATION_DIR"
+sudo chown -R www-data:www-data $DESTINATION_DIR
+if [ $? -ne 0 ]; then
+    log "Error - Setting permissions on /var/www/suitecrm/vinttro2.0"
+    exit 1
+fi
+
+
 
 log "Deployment successful for custom files."
 exit 0

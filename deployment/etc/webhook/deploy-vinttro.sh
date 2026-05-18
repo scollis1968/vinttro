@@ -98,11 +98,11 @@ fi
 
 ##-------------------------------------------------------------------------
 # VINTTRO  SuietCRM custom UI
-SOURCE_DIR="/tmp/vinttro-repo/suitecrm/dist/extensions/vinttro-custom-ui"
-DESTINATION_DIR="/var/www/suitecrm/dist/extensions/vinttro-custom-ui"
+SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/dist/extensions/vinttro-custom-ui"
+DESTINATION_DIR="/var/www/suitecrm/publicdist/extensions/vinttro-custom-ui"
 sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
 if [ $? -ne 0 ]; then
-    log "ERROR: Deploying SuiteCrm/vintro-custom-ui failed."
+    log "ERROR: Deploying $DESTINATION_DIR failed."
     exit 1
 fi
 

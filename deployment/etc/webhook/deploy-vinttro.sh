@@ -19,7 +19,7 @@
     # --- 1. Clone or Pull the Repository ---
     if [ ! -d "$STAGING_DIR/.git" ]; then
         # Clone the repository if it doesn't exist
-        log "Cloning repository..."
+        log "Cloning repository...."
         git clone $REPO_URL $STAGING_DIR
         if [ $? -ne 0 ]; then
             log "ERROR: Git clone failed."

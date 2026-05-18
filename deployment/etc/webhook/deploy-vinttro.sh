@@ -98,8 +98,8 @@
 
     ##-------------------------------------------------------------------------
     # VINTTRO  SuietCRM custom UI
-    SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/dist/extensions/vinttro-custom-ui"
-    DESTINATION_DIR="/var/www/suitecrm/public/dist/extensions/vinttro-custom-ui"
+    SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/dist/extensions/vinttro-custom-ui/"
+    DESTINATION_DIR="/var/www/suitecrm/public/dist/extensions/vinttro-custom-ui/"
     sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
     if [ $? -ne 0 ]; then
         log "ERROR: Deploying $DESTINATION_DIR failed."
@@ -115,8 +115,8 @@
 
     ##-------------------------------------------------------------------------
     # VINTTRO  SuietCRM  public/lecacy/custom
-    SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/legacy/custom"
-    DESTINATION_DIR="/var/www/suitecrm/public/legacy/custom"
+    SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/legacy/custom/"
+    DESTINATION_DIR="/var/www/suitecrm/public/legacy/custom/"
     sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
     if [ $? -ne 0 ]; then
         log "ERROR: Deploying $DESINATION_DIR failed."

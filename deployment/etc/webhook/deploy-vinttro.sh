@@ -123,7 +123,7 @@ if [ $? -ne 0 ]; then
 fi
 
 ##-------------------------------------------------------------------------
-    # VINTTRO  SuiteCRM  public/legacy/custom (Using Relative Overlay)
+    # VINTTRO  SuiteCRM  public/legacy/custom (Using Relative Overlay).
     
     # 1. Move to the root of your cloned repository
     cd /tmp/vinttro-repo

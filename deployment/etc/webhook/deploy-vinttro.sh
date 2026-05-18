@@ -123,21 +123,30 @@ if [ $? -ne 0 ]; then
 fi
 
 ##-------------------------------------------------------------------------
-# VINTTRO  SuietCRM  public/lecacy/custom
-SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/legacy/custom/"
-DESTINATION_DIR="/var/www/suitecrm/public/legacy/custom/"
-sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
-if [ $? -ne 0 ]; then
-    log "ERROR: Deploying $DESTINATION_DIR failed."
-    exit 1
-fi
+    # VINTTRO  SuiteCRM  public/legacy/custom (Using Relative Overlay)
+    
+    # 1. Move to the root of your cloned repository
+    cd /tmp/vinttro-repo
+    
+    # 2. Define the path relative to where you are standing
+    # Note: NO trailing slash here!
+    RELATIVE_SOURCE="suitecrm/public/legacy/custom"
+    TARGET_ROOT="/var/www"
 
-log "Setting permissions on  $DESTINATION_DIR "
-sudo chown -R www-data:www-data $DESTINATION_DIR
-if [ $? -ne 0 ]; then
-    log "Error - Setting permissions on $DESTINATION_DIR"
-    exit 1
-fi
+    log "Deploying SuiteCRM custom overlay..."
+
+    # 3. Use -aR (archive + relative)
+    # This will automatically create any missing folders under /var/www/suitecrm/public/legacy/custom/
+    sudo rsync -aR "$RELATIVE_SOURCE" "$TARGET_ROOT/" >> "$LOG_FILE" 2>&1
+    
+    if [ $? -ne 0 ]; then
+        log "ERROR: Relative deploy of $RELATIVE_SOURCE failed."
+        exit 1
+    fi
+
+    # 4. Fix permissions on the entire newly updated tree
+    log "Setting permissions on $TARGET_ROOT/$RELATIVE_SOURCE"
+    sudo chown -R www-data:www-data "$TARGET_ROOT/$RELATIVE_SOURCE" >> "$LOG_FILE" 2>&1
 
 
 log "Deployment successful for custom files."

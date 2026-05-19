@@ -101,6 +101,25 @@ jQuery(document).ready(function($) {
         console.log("Reset clicked. Reloading clean page.");
         window.location.href = window.location.pathname; 
     });
+
+    // ==========================================================
+    // 🔔 5. CF7 SUCCESS: TRIGGER HIDDEN CONFIRMATION POPUP
+    // ==========================================================
+    document.addEventListener('wpcf7mailsent', function(event) {
+        console.log("CF7 Form Sent successfully! Form ID: " + event.detail.contactFormId);
+        
+        // 1. Find the hidden CTA button that triggers your popup.
+        // Change '.my-hidden-popup-button' to match the actual CSS class of your button.
+        const $hiddenPopupBtn = $('.confirmation-popup-trigger-button'); 
+        
+        // 2. Trigger the click if the button exists on the page
+        if ($hiddenPopupBtn.length > 0) {
+            console.log("Hidden popup button found. Simulating click to launch popup...");
+            $hiddenPopupBtn.click();
+        } else {
+            console.warn("CF7 submitted, but no hidden popup button class was found on this page.");
+        }
+    }, false);
     
 });
 // Force AJAX requests to be unique so they can't be cached

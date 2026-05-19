@@ -108,14 +108,23 @@ jQuery(document).ready(function($) {
     document.addEventListener('wpcf7mailsent', function(event) {
         console.log("CF7 Form Sent successfully! Form ID: " + event.detail.contactFormId);
         
-        // 1. Find the hidden CTA button that triggers your popup.
-        // Change '.my-hidden-popup-button' to match the actual CSS class of your button.
-        const $hiddenPopupBtn = $('.confirmation-popup-trigger-button'); 
+        // 1. Find and click the close button on the current form popup
+        // Popup Builder uses classes containing 'sgpb-popup-close-button'
+        const $currentCloseBtn = $('[class*="sgpb-popup-close-button"]');
+        if ($currentCloseBtn.length > 0) {
+            console.log("Closing the initial form popup to prevent stacking...");
+            $currentCloseBtn.click();
+        }
+
+        // 2. Find the hidden CTA button that triggers your confirmation popup
+        const $hiddenPopupBtn = $('.my-hidden-popup-button'); // Ensure this matches your CSS class
         
-        // 2. Trigger the click if the button exists on the page
+        // 3. Trigger the confirmation popup after a brief delay
         if ($hiddenPopupBtn.length > 0) {
-            console.log("Hidden popup button found. Simulating click to launch popup...");
-            $hiddenPopupBtn.click();
+            setTimeout(function() {
+                console.log("Hidden popup button found. Launching confirmation popup...");
+                $hiddenPopupBtn.click();
+            }, 300); // 300ms delay gives Popup Builder time to gracefully close the first instance
         } else {
             console.warn("CF7 submitted, but no hidden popup button class was found on this page.");
         }

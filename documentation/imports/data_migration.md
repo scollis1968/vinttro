@@ -2,9 +2,12 @@
 
 This docuemnet records the process we need to go through to export the data from various active legacy systems into one place.
 
+## Uploading the raw data.
+In attempt to bring some consistency into the data migration an ETL process has been adopted wherby the data is uploaded into a staging table and then a second process runs automaticaly on a schedule to transform and load the data into the relevant CRM modules.
 
 ## Active Systems 
-Active systems are systems that will be used in the forseable future and therfore will need a continual and preferably automated sysnc process.
+Active systems are systems 
+that will be used in the forseable future and therfore will need a continual and preferably automated sysnc process.
 
 1. Acturis
 1. Google - Diary

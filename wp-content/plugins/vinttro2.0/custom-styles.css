@@ -306,7 +306,7 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
     overflow-y: auto !important; /* Enable the vertical slider */
     display: block !important;
     margin: 0 !important; /* Reset any plugin-forced margins */
-    border-width: 5px !important;
+    border: none !important;     /* ✨ FIX: Removes the red border entirely */
     z-index: 10 !important;
 }
 

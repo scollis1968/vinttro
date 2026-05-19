@@ -117,7 +117,7 @@ jQuery(document).ready(function($) {
         }
 
         // 2. Find the hidden CTA button that triggers your confirmation popup
-        const $hiddenPopupBtn = $('.my-hidden-popup-button'); // Ensure this matches your CSS class
+        const $hiddenPopupBtn = $('.confirmation-popup-trigger-button'); // Ensure this matches your CSS class
         
         // 3. Trigger the confirmation popup after a brief delay
         if ($hiddenPopupBtn.length > 0) {

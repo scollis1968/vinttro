@@ -103,23 +103,37 @@ jQuery(document).ready(function($) {
     });
 
     // ==========================================================
-    // 🔔 5. CF7 SUCCESS: TRIGGER HIDDEN CONFIRMATION POPUP
+    // 🔔 5. CF7 SUCCESS: TRIGGER POPUP & RESET FORM
     // ==========================================================
     document.addEventListener('wpcf7mailsent', function(event) {
         console.log("CF7 Form Sent successfully! Form ID: " + event.detail.contactFormId);
         
         // 1. Find and click the close button on the current form popup
-        // Popup Builder uses classes containing 'sgpb-popup-close-button'
         const $currentCloseBtn = $('[class*="sgpb-popup-close-button"]');
         if ($currentCloseBtn.length > 0) {
             console.log("Closing the initial form popup to prevent stacking...");
             $currentCloseBtn.click();
         }
 
-        // 2. Find the hidden CTA button that triggers your confirmation popup
-        const $hiddenPopupBtn = $('.confirmation-popup-trigger-button'); // Ensure this matches your CSS class
+        // 2. ✨ NEW: Reset the form completely once it's hidden out of sight
+        const $form = $(event.target);
+        setTimeout(function() {
+            // Reset all input fields back to blank/default
+            $form[0].reset(); 
+            
+            // Remove the CF7 'sent' class and reset it to 'init'
+            $form.closest('.wpcf7').removeClass('sent').addClass('init');
+            
+            // Clear out and hide the green success message box
+            $form.find('.wpcf7-response-output').html('').hide();
+            
+            console.log("Form wrapper and messages successfully reset to a clean sheet.");
+        }, 500); // 500ms ensures it's completely invisible before clearing
+
+        // 3. Find the hidden CTA button that triggers your confirmation popup
+        const $hiddenPopupBtn = $('.my-hidden-popup-button'); // Ensure this matches your CSS class
         
-        // 3. Trigger the confirmation popup after a brief delay
+        // 4. Trigger the confirmation popup after a brief delay
         if ($hiddenPopupBtn.length > 0) {
             setTimeout(function() {
                 console.log("Hidden popup button found. Launching confirmation popup...");

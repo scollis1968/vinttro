@@ -48,12 +48,12 @@ Text Domain: vinttro_child_theme
    ========================================================================== */
 .vinttro-cover-cta .wp-block-cover__inner-container a {
     color: #ffffff !important;
-    text-decoration: none !important;
+    text-decoration: underline !important;
 }
 
 .vinttro-cover-cta .wp-block-cover__inner-container a:hover {
-    color: #B28324 !important;
-    text-decoration: underline !important;
+    color: #ffffff !important;
+    text-decoration: none !important;
 }
 
 /* Remove the dimming overlay from Vinttro CTAs */

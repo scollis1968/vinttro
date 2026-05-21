@@ -1,0 +1,18 @@
+{
+    "name": "vinttro/vinttro-plugin",
+    "description": "VINTTRO core extensions and WebRTC tools.",
+    "type": "wordpress-plugin",
+    "autoload": {
+        "psr-4": {
+            "Vinttro\\VinttroPlugin\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Stephen Collis"
+        }
+    ],
+    "require": {
+        "twilio/sdk": "^8.11"
+    }
+}

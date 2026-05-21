@@ -343,3 +343,7 @@ add_shortcode( 'vinttro_search', function() {
     <?php
     return ob_get_clean();
 });
+// Include WebRTC infrastructure for /visp pages
+if ( file_exists( get_stylesheet_directory() . '/inc/twilio-rtc.php' ) ) {
+    require_once get_stylesheet_directory() . '/inc/twilio-rtc.php';
+}

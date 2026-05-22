@@ -47,25 +47,23 @@ function my_plugin_load_scripts() {
     // Checks if the current URL contains '/visp' anywhere (case-insensitive wildcard)
     if ( stripos( $_SERVER['REQUEST_URI'], '/visp' ) !== false ) {
         
-    // Load the explicit, un-blocked release version from Twilio's cloud
-    wp_enqueue_script(
-        'twilio-video-cdn-pinned', 
-        'https://sdk.twilio.com/js/video/releases/2.35.0/twilio-video.min.js', 
-        array(), 
-        '2.35.0', 
-        true
-    );
-
-        // B. Load your modular WebRTC layout tracking code
+        // Load the explicit, un-blocked release version from Twilio's cloud
         wp_enqueue_script(
-            'vinttro-rtc-client', 
-            plugins_url( 'js/rtc-client.js', __FILE__ ), // Looks for /js/rtc-client.js inside your plugin
-            array('twilio-video-cdn', 'jquery'),         // Ensures Twilio & jQuery load first
-            '1.0.0', 
+            'twilio-video-cdn-pinned', 
+            'https://sdk.twilio.com/js/video/releases/2.35.0/twilio-video.min.js', 
+            array(), 
+            '2.35.0', 
             true
         );
 
-        // C. Inject security Nonces and local API routing paths into the script context
+        wp_enqueue_script(
+            'vinttro-rtc-client', 
+            plugins_url( 'js/rtc-client.js', __FILE__ ), 
+            array('twilio-video-cdn-pinned', 'jquery'), // Forces execution order
+            '1.0.3', 
+            true
+        );
+
         wp_localize_script( 'vinttro-rtc-client', 'vinttroSettings', array(
             'root'  => esc_url_raw( rest_url() ),
             'nonce' => wp_create_nonce( 'wp_rest' )

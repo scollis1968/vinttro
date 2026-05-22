@@ -323,3 +323,14 @@ function display_custom_user_meta( $user ) {
     </table>
     <?php
 }
+// Inside wp-content/plugins/vinttro2.0/custom-functions.php
+
+/**
+ * Automatically upgrade all insecure asset requests (HTTP) to HTTPS
+ * This eliminates Mixed Content errors in the frontend and wp-admin.
+ */
+add_action('wp_head', 'vinttro_force_ssl_upgrade_csp', 1);
+add_action('admin_head', 'vinttro_force_ssl_upgrade_csp', 1);
+function vinttro_force_ssl_upgrade_csp() {
+    echo '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">';
+}

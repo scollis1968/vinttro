@@ -327,22 +327,27 @@ function display_custom_user_meta( $user ) {
 // Inside wp-content/plugins/vinttro2.0/custom-functions.php
 
 /**
- * Dynamically filter the admin dashboard output to fix the broken font URL string.
- * This guarantees that React and Mediaelement read a clean HTTPS string.
+ * THE NUCLEAR OPTION: Global HTML Output Buffer Filter
+ * Intercepts the final page rendering for both Frontend and Backend,
+ * automatically converting all internal HTTP links to HTTPS on the fly.
  */
-add_action('admin_init', 'vinttro_start_admin_buffer');
-function vinttro_start_admin_buffer() {
-    ob_start('vinttro_rewrite_http_fonts');
-}
-
-function vinttro_rewrite_http_fonts($output) {
-    // Target your exact staging URL font references and swap them to secure paths
-    return str_replace('http://uat.vinttro.co.uk', 'https://uat.vinttro.co.uk', $output);
-}
-
-add_action('admin_footer', 'vinttro_end_admin_buffer');
-function vinttro_end_admin_buffer() {
-    if (ob_get_length() > 0) {
-        ob_end_flush();
+add_action('init', 'vinttro_force_global_ssl_buffer');
+function vinttro_force_global_ssl_buffer() {
+    // Only trigger this if we aren't handling a raw file or command line action
+    if (!is_admin() && !defined('DOING_AJAX') && !defined('DOING_CRON')) {
+        ob_start('vinttro_global_http_rewrite_callback');
     }
+}
+
+// Separate hook specifically for the admin backend dashboard
+add_action('admin_init', 'vinttro_force_admin_ssl_buffer');
+function vinttro_force_admin_ssl_buffer() {
+    ob_start('vinttro_global_http_rewrite_callback');
+}
+
+// The clean-up execution worker
+function vinttro_global_http_rewrite_callback($output) {
+    if (empty($output)) return $output;
+    // Swap your exact staging URL strings perfectly before the browser can see them
+    return str_replace('http://uat.vinttro.co.uk', 'https://uat.vinttro.co.uk', $output);
 }

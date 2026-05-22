@@ -324,14 +324,25 @@ function display_custom_user_meta( $user ) {
     <?php
 }
 
+// Inside wp-content/plugins/vinttro2.0/custom-functions.php
+
 /**
- * Force a true HTTP Server Header CSP Upgrade.
- * This instructs the browser engine to rewrite HTTP requests to HTTPS
- * at the root server layer, fixing script-injected assets.
+ * Dynamically filter the admin dashboard output to fix the broken font URL string.
+ * This guarantees that React and Mediaelement read a clean HTTPS string.
  */
-add_action('init', 'vinttro_send_global_csp_header');
-function vinttro_send_global_csp_header() {
-    if ( ! headers_sent() ) {
-        header("Content-Security-Policy: upgrade-insecure-requests");
+add_action('admin_init', 'vinttro_start_admin_buffer');
+function vinttro_start_admin_buffer() {
+    ob_start('vinttro_rewrite_http_fonts');
+}
+
+function vinttro_rewrite_http_fonts($output) {
+    // Target your exact staging URL font references and swap them to secure paths
+    return str_replace('http://uat.vinttro.co.uk', 'https://uat.vinttro.co.uk', $output);
+}
+
+add_action('admin_footer', 'vinttro_end_admin_buffer');
+function vinttro_end_admin_buffer() {
+    if (ob_get_length() > 0) {
+        ob_end_flush();
     }
 }

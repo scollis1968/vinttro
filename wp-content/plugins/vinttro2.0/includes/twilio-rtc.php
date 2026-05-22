@@ -51,7 +51,7 @@ function vinttro_check_plugin_employee_access() {
         return false;
     }
     $current_user = wp_get_current_user();
-    return str_ends_with( strtolower($current_user->user_email), '@vinttro.com' );
+    return str_ends_with( strtolower($current_user->user_email), '@vinttro.co.uk' );
 }
 
 // 4. GENERATE TOKENS USING PLUGIN PATHS

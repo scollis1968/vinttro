@@ -56,8 +56,9 @@ function vinttro_check_plugin_employee_access() {
 
 // 4. GENERATE TOKENS USING PLUGIN PATHS
 function vinttro_generate_plugin_rtc_token( WP_REST_Request $request ) {
-    // Look for composer vendor folder inside your plugin directory instead
-    $autoload_path = plugin_dir_path( dirname(__FILE__) ) . 'vendor/autoload.php';
+    
+    // 🚀 FIX: Step cleanly out of the 'includes' folder into the plugin root
+    $autoload_path = dirname( __DIR__ ) . '/vendor/autoload.php';
     
     if ( file_exists( $autoload_path ) ) {
         require_once $autoload_path;

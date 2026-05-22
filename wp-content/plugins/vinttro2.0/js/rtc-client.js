@@ -2,6 +2,10 @@
  * Vinttro WebRTC Engine Client
  * Handles room signaling, local media ingestion, and video/audio mapping.
  */
+console.log("👉 TWILIO RTC SCRIPT HAS RUN AND IS ALIVE!");
+
+jQuery(document).ready(function($) {
+   // ... the rest of your code ...
 jQuery(document).ready(function($) {
     let activeRoom = null;
 

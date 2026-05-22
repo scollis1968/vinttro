@@ -48,11 +48,14 @@ jQuery(document).ready(function($) {
                 $callTypeSelect.val('audio').trigger('change'); // Force audio-mode fallback
             }
 
-        } catch (err) {
-            console.warn("Hardware enumeration restricted:", err.message);
-            updateStatus("Hardware scanning restricted. Using defaults.", "info");
-        }
+    } catch (err) {
+        // 🚀 NEW: Print the exact system error to the console
+        console.error("❌ RAW HARDWARE ERROR:", err.name, "-", err.message); 
+        
+        console.warn("Hardware enumeration restricted:", err.message);
+        updateStatus("Hardware scanning restricted. Using defaults.", "info");
     }
+    
 
     initializeDeviceDirectory();
 

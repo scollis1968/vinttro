@@ -38,11 +38,41 @@ add_action( 'wp_enqueue_scripts', 'my_plugin_load_styles', 99 );
 
 //--------------------------------------------------------
 function my_plugin_load_scripts() {
-    // Enqueue the script, ensuring it loads in the footer
+    // 1. Enqueue your existing global form preview script
     wp_enqueue_script( 'my-form-preview-script', plugins_url( 'custom-scripts.js', __FILE__ ), array('jquery'), '1.6', true );
+
+    // ==========================================================
+    // 📞 2. TWILIO WEBRTC ENGINE: TARGET ANY PAGE UNDER /visp
+    // ==========================================================
+    // Checks if the current URL contains '/visp' anywhere (case-insensitive wildcard)
+    if ( stripos( $_SERVER['REQUEST_URI'], '/visp' ) !== false ) {
+        
+        // A. Load the Twilio WebRTC Client SDK from their CDN
+        wp_enqueue_script(
+            'twilio-video-cdn', 
+            'https://sdk.twilio.com/js/video/v2/twilio-video.min.js', 
+            array(), 
+            '2.0', 
+            true
+        );
+
+        // B. Load your modular WebRTC layout tracking code
+        wp_enqueue_script(
+            'vinttro-rtc-client', 
+            plugins_url( 'js/rtc-client.js', __FILE__ ), // Looks for /js/rtc-client.js inside your plugin
+            array('twilio-video-cdn', 'jquery'),         // Ensures Twilio & jQuery load first
+            '1.0.0', 
+            true
+        );
+
+        // C. Inject security Nonces and local API routing paths into the script context
+        wp_localize_script( 'vinttro-rtc-client', 'vinttroSettings', array(
+            'root'  => esc_url_raw( rest_url() ),
+            'nonce' => wp_create_nonce( 'wp_rest' )
+        ));
+    }
 }
 add_action( 'wp_enqueue_scripts', 'my_plugin_load_scripts' );
-
 //--------------------------------------------------------
 
 

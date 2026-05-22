@@ -47,14 +47,14 @@ function my_plugin_load_scripts() {
     // Checks if the current URL contains '/visp' anywhere (case-insensitive wildcard)
     if ( stripos( $_SERVER['REQUEST_URI'], '/visp' ) !== false ) {
         
-        // A. Load the Twilio WebRTC Client SDK from their CDN
-        wp_enqueue_script(
-            'twilio-video-cdn', 
-            'https://sdk.twilio.com/js/video/v2/twilio-video.min.js', 
-            array(), 
-            '2.0', 
-            true
-        );
+    // Load the explicit, un-blocked release version from Twilio's cloud
+    wp_enqueue_script(
+        'twilio-video-cdn-pinned', 
+        'https://sdk.twilio.com/js/video/releases/2.35.0/twilio-video.min.js', 
+        array(), 
+        '2.35.0', 
+        true
+    );
 
         // B. Load your modular WebRTC layout tracking code
         wp_enqueue_script(

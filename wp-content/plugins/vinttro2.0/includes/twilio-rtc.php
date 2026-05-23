@@ -8,21 +8,34 @@ use Twilio\Jwt\Grants\VideoGrant;
 use Twilio\Jwt\Grants\SyncGrant; // 🚀 NEW: Include the Sync grant constructor
 
 function vinttro_generate_plugin_rtc_token( WP_REST_Request $request ) {
-    // ... your existing file checking / credential definition lines remain unchanged ...
+    // ... Keep your autoload paths and credential retrieval lines at the top exactly as they are ...
 
-    $identity = $current_user->user_login;
-    $token    = new AccessToken($accountSid, $apiKeySid, $apiKeySecret, 3600, $identity);
+    $current_user = wp_get_current_user();
+    $identity     = $current_user->user_login;
 
-    // A. Keep your existing WebRTC video engine grant active
-    $videoGrant = new VideoGrant();
+    // Initialize the root AccessToken container
+    // (Ensure you are using the absolute root namespace indicator '\' if it complains)
+    $token = new \Twilio\Jwt\AccessToken($accountSid, $apiKeySid, $apiKeySecret, 3600, $identity);
+
+    // 1. Video Connection Grant (Using absolute inline namespace)
+    $videoGrant = new \Twilio\Jwt\Grants\VideoGrant();
     $token->addGrant($videoGrant);
 
-    // B. 🚀 NEW: Append a Sync engine authorization grant to the same token
-    $syncGrant = new SyncGrant();
-    // Resolves a target service instance identifier (Define this in your wp-config.php)
-    $syncGrant->setServiceSid(defined('TWILIO_SYNC_SERVICE_SID') ? TWILIO_SYNC_SERVICE_SID : 'default');
-    $token->addGrant($syncGrant);
+    // 2. 🛰️ Real-Time Sync WebSocket Grant (Using absolute inline namespace)
+    // This safely verifies the wp-config constant exists before attempting to stamp the token
+    if ( defined('TWILIO_SYNC_SERVICE_SID') && !empty(TWILIO_SYNC_SERVICE_SID) ) {
+        $syncGrant = new \Twilio\Jwt\Grants\SyncGrant();
+        $syncGrant->setServiceSid(TWILIO_SYNC_SERVICE_SID);
+        $token->addGrant($syncGrant);
+    } else {
+        return new WP_Error(
+            'missing_sync_sid', 
+            'Backend Error: TWILIO_SYNC_SERVICE_SID is not defined in your wp-config.php file!', 
+            array( 'status' => 500 )
+        );
+    }
 
+    // Return clean authorized payload string
     return new WP_REST_Response(array(
         'token'    => $token->toJWT(),
         'identity' => $identity

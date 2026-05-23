@@ -27,6 +27,13 @@ function vinttro_register_all_rtc_routes() {
         'callback'            => 'vinttro_agent_bridge_call',
         'permission_callback' => 'vinttro_check_plugin_employee_access',
     ) );
+
+    // 🚀 NEW - Endpoint C: Public Inbound Gateway (Open for external Twilio Webhooks & Postman)
+    register_rest_route( 'vinttro/v1', '/inbound-call', array(
+        'methods'             => 'POST',
+        'callback'            => 'vinttro_handle_inbound_voice_call',
+        'permission_callback' => '__return_true', 
+    ) );
 }
 
 // ==========================================================
@@ -128,4 +135,50 @@ function vinttro_agent_bridge_call( WP_REST_Request $request ) {
     } catch (Exception $e) {
         return new WP_Error('bridge_execution_failure', $e->getMessage(), array('status' => 500));
     }
+}
+
+// ==========================================================
+// 📞 6. 🚀 NEW - CALLBACK C: INBOUND HANDLER & SYNC BROADCAST
+// ==========================================================
+function vinttro_handle_inbound_voice_call( WP_REST_Request $request ) {
+    $call_sid  = $request->get_param('CallSid');
+    $caller_id = $request->get_param('From');
+
+    // Make sure we aren't handling blank parameters
+    if ( empty($call_sid) ) {
+        return new WP_Error('invalid_webhook', 'Missing structural telephony attributes.', array('status' => 400));
+    }
+
+    // A. Generate a completely randomized, unique meeting identifier room name string
+    $unique_room_id = 'vinttro-call-' . wp_generate_password(8, false);
+
+    // B. PUSH TARGET STATE DATA METADATA OUT VIA TWILIO SYNC NODE
+    try {
+        $sdk = vinttro_get_twilio_sdk_client();
+        
+        $syncServiceSid = defined('TWILIO_SYNC_SERVICE_SID') ? TWILIO_SYNC_SERVICE_SID : 'default';
+        
+        $sdk->sync->v1->services($syncServiceSid)
+                      ->syncLists('vinttro_live_queue')
+                      ->syncListItems->create([
+                          "data" => [
+                              "callSid"  => $call_sid,
+                              "callerId" => $caller_id ? $caller_id : 'Unknown Web Client',
+                              "roomId"   => $unique_room_id,
+                              "status"   => "parked"
+                          ]
+                      ]);
+    } catch (Exception $e) {
+        // Log locally so we don't crash phone lines if Sync configuration strings hiccup
+        error_log('Vinttro Sync Queue Broadcasting Fault: ' . $e->getMessage());
+    }
+
+    // C. STREAM BACK INTERACTIVE AUDIO HOLD MUSIC RESPONSES TO TELECOM SYSTEM
+    $twiml  = '<?xml version="1.0" encoding="UTF-8"?>';
+    $twiml .= '<Response>';
+    $twiml .= '<Say voice="alice">Please hold while we locate an authorized agent.</Say>';
+    $twiml .= '<Play loop="0">http://com.twilio.music.classical.s3.amazonaws.com/Classic_Rock.mp3</Play>';
+    $twiml .= '</Response>';
+
+    return new WP_REST_Response($twiml, 200, array('Content-Type' => 'application/xml'));
 }

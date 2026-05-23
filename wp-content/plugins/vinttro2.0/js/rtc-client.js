@@ -2,6 +2,8 @@ console.log("👉 TWILIO RTC DEVICE-AWARE ENGINE ACTIVE!");
 
 jQuery(document).ready(function($) {
     let activeRoom = null;
+    let syncClient = null; // 🚀 NEW: Twilio Sync Client State
+    let liveToken  = null; // 🚀 NEW: Cached Token for immediate background reuse
 
     const $connectBtn     = $('#vinttro-rtc-connect');
     const $disconnectBtn  = $('#vinttro-rtc-disconnect');
@@ -14,7 +16,9 @@ jQuery(document).ready(function($) {
     const $camSelect      = $('#vinttro-cam-select');
     const $roomInput      = $('#vinttro-room-id');
 
-    // 1. PAGE INITIALIZATION: UNMASK HARDWARE LABELS
+    // ==========================================================
+    // ⚙️ 1. PAGE INITIALIZATION: UNMASK HARDWARE LABELS
+    // ==========================================================
     async function initializeDeviceDirectory() {
         try {
             // Trigger a quick permission handshake to unmask generic device names
@@ -49,17 +53,124 @@ jQuery(document).ready(function($) {
             }
 
         } catch (err) {
-            // 🚀 The brackets around here are now perfectly balanced!
             console.error("❌ RAW HARDWARE ERROR:", err.name, "-", err.message); 
-            
             console.warn("Hardware enumeration restricted:", err.message);
             updateStatus("Hardware scanning restricted. Using defaults.", "info");
         }
     }
 
+    // Initialize hardware configuration instantly
     initializeDeviceDirectory();
 
-    // 2. TOGGLE UI DEPENDING ON CALL TYPE CHOSEN
+
+    // ==========================================================
+    // 🛰️ 2. TWILIO SYNC WEBSOCKET INITIALIZATION (BACKGROUND MONITOR)
+    // ==========================================================
+    async function activateAgentSyncListeningTerminal() {
+        try {
+            // A. Fetch our multi-grant authorization passport on page mount
+            const response = await fetch(`${vinttroSettings.root}vinttro/v1/rtc-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+                body: JSON.stringify({ roomName: 'vinttro-dashboard-mount' })
+            });
+            
+            const data = await response.json();
+            liveToken  = data.token; // Cache token locally for fast access-bridge actions
+
+            // B. Boot up the Twilio Sync real-time engine
+            syncClient = new Twilio.Sync.Client(liveToken);
+
+            syncClient.on('connectionStateChanged', state => {
+                console.log(`%c📡 WebSocket Node Sync State: ${state}`, "color: #3182ce; font-weight: bold;");
+            });
+
+            // C. Subscribe to our centralized live queue list object
+            syncClient.list('vinttro_live_queue').then(list => {
+                console.log("✅ Successfully subscribed to Vinttro Live Call Sync Channel.");
+                
+                // 🔔 LISTEN: The exact millisecond your backend pushes a call entry, this fires!
+                list.on('itemAdded', event => {
+                    const callPayload = event.item.data;
+                    if (callPayload.status === 'parked') {
+                        triggerInboundCallAlert(callPayload);
+                    }
+                });
+            });
+
+        } catch (err) {
+            console.error("Failed to mount secure WebSocket sync cluster:", err);
+        }
+    }
+
+    // Silently fire up the live queue listener
+    activateAgentSyncListeningTerminal();
+
+
+    // ==========================================================
+    // 🔔 3. INTERACTIVE MODAL NOTIFICATION HANDLER
+    // ==========================================================
+    function triggerInboundCallAlert(callData) {
+        console.log("🚨 INCOMING QUEUE ASSIGNMENT ALERT RECEIVED:", callData);
+        
+        // Render a clean notification toast drawer at the top of their viewport frame
+        const alertHtml = `
+            <div id="alert-node-${callData.callSid}" class="vinttro-incoming-call-toast" style="position: fixed; top: 20px; right: 20px; background: #1a202c; border: 2px solid #3182ce; color: white; padding: 20px; border-radius: 8px; box-shadow: 0 10px 15px rgba(0,0,0,0.5); z-index: 99999; min-width: 320px; font-family: -apple-system, sans-serif;">
+                <h4 style="margin:0 0 5px 0; color: #63b3ed;">📞 Incoming Customer Call</h4>
+                <p style="margin:0 0 15px 0; font-size: 0.9rem;">Caller ID: <strong>${callData.callerId}</strong></p>
+                <div style="display:flex; gap:10px;">
+                    <button class="accept-toast-btn" data-sid="${callData.callSid}" data-room="${callData.roomId}" style="background: #2f855a; border:none; color:white; padding: 8px 16px; font-weight:bold; border-radius:4px; cursor:pointer; transition: 0.2s;">Accept and Bridge</button>
+                    <button class="reject-toast-btn" style="background: transparent; border:1px solid #e53e3e; color:#fc8181; padding: 8px 16px; border-radius:4px; cursor:pointer; transition: 0.2s;">Dismiss</button>
+                </div>
+            </div>
+        `;
+
+        $('body').append(alertHtml);
+        
+        // Play an elegant, subtle notification ping sound through the agent's active headset
+        const alertAudio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
+        alertAudio.volume = 0.3;
+        alertAudio.play().catch(() => console.log("Audio play deferred until user interacts with document."));
+    }
+
+
+    // ==========================================================
+    // 🤝 4. THE CALL ACCEPTANCE HANDSHAKE (THE AGENT TOAST CLICK)
+    // ==========================================================
+    $(document).on('click', '.accept-toast-btn', async function() {
+        const targetCallSid = $(this).data('sid');
+        const targetRoomId  = $(this).data('room');
+        
+        // Close out the visual notification block instantly
+        $(`#alert-node-${targetCallSid}`).remove();
+        updateStatus(`Joining call canvas container: [${targetRoomId}]...`, "info");
+
+        try {
+            // A. Instruct WordPress to live-redirect the waiting landline caller out of hold music
+            const bridgeResponse = await fetch(`${vinttroSettings.root}vinttro/v1/accept-call`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+                body: JSON.stringify({ callSid: targetCallSid, roomId: targetRoomId })
+            });
+
+            if (!bridgeResponse.ok) throw new Error("Server failed to establish media routing intercept.");
+
+            // B. Launch the agent's media component channels using our cached token asset
+            initializeWebRTCSession(liveToken, targetRoomId);
+
+        } catch (error) {
+            updateStatus(`Handshake Aborted: ${error.message}`, "error");
+        }
+    });
+
+    $(document).on('click', '.reject-toast-btn', function() {
+        $(this).closest('.vinttro-incoming-call-toast').remove();
+    });
+
+
+    // ==========================================================
+    // 🎛️ 5. TOGGLE UI DEPENDING ON CALL TYPE CHOSEN
+    // ==========================================================
     $callTypeSelect.on('change', function() {
         if ($(this).val() === 'audio') {
             $('.cam-wrapper').hide(); // Instantly hide camera selectors & local monitor views
@@ -68,26 +179,30 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // 3. INITIALIZE SECURE TOKEN REQUEST
+
+    // ==========================================================
+    // ⚡ 6. MANUAL OUTBOUND CONNECTION INITIATOR (OLD BUTTON CLICK)
+    // ==========================================================
     $connectBtn.on('click', async function() {
         const chosenRoom = $roomInput.val().trim() || 'vinttro-hq';
         updateStatus(`Securing terminal connection credentials for space: [${chosenRoom}]...`, "info");
         $connectBtn.prop('disabled', true);
 
         try {
-            const response = await fetch(`${vinttroSettings.root}vinttro/v1/rtc-token`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': vinttroSettings.nonce
-                },
-                body: JSON.stringify({ roomName: chosenRoom })
-            });
+            // Reuse cached page-load token if it exists, otherwise request a manual one
+            if (liveToken) {
+                initializeWebRTCSession(liveToken, chosenRoom);
+            } else {
+                const response = await fetch(`${vinttroSettings.root}vinttro/v1/rtc-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+                    body: JSON.stringify({ roomName: chosenRoom })
+                });
 
-            if (!response.ok) throw new Error("Failed validation check from server.");
-            const data = await response.json();
-
-            initializeWebRTCSession(data.token, chosenRoom);
+                if (!response.ok) throw new Error("Failed validation check from server.");
+                const data = await response.json();
+                initializeWebRTCSession(data.token, chosenRoom);
+            }
 
         } catch (error) {
             updateStatus(`Authorization Denied: ${error.message}`, "error");
@@ -95,7 +210,10 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // 4. MAP EXPLICIT HARDWARE CONSTRAINTS TO TWILIO SIGNALING
+
+    // ==========================================================
+    // 📞 7. MAP EXPLICIT HARDWARE CONSTRAINTS TO TWILIO SIGNALING
+    // ==========================================================
     function initializeWebRTCSession(token, roomName) {
         updateStatus("Routing real-time media streams...", "info");
 

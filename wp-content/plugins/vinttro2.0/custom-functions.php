@@ -45,22 +45,30 @@ function my_plugin_load_scripts() {
     // 📞 2. TWILIO WEBRTC ENGINE: TARGET ANY PAGE UNDER /visp
     // ==========================================================
     // Checks if the current URL contains '/visp' anywhere (case-insensitive wildcard)
+    // Inside wp-content/plugins/vinttro2.0/custom-functions.php
+
     if ( stripos( $_SERVER['REQUEST_URI'], '/visp' ) !== false ) {
         
-        // Load the explicit, un-blocked release version from Twilio's cloud
+        // A. Keep your release-pinned video media asset
         wp_enqueue_script(
             'twilio-video-cdn-pinned', 
             'https://sdk.twilio.com/js/video/releases/2.35.0/twilio-video.min.js', 
-            array(), 
-            '2.35.0', 
-            true
+            array(), '2.35.0', true
         );
 
+        // B. 🚀 NEW: Add the official, release-pinned Twilio Sync WebSocket Client library
+        wp_enqueue_script(
+            'twilio-sync-cdn-pinned', 
+            'https://sdk.twilio.com/js/sync/releases/3.1.0/twilio-sync.min.js', 
+            array(), '3.1.0', true
+        );
+
+        // C. Update your local asset queue dependencies to wait for BOTH video and sync engines
         wp_enqueue_script(
             'vinttro-rtc-client', 
             plugins_url( 'js/rtc-client.js', __FILE__ ), 
-            array('twilio-video-cdn-pinned', 'jquery'), // Forces execution order
-            '1.0.3', 
+            array('twilio-video-cdn-pinned', 'twilio-sync-cdn-pinned', 'jquery'), // 🚀 Waits for both
+            '1.1.0', 
             true
         );
 

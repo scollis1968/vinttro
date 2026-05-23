@@ -63,12 +63,11 @@ jQuery(document).ready(function($) {
     initializeDeviceDirectory();
 
 
-    // ==========================================================
-    // 🛰️ 2. TWILIO SYNC WEBSOCKET INITIALIZATION (BACKGROUND MONITOR)
+// ==========================================================
+    // 🛰️ 2. TWILIO SYNC WEBSOCKET INITIALIZATION (DIAGNOSTIC MODE)
     // ==========================================================
     async function activateAgentSyncListeningTerminal() {
         try {
-            // A. Fetch our multi-grant authorization passport on page mount
             const response = await fetch(`${vinttroSettings.root}vinttro/v1/rtc-token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
@@ -76,26 +75,39 @@ jQuery(document).ready(function($) {
             });
             
             const data = await response.json();
-            liveToken  = data.token; // Cache token locally for fast access-bridge actions
+            liveToken  = data.token; 
 
-            // B. Boot up the Twilio Sync real-time engine
             syncClient = new Twilio.Sync.Client(liveToken);
 
             syncClient.on('connectionStateChanged', state => {
                 console.log(`%c📡 WebSocket Node Sync State: ${state}`, "color: #3182ce; font-weight: bold;");
             });
 
-            // C. Subscribe to our centralized live queue list object
+            // Attempting to subscribe to the queue container...
             syncClient.list('vinttro_live_queue').then(list => {
-                console.log("✅ Successfully subscribed to Vinttro Live Call Sync Channel.");
+                console.log("%c✅ SUCCESS: Browser is actively subscribed to the Twilio Sync List channel!", "color: #2f855a; font-weight: bold;");
                 
-                // 🔔 LISTEN: The exact millisecond your backend pushes a call entry, this fires!
+                // 🔍 DEBUG TRACER: Log if the list currently has items sitting inside it on load
+                list.getItems({ limit: 1 }).then(page => {
+                    console.log(`📦 Current items stored in this cloud list: ${page.items.length}`);
+                });
+
+                // 🔔 LISTEN: This fires when ANY new item lands in the cloud bucket
                 list.on('itemAdded', event => {
-                    const callPayload = event.item.data;
-                    if (callPayload.status === 'parked') {
+                    console.log("%c🔔 RAW EVENT DETECTED BY WEBSOCKET!", "color: #ecc94b; font-weight: bold;", event);
+                    
+                    // Safely extract data block regardless of inner encapsulation format
+                    const callPayload = event.item ? event.item.data : null;
+                    console.log("📋 Extracted Call Payload Data Map:", callPayload);
+
+                    if (callPayload) {
                         triggerInboundCallAlert(callPayload);
+                    } else {
+                        console.error("❌ Event captured, but payload configuration map was empty or unreadable.");
                     }
                 });
+            }).catch(listError => {
+                console.error("❌ CRITICAL: Twilio Sync List subscription rejected by cloud:", listError);
             });
 
         } catch (err) {
@@ -103,7 +115,6 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Silently fire up the live queue listener
     activateAgentSyncListeningTerminal();
 
 

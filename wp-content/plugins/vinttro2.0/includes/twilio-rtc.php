@@ -1,9 +1,31 @@
 <?php
+
+// 🔍 TEMPORARY DIAGNOSTIC WIRETAP: Log raw network data for incoming calls
+add_action( 'init', 'vinttro_spy_on_inbound_headers', 1 );
+function vinttro_spy_on_inbound_headers() {
+    // Only fire when our specific inbound call route path is targeted
+    if ( isset( $_SERVER['REQUEST_URI'] ) && strpos( $_SERVER['REQUEST_URI'], '/vinttro/v1/inbound-call' ) !== false ) {
+        
+        error_log('==================================================');
+        error_log('🚨 VINTTRO NETWORK WIRETAP: ENDPOINT PATH MATCHED!');
+        error_log('==================================================');
+        error_log('USER AGENT   : ' . ( $_SERVER['HTTP_USER_AGENT'] ?? 'MISSING' ));
+        error_log('AUTH HEADER  : ' . ( $_SERVER['HTTP_AUTHORIZATION'] ?? 'MISSING' ));
+        error_log('REDIRECT AUTH: ' . ( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? 'MISSING' ));
+        error_log('PHP_AUTH_USER: ' . ( $_SERVER['PHP_AUTH_USER'] ?? 'MISSING' ));
+        error_log('--------------------------------------------------');
+        
+        // Log all raw headers just in case they are hiding under different names
+        if ( function_exists( 'apache_request_headers' ) ) {
+            error_log('ALL RAW HEADERS: ' . print_r( apache_request_headers(), true ));
+        }
+    }
+}
+
 /**
  * Vinttro 2.0 - Twilio Infrastructure Real-Time Communication Node
  * Handles token distribution grants and active telecom call intercepts.
  */
-
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Prevent direct file execution access
 }

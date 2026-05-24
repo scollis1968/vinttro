@@ -21,6 +21,34 @@ function vinttro_spy_on_inbound_headers() {
         }
     }
 }
+// Inside wp-content/plugins/vinttro2.0/includes/twilio-rtc.php
+
+// 🛰️ GLOBAL GATEWAY FILTER: Authenticate Twilio Studio using a dynamic wp-config.php key
+add_filter( 'rest_authentication_errors', 'vinttro_secure_query_key_bypass', 99 );
+function vinttro_secure_query_key_bypass( $result ) {
+    
+    // Check if this is our inbound call path
+    if ( isset( $_SERVER['REQUEST_URI'] ) && strpos( $_SERVER['REQUEST_URI'], '/vinttro/v1/inbound-call' ) !== false ) {
+        
+        // Extract our private token parameter from the URL query string
+        $passed_key = isset($_GET['vinttro_key']) ? trim($_GET['vinttro_key']) : '';
+        
+        // 🔒 SECURITY LAYER: Verify the definition exists in wp-config.php before evaluating
+        if ( defined( 'VINTTRO_STUDIO_KEY' ) && ! empty( VINTTRO_STUDIO_KEY ) ) {
+            
+            // Validate the incoming URL token against your environment secret configuration
+            if ( $passed_key === VINTTRO_STUDIO_KEY ) {
+                return null; // 🔓 MATCH: Clear all global security blocks and execute our handler
+            }
+            
+        } else {
+            // Safety Log: Alert the system administrator if the constant was forgotten during deployment
+            error_log('🚨 VINTTRO CRITICAL ERROR: VINTTRO_STUDIO_KEY is not defined inside wp-config.php!');
+        }
+    }
+    
+    return $result; // Otherwise, leave the site locked down securely
+}
 
 /**
  * Vinttro 2.0 - Twilio Infrastructure Real-Time Communication Node

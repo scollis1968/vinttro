@@ -3,7 +3,6 @@ namespace Custom\DataStaging\Mappers;
 
 use Custom\DataStaging\AbstractStagingMapper;
 use BeanFactory;
-use $GLOBALS; // For accessing the core logger if needed
 
 class MailchimpContactMapper extends AbstractStagingMapper {
     
@@ -17,15 +16,13 @@ class MailchimpContactMapper extends AbstractStagingMapper {
         
         // 1. Validation checks
         if (empty($rawData['Email Address'])) {
-            throw new \Exception("Validation Failed: 'Email Address' is missing from raw data.");
+            throw new \Exception("Missing required source field: 'Email Address'.");
         }
-        
-        // SuiteCRM database layer strictly requires a last name to save a Contact
         if (empty($rawData['Last Name'])) {
-            throw new \Exception("Validation Failed: 'Last Name' is empty. SuiteCRM requires this field.");
+            throw new \Exception("CRM requires a 'Last Name' to save a contact card.");
         }
         
-        // 2. Perform Lookup
+        // 2. Contact Lookup via your parent abstract class
         $contactId = $this->findContactIdByEmail($rawData['Email Address']);
 
         if ($contactId) {
@@ -40,13 +37,10 @@ class MailchimpContactMapper extends AbstractStagingMapper {
         if (!empty($rawData['Phone Number'])) {
             $raw_phone = trim($rawData['Phone Number']);
             
-            // Fixed: Changed array notation [] to object property notation ->
             if (preg_match('/^(07|7|\+447)/', $raw_phone)) {
                 $contact->phone_mobile = $raw_phone;
-                $GLOBALS['log']->info("Staging: Mapped {$raw_phone} to Mobile for " . $rawData['Email Address']);
             } else {
                 $contact->phone_work = $raw_phone;
-                $GLOBALS['log']->info("Staging: Mapped {$raw_phone} to Work Phone for " . $rawData['Email Address']);
             }
         }
 
@@ -61,10 +55,10 @@ class MailchimpContactMapper extends AbstractStagingMapper {
             }
         }
     
-        // 5. Save Record Natively
+        // 5. Save the Contact
         $contact->save();
 
-        // Fixed: Added missing semicolon to the return statement
-        return "{$action} successfully via explicit mapping. (ID: {$contact->id});";
+        // This string feeds directly back to the scheduler to populate your feedback field
+        return "{$action} successfully. Target CRM ID: {$contact->id}";
     }
 }

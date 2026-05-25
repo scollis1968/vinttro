@@ -4,7 +4,8 @@
 
 //$csv_file_path = '/tmp/mailchimp_contacts_1.csv';
 $source_system = $argv[1];
-$csv_file_path = $argv[2];
+$data_type = $argv[2];
+$csv_file_path = $argv[3];
 $module_name = 'Contacts';
 
 include('suitecrm-common-functions.php');
@@ -31,7 +32,7 @@ while (($row = fgetcsv($handle)) !== FALSE) {
 
 
 
-    $r = insertRawData($suitecrm_url,$access_token,$source_system,$record);
+    $r = insertRawData($suitecrm_url,$access_token,$source_system,$data_type,$record);
     // Log the result
     if (empty($r) || isset($r['errors'])) {
         echo "❌ Error importing record #$row_count.\n";

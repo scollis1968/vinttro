@@ -14,23 +14,38 @@ function processStagingRecords() {
     }
 
     foreach ($pendingList as $record) {
-        // Automatically determine if the field is custom (feed_back_c) or standard (feed_back)
         $fbField = isset($record->field_defs['feed_back_c']) ? 'feed_back_c' : 'feed_back';
 
         try {
-            $rawData = json_decode($record->raw_data, true);
+            // 1. Get the raw string from the database
+            $rawString = $record->raw_data;
+
+            // 2. Decode standard HTML entities (converts &quot; back to ")
+            $cleanJson = html_entity_decode($rawString, ENT_QUOTES, 'UTF-8');
+
+            // 3. Fallback: If SuiteCRM double-encoded or mangled the tokens (leaving literal &amp; as quotes)
+            $rawData = json_decode($cleanJson, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception("Invalid JSON formatting in raw_data field.");
+                $fallbackJson = str_replace('&amp;', '"', $rawString);
+                $rawData = json_decode($fallbackJson, true);
+                
+                // If the fallback worked, use it
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $cleanJson = $fallbackJson;
+                } else {
+                    // If it STILL fails, throw the official PHP JSON error message
+                    throw new Exception("Invalid JSON formatting: " . json_last_error_msg());
+                }
             }
 
             $source = !empty($record->source_system) ? $record->source_system : 'Generic';
             $dataType = !empty($record->data_type) ? $record->data_type : 'Default';
 
-            // 1. Get mapper and execute
+            // 4. Get mapper and execute
             $mapper = \Custom\DataStaging\MapperFactory::getMapper($source, $dataType);
             $resultMessage = $mapper->process($rawData, $record);
 
-            // 2. Log Success Summary
+            // 5. Log Success Summary
             $record->status = 'processed';
             if (property_exists($record, $fbField) || isset($record->field_defs[$fbField])) {
                 $record->$fbField = is_string($resultMessage) ? $resultMessage : 'Processed successfully.';
@@ -38,7 +53,7 @@ function processStagingRecords() {
             $record->save();
 
         } catch (Exception $e) {
-            // 3. Log Failure Details
+            // 6. Log Failure Details
             $record->status = 'failed';
             if (property_exists($record, $fbField) || isset($record->field_defs[$fbField])) {
                 $record->$fbField = "❌ CRASHED: " . $e->getMessage();

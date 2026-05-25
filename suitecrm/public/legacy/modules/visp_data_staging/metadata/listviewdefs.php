@@ -38,11 +38,11 @@ array (
     'width' => '10%',
     'default' => true,
   ),
-  'RAW_DATA' => 
+  'FEED_BACK' => 
   array (
     'type' => 'text',
     'studio' => 'visible',
-    'label' => 'LBL_RAW_DATA',
+    'label' => 'LBL_FEED_BACK',
     'sortable' => false,
     'width' => '10%',
     'default' => true,

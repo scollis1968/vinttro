@@ -48,7 +48,7 @@ function processStagingRecords() {
             // 5. Log Success Summary
             $record->status = 'processed';
             if (property_exists($record, $fbField) || isset($record->field_defs[$fbField])) {
-                $record->$fbField = is_string($resultMessage) ? $resultMessage : 'Processed successfully.';
+                $record->$fbField = is_string($resultMessage) ? '✔️ ' . $resultMessage : '✔️ Processed successfully.';
             }
             $record->save();
 
@@ -56,7 +56,7 @@ function processStagingRecords() {
             // 6. Log Failure Details
             $record->status = 'failed';
             if (property_exists($record, $fbField) || isset($record->field_defs[$fbField])) {
-                $record->$fbField = "❌ CRASHED: [" . get_class($e) . "] " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine();
+                $record->$fbField = "❌ Error: [" . get_class($e) . "] " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine();
             }
             $record->save();
         }

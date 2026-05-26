@@ -23,7 +23,7 @@ function processStagingRecords() {
             // 2. Decode standard HTML entities (converts &quot; back to ")
             $cleanJson = html_entity_decode($rawString, ENT_QUOTES, 'UTF-8');
 
-            // 3. Fallback: If SuiteCRM double-encoded or mangled the tokens (leaving literal &amp; as quotes)
+            // 3. Fallback: If SuiteCRM double-encoded or mangled the tokens
             $rawData = json_decode($cleanJson, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 $fallbackJson = str_replace('&amp;', '"', $rawString);
@@ -52,11 +52,11 @@ function processStagingRecords() {
             }
             $record->save();
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) { // <-- CHANGED THIS TO \Throwable TO CATCH SYSTEM CRASHES
             // 6. Log Failure Details
             $record->status = 'failed';
             if (property_exists($record, $fbField) || isset($record->field_defs[$fbField])) {
-                $record->$fbField = "❌ CRASHED: " . $e->getMessage();
+                $record->$fbField = "❌ CRASHED: [" . get_class($e) . "] " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine();
             }
             $record->save();
         }

@@ -1,6 +1,9 @@
 <?php
 namespace Custom\DataStaging;
 
+// ADD THIS LINE RIGHT HERE to load the abstract parent class blueprint
+require_once __DIR__ . '/AbstractStagingMapper.php';
+
 class MapperFactory {
     public static function getMapper(string $source, string $dataType): StagingMapperInterface {
         // Clean strings to match file/class naming conventions (CamelCase)

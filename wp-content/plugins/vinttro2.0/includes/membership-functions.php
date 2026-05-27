@@ -90,6 +90,7 @@ function vinttro_get_garage_panel($user_id) {
                     <strong><?php echo esc_html($car['make'] . ' ' . $car['model']); ?></strong><br>
                     <small>Reg: <?php echo esc_html($car['reg']); ?></small><br>
                     <small>MOT Due: <?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?></small>
+                    <small>Next Service: <?php echo vinttro_render_date_pill($car['next_service'] ?? ''); ?></small>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -140,7 +141,7 @@ function vinttro_get_fleet_panels($user_id) {
                                 <span class="vehicle-status-dot <?php echo $status_class; ?>" title="<?php echo $has_issues ? 'Issues Reported' : 'All Clear'; ?>"></span>
                             </td>
                             <td><?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?></td>
-                            <td><?php echo vinttro_render_date_pill($car['date_next_service'] ?? ''); ?></td>
+                            <td><?php echo vinttro_render_date_pill($car['next_service'] ?? ''); ?></td>
                             <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? ''); ?></td>
                         </tr>
 

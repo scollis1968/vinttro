@@ -7,12 +7,34 @@ add_action('rest_api_init', function () {
         'methods'             => 'POST',
         'callback'            => 'vinttro_handle_crm_member',
         'permission_callback' => function () {
-            // This ensures only users with 'create_users' capability (like Admins) 
-            // can access this endpoint via the API.
             return current_user_can('create_users');
         }
     ]);
 });
+
+/**
+ * Recursive helper to sanitize multidimensional arrays dynamically
+ * keeping data clean without knowing the field names in advance.
+ */
+function vinttro_sanitize_incoming_data($data) {
+    if (!is_array($data)) {
+        return sanitize_text_field($data);
+    }
+    
+    foreach ($data as $key => $value) {
+        if (is_array($value)) {
+            $data[$key] = vinttro_sanitize_incoming_data($value);
+        } else {
+            // Contextual sanitization: Use esc_url_raw for URLs, standard sanitization for everything else
+            if (strpos($key, 'url') !== false || strpos($key, 'image') !== false) {
+                $data[$key] = esc_url_raw($value);
+            } else {
+                $data[$key] = sanitize_text_field($value);
+            }
+        }
+    }
+    return $data;
+}
 
 /**
  * The logic that runs when the API is hit
@@ -26,7 +48,6 @@ function vinttro_handle_crm_member($request) {
     }
 
     $user = get_user_by('email', $email);
-    $is_new_user = false;
 
     if ($user) {
         $user_id = $user->ID;
@@ -36,7 +57,6 @@ function vinttro_handle_crm_member($request) {
             'last_name'  => sanitize_text_field($params['last_name'] ?? ''),
         ]);
     } else {
-        $is_new_user = true;
         $user_id = wp_insert_user([
             'user_login' => $email,
             'user_email' => $email,
@@ -51,72 +71,25 @@ function vinttro_handle_crm_member($request) {
         }
     }
 
-    // --- Sync Metadata ---
-    if (isset($params['mot_date'])) update_user_meta($user_id, 'vinttro_mot_date', sanitize_text_field($params['mot_date']));
-    if (isset($params['insurance_renewal'])) update_user_meta($user_id, 'vinttro_insurance_renewal', sanitize_text_field($params['insurance_renewal']));
-    if (isset($params['membership_status'])) update_user_meta($user_id, 'vinttro_membership_status', sanitize_text_field($params['membership_status']));
-
-    // --- Handling the Garage (vinttro_garage) ---
-    if (isset($params['vehicles']) && is_array($params['vehicles'])) {
-        $garage_data = [];
-        foreach ($params['vehicles'] as $vehicle) {
-            $garage_data[] = [
-                'fleet'      => sanitize_text_field($vehicle['fleet'] ?? ''),
-                'make'       => sanitize_text_field($vehicle['make'] ?? ''),
-                'model'      => sanitize_text_field($vehicle['model'] ?? ''),
-                'reg'        => sanitize_text_field($vehicle['reg'] ?? ''),
-                'mot_expiry' => sanitize_text_field($vehicle['mot_expiry'] ?? ''),
-                'ins_expiry' => sanitize_text_field($vehicle['ins_expiry'] ?? ''),
-                'image_url'  => esc_url_raw($vehicle['image_url'] ?? '')
-            ];
+    // --- Dynamic Metadata Syncing ---
+    // Top-level standalone keys
+    $simple_meta_keys = ['mot_date', 'insurance_renewal', 'membership_status'];
+    foreach ($simple_meta_keys as $key) {
+        if (isset($params[$key])) {
+            update_user_meta($user_id, 'vinttro_' . $key, sanitize_text_field($params[$key]));
         }
-        update_user_meta($user_id, 'vinttro_garage', $garage_data);
     }
 
-    // --- Handling the Fleets (vinttro_fleets) ---
+    // --- Dynamic Array Syncing (Garage & Fleets) ---
+    // WordPress accepts the whole vehicle/fleet array exactly as SuiteCRM formats it!
+    if (isset($params['vehicles']) && is_array($params['vehicles'])) {
+        $clean_garage = vinttro_sanitize_incoming_data($params['vehicles']);
+        update_user_meta($user_id, 'vinttro_garage', $clean_garage);
+    }
+
     if (isset($params['fleets']) && is_array($params['fleets'])) {
-        $fleet_data = [];
-
-        foreach ($params['fleets'] as $fleet) {
-            $fleet_vehicles = []; 
-
-            if (isset($fleet['vehicles']) && is_array($fleet['vehicles'])) {
-                foreach ($fleet['vehicles'] as $vehicle) {
-                    
-                    // Process Outstanding Issues nested array
-                    $issues = [];
-                    if (!empty($vehicle['outstanding_issues']) && is_array($vehicle['outstanding_issues'])) {
-                        foreach ($vehicle['outstanding_issues'] as $issue) {
-                            $issues[] = [
-                                'title'       => sanitize_text_field($issue['title'] ?? ''),
-                                'description' => sanitize_textarea_field($issue['description'] ?? ''),
-                                'severity'    => sanitize_text_field($issue['issue_severity'] ?? 'low'),
-                                'date'        => sanitize_text_field($issue['date_issue_reported'] ?? ''),
-                            ];
-                        }
-                    }
-
-                    $fleet_vehicles[] = [
-                        'make'               => sanitize_text_field($vehicle['make'] ?? ''),
-                        'model'              => sanitize_text_field($vehicle['model'] ?? ''),
-                        'reg'                => sanitize_text_field($vehicle['reg'] ?? ''),
-                        'mot_expiry'         => sanitize_text_field($vehicle['mot_expiry'] ?? ''),
-                        'date_next_service'  => sanitize_text_field($vehicle['date_next_service'] ?? ''),
-                        'date_last_check'    => sanitize_text_field($vehicle['date_last_check'] ?? ''),
-                        'ins_expiry'         => sanitize_text_field($vehicle['ins_expiry'] ?? ''),
-                        'image_url'          => esc_url_raw($vehicle['image_url'] ?? ''),
-                        'driver_name'        => sanitize_text_field($vehicle['driver_name'] ?? ''),
-                        'outstanding_issues' => $issues // Nested array saved safely
-                    ];
-                }
-            }
-
-            $fleet_data[] = [
-                'name'     => sanitize_text_field($fleet['name'] ?? 'Unnamed Fleet'),
-                'vehicles' => $fleet_vehicles 
-            ];
-        }
-        update_user_meta($user_id, 'vinttro_fleets', $fleet_data);
+        $clean_fleets = vinttro_sanitize_incoming_data($params['fleets']);
+        update_user_meta($user_id, 'vinttro_fleets', $clean_fleets);
     }
 
     return new WP_REST_Response(['status' => 'success', 'user_id' => $user_id], 200);

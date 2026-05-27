@@ -183,7 +183,7 @@ class WPSyncHook {
                     file_put_contents($log, "        ⭐ MATCH: Record is a Fleet Admin. Fetching Contact record...\n", FILE_APPEND);
                     
                     // Name of relationship between Membership module and Contacts
-                    $rel_membership_contact = 'contacts_visp_fleet_membership';
+                    $rel_membership_contact = 'contacts_visp_fleet_memberships_1';
                     file_put_contents($log, "        - Loading Membership -> Contact relationship: '$rel_membership_contact'\n", FILE_APPEND);
                     
                     if ($membership->load_relationship($rel_membership_contact)) {

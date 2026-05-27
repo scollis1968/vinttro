@@ -143,12 +143,14 @@ class WPSyncHook {
                     'make'                   => $vehicle->make,
                     'model'                  => $vehicle->model,
                     'reg'                    => $vehicle->name,
-                    'date_next_mot'          => $vehicle->date_next_mot,
-                    'date_last_service'      => $vehicle->date_last_service,
-                    'date_next_service'      => $vehicle->date_next_service,
                     'date_last_check'        => $vehicle->date_last_check,
-                    'mot_expiry'             => $vehicle->date_mot,
-                    'ins_expiry'             => $vehicle->date_registered,
+                    'date_last_mot'          => $vehicle->date_last_mot,
+                    'date_last_service'      => $vehicle->date_last_service,
+                    'date_last_tax'          => $vehicle->date_last_tax,
+                    'date_next_mot'          => $vehicle->date_next_mot,
+                    'date_next_service'      => $vehicle->date_next_service,
+                    'date_next_tax'          => $vehicle->date_next_tax,
+                    'date_ins_renewal'       => $vehicle->date_ins_renewal,
                     'outstanding_issues'     => $this->getVehicleIssues($vehicle)
                 ];
             }

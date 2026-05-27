@@ -166,8 +166,8 @@ class WPSyncHook {
         $log = '/tmp/vinttro_ladder_debug.log';
         file_put_contents($log, " - [STEP 3] Distributing updates for Fleet: " . $fleetBean->name . "\n", FILE_APPEND);
 
-        // Name of relationship between Fleets and your new Membership module
-        $rel_fleet_memberships = 'visp_fleet_visp_fleet_membership';
+        // Name of relationship between Fleets and your new Membership module..
+        $rel_fleet_memberships = 'visp_fleet_visp_fleet_memberships';
         file_put_contents($log, "   - Loading Fleet -> Membership relationship: '$rel_fleet_memberships'\n", FILE_APPEND);
 
         if ($fleetBean->load_relationship($rel_fleet_memberships)) {

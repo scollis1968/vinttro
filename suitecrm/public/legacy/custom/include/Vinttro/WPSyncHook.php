@@ -225,7 +225,7 @@ class WPSyncHook {
         $issuesData = [];
         
         // Name of relationship between Vehicles and Issues module
-        $rel_vehicle_issues = 'visp_vehicle_visp_vehicle_issues'; 
+        $rel_vehicle_issues = 'visp_vehicle_visp_vehicle_issue'; 
         
         if ($vehicleBean->load_relationship($rel_vehicle_issues)) {
             $issues = $vehicleBean->$rel_vehicle_issues->getBeans();

@@ -154,7 +154,7 @@ function vinttro_get_fleet_panels($user_id) {
                                             <?php foreach ($issues as $issue) : ?>
                                                 <li>
                                                     <span class="issue-severity-tag sev-<?php echo esc_attr($issue['severity']); ?>"></span>
-                                                    <strong><?php echo esc_html($issue['title']); ?>:</strong> 
+                                                    <strong><?php echo esc_html($issue['name']); ?>:</strong> 
                                                     <?php echo esc_html($issue['description']); ?>
                                                     <span class="issue-date">- Reported: <?php echo esc_html($issue['date'] ?? ''); ?></span>
                                                 </li>

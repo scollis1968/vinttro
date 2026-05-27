@@ -234,9 +234,9 @@ class WPSyncHook {
             
             foreach ($issues as $issue) {
                 $issuesData[] = [
-                    'title'               => $issue->name,
+                    'name'                => $issue->name,
                     'description'         => $issue->description,
-                    'issue_severity'      => $issue->severity_c, 
+                    'severity'            => $issue->severity, 
                     'date_issue_reported' => $issue->date_entered
                 ];
             }

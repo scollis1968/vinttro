@@ -149,7 +149,7 @@ class WPSyncHook {
      */
     private function distributeToFleetAdmins($fleetBean, $fleetPayload) {
         // Name of relationship between Fleets and your new Membership module
-        $rel_fleet_memberships = 'visp_fleets_visp_fleet_membership';
+        $rel_fleet_memberships = 'visp_fleet_visp_fleet_membership';
 
         if ($fleetBean->load_relationship($rel_fleet_memberships)) {
             $memberships = $fleetBean->$rel_fleet_memberships->getBeans();

@@ -37,7 +37,7 @@ class WPSyncHook {
                 $payload['vehicles'][] = [
                     'make'         => $vehicle->make,      // Custom fields usually end in _c
                     'model'        => $vehicle->model,
-                    'reg'          => $vehicle->registration_number,         // Often the 'Name' field is used for Reg
+                    'reg'          => $vehicle->name,         // Assuming 'name' field holds the registration number
                     'mot_expiry'   => $vehicle->date_mot,
                     'next_service' => $vehicle->date_service,
                     'ins_expiry'   => $vehicle->date_registered,

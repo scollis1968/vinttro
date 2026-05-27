@@ -90,6 +90,123 @@ class WPSyncHook {
         file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - syncToWordPress 4 All done! \n" , FILE_APPEND);        // 1. Only sync if the "Portal Active" checkbox is checked
     }
 
+    /**
+     * Triggered automatically whenever a Vehicle record is saved
+     */
+    public function syncVehicleFleetUpdate($vehicleBean, $event, $arguments) {
+        // 1. Name of relationship between Vehicles and Fleets
+        $rel_vehicle_fleet = 'visp_fleets_visp_vehicles'; 
+
+        if ($vehicleBean->load_relationship($rel_vehicle_fleet)) {
+            $relatedFleets = $vehicleBean->$rel_vehicle_fleet->getBeans();
+            
+            foreach ($relatedFleets as $fleet) {
+                // Compile the fleet payload once so we don't repeat DB queries
+                $fleetPayload = $this->compileFleetDataStructure($fleet);
+                
+                // Blast this update out to all qualifying admins linked to this fleet
+                $this->distributeToFleetAdmins($fleet, $fleetPayload);
+            }
+        }
+    }
+
+    /**
+     * Compiles the full nested dataset for a specific Fleet
+     */
+    private function compileFleetDataStructure($fleetBean) {
+        $fleetStructure = [
+            'name'     => $fleetBean->name,
+            'vehicles' => []
+        ];
+
+        // Name of relationship between Fleets and Vehicles
+        $rel_fleet_vehicles = 'visp_fleet_visp_vehicle';
+        
+        if ($fleetBean->load_relationship($rel_fleet_vehicles)) {
+            $vehicles = $fleetBean->$rel_fleet_vehicles->getBeans();
+            
+            foreach ($vehicles as $vehicle) {
+                $fleetStructure['vehicles'][] = [
+                    'make'                   => $vehicle->make,
+                    'model'                  => $vehicle->model,
+                    'reg'                    => $vehicle->name, // Or registration_number
+                    'date_next_mot'          => $vehicle->date_next_mot,
+                    'date_last_service'      => $vehicle->date_last_service,
+                    'date_next_service'      => $vehicle->date_next_service,
+                    'date_last_check'        => $vehicle->date_last_check,
+                    'mot_expiry'             => $vehicle->date_mot,
+                    'ins_expiry'             => $vehicle->date_registered,
+                    'outstanding_issues'     => $this->getVehicleIssues($vehicle)
+                ];
+            }
+        }
+
+        return $fleetStructure;
+    }
+
+    /**
+     * Finds all fleet administrators and broadcasts the data payload to WordPress
+     */
+    private function distributeToFleetAdmins($fleetBean, $fleetPayload) {
+        // Name of relationship between Fleets and your new Membership module
+        $rel_fleet_memberships = 'visp_fleets_visp_fleet_membership';
+
+        if ($fleetBean->load_relationship($rel_fleet_memberships)) {
+            $memberships = $fleetBean->$rel_fleet_memberships->getBeans();
+
+            foreach ($memberships as $membership) {
+                // Check if the "is_fleetadmin" checkbox is checked (returns 1 or true)
+                if (!empty($membership->is_fleetadmin) && $membership->is_fleetadmin == 1) {
+                    
+                    // Name of relationship between Membership module and Contacts
+                    $rel_membership_contact = 'contacts_visp_fleet_membership';
+                    
+                    if ($membership->load_relationship($rel_membership_contact)) {
+                        $contacts = $membership->$rel_membership_contact->getBeans();
+                        $contact = reset($contacts); // Get the single contact record linked
+
+                        if ($contact && !empty($contact->email1)) {
+                            // Format the wrapper payload exactly how WordPress wants it
+                            $wpPayload = [
+                                'email'             => $contact->email1,
+                                'first_name'        => $contact->first_name,
+                                'last_name'         => $contact->last_name,
+                                'membership_status' => $contact->membership_status_c ?? 'Active',
+                                'fleets'            => [$fleetPayload] // Sent inside an array wrapper
+                            ];
+
+                            // Call your existing operational API method
+                            $this->callWPAPI($wpPayload);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper to compile outstanding issues for a single vehicle
+     */
+    private function getVehicleIssues($vehicleBean) {
+        $issuesData = [];
+        // Name of relationship between Vehicles and Issues module
+        $rel_vehicle_issues = 'visp_vehicle_visp_vehicle_issues'; 
+
+        if ($vehicleBean->load_relationship($rel_vehicle_issues)) {
+            $issues = $vehicleBean->$rel_vehicle_issues->getBeans();
+            foreach ($issues as $issue) {
+                $issuesData[] = [
+                    'title'               => $issue->name,
+                    'description'         => $issue->description,
+                    'issue_severity'      => $issue->severity_c, 
+                    'date_issue_reported' => $issue->date_entered
+                ];
+            }
+        }
+        return $issuesData;
+    }
+
+
     private function getVehicleImageUrl($vehicle) {
         // If you are using a Photo field in SuiteCRM, the ID is stored in the field
         // Adjust 'photo_c' to your actual field name

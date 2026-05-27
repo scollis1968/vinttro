@@ -97,7 +97,7 @@ class WPSyncHook {
         file_put_contents($log, date('Y-m-d H:i:s') . " - [STEP 1] Hook triggered on Vehicle. ID: " . $vehicleBean->id . " | Reg: " . $vehicleBean->name . "\n", FILE_APPEND);
 
         // 1. Name of relationship between Vehicles and Fleets
-        $rel_vehicle_fleet = 'visp_fleets_visp_vehicles'; 
+        $rel_vehicle_fleet = 'visp_fleet_visp_vehicle'; 
         file_put_contents($log, " - Loading Vehicle -> Fleet relationship: '$rel_vehicle_fleet'\n", FILE_APPEND);
 
         if ($vehicleBean->load_relationship($rel_vehicle_fleet)) {

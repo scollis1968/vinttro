@@ -6,6 +6,44 @@ if (!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - File was included\n", FILE_APPEND);
 
 class WPSyncHook {
+    public function syncContactHook($bean, $event, $arguments) {
+        $this->executeSyncForContact($bean);
+    }
+
+    public function syncVehicleHook($vehicleBean, $event, $arguments) {
+        $rel_name = 'visp_vehicle_contacts'; // The relationship link name back to Contacts
+
+        if ($vehicleBean->load_relationship($rel_name)) {
+            $relatedContacts = $vehicleBean->$rel_name->getBeans();
+
+            foreach ($relatedContacts as $contact) {
+                // Trigger the centralized sync for every contact linked to this vehicle!
+                $this->executeSyncForContact($contact);
+            }
+        }
+    }
+
+    /**
+     * The single source of truth for gathering data and blasting WP
+     */
+    public function executeSyncForContact($contactBean) {
+        if (empty($contactBean->portal_active_c)) {
+            return; // Skip if portal isn't active
+        }
+
+        // Build your massive multi-dimensional payload exactly as you designed it
+        $payload = [
+            'email'             => $contactBean->email1,
+            'first_name'        => $contactBean->first_name,
+            'last_name'         => $contactBean->last_name,
+            'membership_status' => $contactBean->membership_status_c,
+            'vehicles'          => $this->getIndividualGarage($contactBean),
+            'fleets'            => $this->getRelatedFleets($contactBean)
+        ];
+
+        $this->callWPAPI($payload);
+    }
+
     public function syncToWordpress($bean, $event, $arguments) {
         // --- ADD THIS LINE AT THE TOP ---
         file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - syncToWordPress 1 trigered\n", FILE_APPEND);        // 1. Only sync if the "Portal Active" checkbox is checked

@@ -89,7 +89,7 @@ function vinttro_get_garage_panel($user_id) {
                 <div class="garage-item" style="border-bottom: 1px solid #eee; padding: 10px 0;">
                     <strong><?php echo esc_html($car['make'] . ' ' . $car['model']); ?></strong><br>
                     <small>Reg: <?php echo esc_html($car['reg']); ?></small><br>
-                    <small>MOT Due: <?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?></small>
+                    <small>MOT Due: <?php echo vinttro_render_date_pill($car['mot_expiry'] ?? ''); ?></small><br>
                     <small>Next Service: <?php echo vinttro_render_date_pill($car['next_service'] ?? ''); ?></small>
                 </div>
             <?php endforeach; ?>

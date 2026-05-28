@@ -37,22 +37,25 @@ class VinttroFormProcessor
         }
 
         // 4. Point 3: Complex Data Mapping (Vehicles Loop)
+        // Find the vehicles loop inside your file and update it with this validation check:
         if (!empty($data['vehicles']) && is_array($data['vehicles'])) {
             foreach ($data['vehicles'] as $vehicleData) {
-                // Swap 'v_Vehicles' with your exact custom vehicle module singular key name
                 $vehicle = \BeanFactory::newBean('v_Vehicles'); 
+                
+                // Defensive Verification Block
+                if (!$vehicle) {
+                    throw new \Exception("SuiteCRM Module 'v_Vehicles' could not be initialized. Please check that the singular module key name matches your Studio configurations exactly.");
+                }
+                
                 $vehicle->name  = ($vehicleData['make'] ?? '') . ' ' . ($vehicleData['model'] ?? '');
                 $vehicle->make_c  = $vehicleData['make'] ?? '';
                 $vehicle->model_c = $vehicleData['model'] ?? '';
                 $vehicle->year_c  = $vehicleData['year'] ?? '';
-                
-                // Establish relationships depending on how your module layout is set up:
                 $vehicle->parent_id   = $leadId;
                 $vehicle->parent_type = 'Leads';
                 $vehicle->save();
             }
         }
-
         // 5. Point 2: Base64 Decoded Attachments Handling
         if (!empty($data['attachments']) && is_array($data['attachments'])) {
             foreach ($data['attachments'] as $file) {

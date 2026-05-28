@@ -40,17 +40,16 @@ class VinttroFormProcessor
         // Find the vehicles loop inside your file and update it with this validation check:
         if (!empty($data['vehicles']) && is_array($data['vehicles'])) {
             foreach ($data['vehicles'] as $vehicleData) {
-                $vehicle = \BeanFactory::newBean('v_Vehicles'); 
+                $vehicle = \BeanFactory::newBean('visp_vehicle'); 
                 
                 // Defensive Verification Block
                 if (!$vehicle) {
                     throw new \Exception("SuiteCRM Module 'v_Vehicles' could not be initialized. Please check that the singular module key name matches your Studio configurations exactly.");
                 }
                 
-                $vehicle->name  = ($vehicleData['make'] ?? '') . ' ' . ($vehicleData['model'] ?? '');
-                $vehicle->make_c  = $vehicleData['make'] ?? '';
-                $vehicle->model_c = $vehicleData['model'] ?? '';
-                $vehicle->year_c  = $vehicleData['year'] ?? '';
+                $vehicle->name        = ($vehicleData['make'] ?? '') . ' ' . ($vehicleData['model'] ?? '');
+                $vehicle->make        = $vehicleData['make'] ?? '';
+                $vehicle->model       = $vehicleData['model'] ?? '';
                 $vehicle->parent_id   = $leadId;
                 $vehicle->parent_type = 'Leads';
                 $vehicle->save();

@@ -13,16 +13,23 @@ class VinttroFormController extends BaseController
 {
     public function handleSubmit(Request $request, Response $response)
     {
-        // Retrieve the parsed JSON payload sent by WordPress
         $params = $request->getParsedBody();
 
-        // Basic sanity check
         if (empty($params['submission_guid'])) {
             return $response->withJson(['status' => 'error', 'message' => 'Missing submission_guid'], 400);
         }
 
-        // Initialize the centralized Service class
-        require_once 'custom/include/Vinttro/VinttroFormProcessor.php';
+        // Absolute path construction independent of webserver rewrite configurations
+        $processorPath = dirname(__DIR__, 5) . '/include/Vinttro/VinttroFormProcessor.php';
+        
+        if (!file_exists($processorPath)) {
+            return $response->withJson([
+                'status' => 'error', 
+                'message' => 'Processor file not found at path: ' . $processorPath
+            ], 500);
+        }
+
+        require_once $processorPath;
 
         try {
             $processor = new \VinttroFormProcessor();
@@ -34,10 +41,13 @@ class VinttroFormController extends BaseController
                 'lead_id' => $leadId
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) { 
+            // Intercepts PHP Fatal Errors and reveals the exact culprit
             return $response->withJson([
                 'status'  => 'error',
-                'message' => $e->getMessage()
+                'message' => 'PHP Fatal Error: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine()
             ], 500);
         }
     }

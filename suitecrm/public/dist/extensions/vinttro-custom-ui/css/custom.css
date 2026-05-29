@@ -95,3 +95,13 @@ app-subpanel-list-view {
 .app-loading {
     background-color: #f5f5f5 !important; 
 }
+/* ==========================================================================
+   4. Pure SuiteCRM 8 Angular Edit-Mode Hide Rule for Driver Relate Field
+   ========================================================================== */
+
+/* Targets the outer grid layout column container, but ONLY when it contains 
+   the active, editable state configuration for the Vinttro Driver relate field.
+*/
+.field-layout-col:has(.field-mode-edit.field-name-contacts_visp_driver_1_name) {
+    display: none !important;
+}

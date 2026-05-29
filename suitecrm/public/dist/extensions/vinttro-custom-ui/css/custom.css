@@ -111,13 +111,8 @@ div[data-field-name="contacts_visp_driver_1_name"]:has(.form-control),
    4. Pure SuiteCRM 8 Angular Edit-Mode Hide Rule for Driver Relate Field
    ========================================================================== */
 
-/* Strategy A: Direct hit on the field wrapper when in edit mode */
-scrm-field.field-mode-edit.field-name-contacts_visp_driver_1_name {
-    display: none !important;
-}
-
-/* Strategy B: Aggressive parent wrapper match via wildcard attribute mapping.
-   This forces the label and the block to drop out together, regardless of shadow DOMs. */
-div[class*="field-layout-col"]:has(.field-mode-edit.field-name-contacts_visp_driver_1_name) {
+/* Targets the outer container cell (including the DRIVER text label), 
+   triggering ONLY when the child element enters an editable template state. */
+.field-layout-col:has(.field-name-contacts_visp_driver_1_name scrm-relate-edit) {
     display: none !important;
 }

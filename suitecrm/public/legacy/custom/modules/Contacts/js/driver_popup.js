@@ -1,11 +1,26 @@
 $(document).ready(function() {
-    // 1. Initial State Check
-    toggleDriverButton();
+    var checkbox = $('#is_driver_c');
+    
+    // Ensure the checkbox exists on the current screen layout
+    if (checkbox.length > 0) {
+        
+        // 1. Dynamically append the button HTML immediately following the checkbox
+        checkbox.after('&nbsp;<button type="button" id="open_driver_popup_btn" class="btn btn-success" style="display:none; vertical-align: middle; padding: 2px 10px;">Manage Driver Profile</button>');
+        
+        // 2. Bind the click handler to extract the Contact ID and open the modal
+        $('#open_driver_popup_btn').click(function() {
+            var contactId = $('input[name="record"]').val(); 
+            launchDriverModal(contactId);
+        });
 
-    // 2. Listen for changes on your custom checkbox/toggle field
-    $('#is_driver_c').change(function() {
+        // 3. Check the initial state on page load
         toggleDriverButton();
-    });
+
+        // 4. Listen for user clicks/changes
+        checkbox.change(function() {
+            toggleDriverButton();
+        });
+    }
 });
 
 function toggleDriverButton() {
@@ -17,10 +32,9 @@ function toggleDriverButton() {
 }
 
 function launchDriverModal(contactId) {
-    // Open SuiteCRM's native QuickCreate or standard EditView inside a modal iframe
-    var url = "index.php?module={Your_Driver_Module}&action=EditView&to_pdf=true&contact_id_link=" + contactId;
+    // Points directly to your custom driver module package key name: visp_driver
+    var url = "index.php?module=visp_driver&action=EditView&to_pdf=true&contact_id_link=" + contactId;
     
-    // Utilizing SuiteCRM's native Bootstrap modal wrapper
     bootbox.dialog({
         title: "Manage Supplementary Driver Details",
         message: '<iframe src="' + url + '" width="100%" height="500px" frameborder="0"></iframe>',

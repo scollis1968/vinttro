@@ -96,10 +96,12 @@ DESTINATION_DIR="/var/www/suitecrm/public/dist/extensions/vinttro-custom-ui/"
 # 1. Double check that the source actually exists in the cloned repo
 if [ -d "$SOURCE_DIR" ]; then
     
-    # FIX: Explicitly enforce parent directory structure creation before running rsync
-    sudo mkdir -p "/var/www/suitecrm/public/dist/extensions/vinttro-custom-ui/"
-    sudo chown www-data:www-data "/var/www/suitecrm/public/dist/extensions/"
+    log "Forcing absolute destination directory tree generation..."
+    # Force the complete absolute path to exist so rsync has a perfect runway
+    sudo mkdir -p "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
+    sudo chown -R www-data:www-data "/var/www/suitecrm/public/dist/" >> "$LOG_FILE" 2>&1
 
+    log "Executing custom UI asset synchronization..."
     # 2. Track rsync errors by appending them to your log file
     sudo rsync -a "$SOURCE_DIR" "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then

@@ -18,7 +18,6 @@ class FleetMembershipHook
                     
                     $id_field = isset($defs['id_name']) ? $defs['id_name'] : '';
 
-                    // If the foreign key ID field is explicitly populated on the bean, process it
                     if (!empty($id_field) && isset($bean->$id_field) && is_string($bean->$id_field) && !empty($bean->$id_field)) {
                         
                         $target_module = isset($defs['module']) && is_string($defs['module']) ? $defs['module'] : '';
@@ -31,8 +30,8 @@ class FleetMembershipHook
                             }
                         }
                         
-                        // Handle Fleet Relationship (Direct/Relate Field path)
-                        else if ($target_module === 'visp_fleet' || (empty($target_module) && isset($defs['link']) && is_string($defs['link']) && strpos($defs['link'], 'fleet') !== false)) {
+                        // Handle Fleet Relationship (Standard field path)
+                        else if ($target_module === 'visp_fleet') {
                             $fleet = BeanFactory::getBean('visp_fleet', $bean->$id_field);
                             if ($fleet && !empty($fleet->id)) {
                                 $fleet_display = $fleet->get_summary_text();
@@ -43,23 +42,35 @@ class FleetMembershipHook
             }
         }
 
-        // 3. CRITICAL FALLBACK FOR SUBPANEL SAVES
-        // If the fleet_display is still unknown after the loop, it means this was created 
-        // from a subpanel view where the relationship isn't bound to the fields yet.
+        // 3. BULLETPROOF ADVANCED JSON PAYLOAD SCANNER FOR SUBPANELS
+        // If the fleet display is still unknown, parse the raw GraphQL JSON payload directly
         if ($fleet_display === 'Unknown Fleet') {
-            $subpanel_parent_id = '';
+            $raw_payload = file_get_contents('php://input');
             
-            if (!empty($_REQUEST['relate_id'])) {
-                $subpanel_parent_id = $_REQUEST['relate_id'];
-            } elseif (!empty($_REQUEST['parent_id'])) {
-                $subpanel_parent_id = $_REQUEST['parent_id'];
-            }
+            if (!empty($raw_payload)) {
+                $payload = json_decode($raw_payload, true);
+                
+                // Collect target variable blocks sent by the Angular frontend
+                $blocks_to_scan = [];
+                if (!empty($payload['variables']['input'])) {
+                    $blocks_to_scan[] = $payload['variables']['input'];
+                    if (!empty($payload['variables']['input']['attributes'])) {
+                        $blocks_to_scan[] = $payload['variables']['input']['attributes'];
+                    }
+                }
 
-            // If we successfully caught the parent ID from the background request context, load it!
-            if (!empty($subpanel_parent_id) && is_string($subpanel_parent_id)) {
-                $fleet = BeanFactory::getBean('visp_fleet', $subpanel_parent_id);
-                if ($fleet && !empty($fleet->id)) {
-                    $fleet_display = $fleet->get_summary_text();
+                // Scan the input packet for any valid 36-character Fleet ID
+                foreach ($blocks_to_scan as $target_block) {
+                    foreach ($target_block as $key => $value) {
+                        if (is_string($value) && strlen($value) === 36) {
+                            // Verify if this string is a real ID inside the visp_fleet table
+                            $check_fleet = BeanFactory::getBean('visp_fleet', $value);
+                            if ($check_fleet && !empty($check_fleet->id)) {
+                                $fleet_display = $check_fleet->get_summary_text();
+                                break 2; // Success! Break out of both loops
+                            }
+                        }
+                    }
                 }
             }
         }

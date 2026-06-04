@@ -13,8 +13,8 @@ class ContactsDriverHook
         }
 
         // 2. Define your exact 1-to-1 relationship name
-        // 💡 NOTE: Change this to match your exact Studio relationship name (e.g., contacts_visp_driver_1)
-        $relationshipName = 'contacts_visp_driver_1'; 
+        // 💡 NOTE: Change this to match your exact Studio relationship name (e.g., visp_driver_contacts)
+        $relationshipName = 'visp_driver_contacts'; 
 
         if (!$bean->load_relationship($relationshipName)) {
             $GLOBALS['log']->error("ContactsDriverHook: Failed to load relationship '$relationshipName'");

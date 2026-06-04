@@ -15,10 +15,14 @@ log() {
 
 log "--- Deployment triggered for Vinttro  - /etc/webhook/deploy-vinttro.sh ---"
 
+# --- Force Root Elevation via Sudoers rule ---
+if [ "$EUID" -ne 0 ]; then
+    log "Script running as restricted user. Elevating execution to root..."
+    exec sudo "$0" "$@"
+fi
 
 # --- 1. Clone or Pull the Repository ---
 if [ ! -d "$STAGING_DIR/.git" ]; then
-    # Clone the repository if it doesn't exist
     log "Cloning repository...."
     git clone $REPO_URL $STAGING_DIR
     if [ $? -ne 0 ]; then
@@ -26,10 +30,8 @@ if [ ! -d "$STAGING_DIR/.git" ]; then
         exit 1
     fi
 else
-    # Pull latest changes if repository exists
     log "Pulling latest changes..."
     cd $STAGING_DIR
-    # Fetch all, then reset to the latest target branch
     git fetch origin
     git reset --hard origin/$BRANCH
     if [ $? -ne 0 ]; then
@@ -40,31 +42,24 @@ fi
 
 # --- 2. Extract and Deploy Custom WordPress Files (rsync) ---
 log "Deploying Vinttro Plugin..."
-# Source: /tmp/vinttro-repo/wp-content/plugins/vinttro2.0/
-# Destination: /var/www/wordpress/wp-content/plugins/vinttro2.0/
-sudo rsync -a $STAGING_DIR/wp-content/plugins/vinttro2.0/ $LIVE_DIR/wp-content/plugins/vinttro2.0/
-
+rsync -a $STAGING_DIR/wp-content/plugins/vinttro2.0/ $LIVE_DIR/wp-content/plugins/vinttro2.0/
 if [ $? -ne 0 ]; then
     log "ERROR: Plugin rsync failed."
     exit 1
 fi
 
 log "Deploying Vinttro Theme..."
-# Define the parent directory and the specific folder name
 THEME_NAME="vinttro_child_theme"
 SOURCE_DIR="$STAGING_DIR/wp-content/themes/$THEME_NAME"
 DEST_DIR="/var/www/wordpress/wp-content/themes/$THEME_NAME"
 
-# Ensure the source actually exists before trying to sync
 if [ -d "$SOURCE_DIR" ]; then
-    # Sync the directory itself (no trailing slash on source) into the parent
-    sudo rsync -av "$SOURCE_DIR/" "$DEST_DIR/" >> "$LOG_FILE" 2>&1
+    rsync -av "$SOURCE_DIR/" "$DEST_DIR/" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
-        log "ERROR: Deploying VINTTRO theme -> rsync -av --delete."
+        log "ERROR: Deploying VINTTRO theme failed."
         exit 1
     fi    
-    # CRITICAL: Fix permissions so WordPress (www-data) can actually use it
-    sudo chown -R www-data:www-data "$DEST_DIR/"
+    chown -R www-data:www-data "$DEST_DIR/"
 else
     log "ERROR: Source theme directory $SOURCE_DIR not found!"
     exit 1
@@ -74,18 +69,14 @@ fi
 log "Deploying SuiteCrm/VINTTRO customisation ..."
 SOURCE_DIR="/tmp/vinttro-repo/suitecrm/vinttro2.0/"
 DESTINATION_DIR="/var/www/suitecrm/vinttro2.0/"
-sudo rsync -a $SOURCE_DIR $DESTINATION_DIR
+rsync -a $SOURCE_DIR $DESTINATION_DIR
 if [ $? -ne 0 ]; then
     log "ERROR: Deploying SuiteCrm/VINTTRO customisation failed."
     exit 1
 fi
 
 log "Setting permissions on /var/www/suitecrm/vinttro2.0"
-sudo chown -R www-data:www-data /var/www/suitecrm/vinttro2.0
-if [ $? -ne 0 ]; then
-    log "Error - Setting permissions on /var/www/suitecrm/vinttro2.0"
-    exit 1
-fi
+chown -R www-data:www-data /var/www/suitecrm/vinttro2.0
 
 
 ##-------------------------------------------------------------------------
@@ -93,19 +84,15 @@ fi
 SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/dist/extensions/vinttro-custom-ui/"
 DESTINATION_DIR="/var/www/suitecrm/public/dist/extensions/vinttro-custom-ui/"
 
-# 1. Double check that the source actually exists in the cloned repo
 if [ -d "$SOURCE_DIR" ]; then
-    
     log "Forcing absolute destination directory tree generation..."
-    # Force the complete absolute path to exist so rsync has a perfect runway
-    sudo mkdir -p "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
-    sudo chown -R www-data:www-data "/var/www/suitecrm/public/dist/" >> "$LOG_FILE" 2>&1
+    mkdir -p "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
+    chown -R www-data:www-data "/var/www/suitecrm/public/dist/" >> "$LOG_FILE" 2>&1
 
     log "Executing custom UI asset synchronization..."
-    # 2. Track rsync errors by appending them to your log file
-    sudo rsync -a "$SOURCE_DIR" "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
+    rsync -a "$SOURCE_DIR" "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
-        log "ERROR: Deploying $DESTINATION_DIR failed during rsync. Check details above."
+        log "ERROR: Deploying $DESTINATION_DIR failed during rsync."
         exit 1
     fi
 else
@@ -114,43 +101,28 @@ else
 fi
 
 log "Setting permissions on $DESTINATION_DIR"
-sudo chown -R www-data:www-data "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
-if [ $? -ne 0 ]; then
-    log "Error - Setting permissions on $DESTINATION_DIR"
-    exit 1
-fi
+chown -R www-data:www-data "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
 
 ##-------------------------------------------------------------------------
 # VINTTRO  SuiteCRM  public/legacy (Using Relative Overlay).
-    
-# 1. Move to the root of your cloned repository
 cd /tmp/vinttro-repo
-    
-# 2. Define the path relative to where you are standing
 RELATIVE_SOURCE="suitecrm/public/legacy"
 TARGET_ROOT="/var/www"
 
 log "Deploying SuiteCRM custom overlay..."
-
-# 3. Use -aR (archive + relative)
-sudo rsync -aR "$RELATIVE_SOURCE" "$TARGET_ROOT/" >> "$LOG_FILE" 2>&1
-    
+rsync -aR "$RELATIVE_SOURCE" "$TARGET_ROOT/" >> "$LOG_FILE" 2>&1
 if [ $? -ne 0 ]; then
     log "ERROR: Relative deploy of $RELATIVE_SOURCE failed."
     exit 1
 fi
 
-# 4. Fix permissions on the entire newly updated tree
 log "Setting permissions on $TARGET_ROOT/$RELATIVE_SOURCE"
-sudo chown -R www-data:www-data "$TARGET_ROOT/$RELATIVE_SOURCE" >> "$LOG_FILE" 2>&1
-if [ $? -ne 0 ]; then
-    log "ERROR: Setting permissions on $TARGET_ROOT/$RELATIVE_SOURCE failed."
-    exit 1
-fi
+chown -R www-data:www-data "$TARGET_ROOT/$RELATIVE_SOURCE" >> "$LOG_FILE" 2>&1
 
 
 ##-------------------------------------------------------------------------
 # --- 3. Automated Post-Deployment Automation & Framework Rebuilds ---
+# Note: Root can safely run "sudo -u www-data" without ever requiring a password
 log "Executing automated SuiteCRM Extensions Rebuild..."
 sudo -u www-data php -r '
     define("sugarEntry", true);
@@ -181,7 +153,6 @@ sudo -u www-data php bin/console scrm:copy-legacy-assets >> "$LOG_FILE" 2>&1
 
 log "Flushing SuiteCRM 8 Production Container Cache..."
 sudo -u www-data php bin/console cache:clear >> "$LOG_FILE" 2>&1
-
 
 log "Deployment successful for custom files."
 exit 0

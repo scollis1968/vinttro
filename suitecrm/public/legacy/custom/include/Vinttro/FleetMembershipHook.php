@@ -10,14 +10,30 @@ class FleetMembershipHook {
         $fleet_display = 'Unknown Fleet';
 
         // 2. Identify relationship field names dynamically
-        // Studio 1:M relationships pass the selected names in the request payload
         foreach ($bean->field_defs as $field_name => $defs) {
-            if ($defs['type'] == 'relate') {
-                if ($defs['module'] == 'Contacts' && !empty($bean->$field_name)) {
-                    $contact_display = $bean->$field_name;
-                }
-                if (isset($defs['link']) && strpos($defs['link'], 'fleet') !== false && !empty($bean->$field_name)) {
-                    $fleet_display = $bean->$field_name;
+            if (isset($defs['type']) && $defs['type'] == 'relate') {
+                
+                // Relate fields use an 'id_name' property to store the actual DB foreign key
+                $id_field = isset($defs['id_name']) ? $defs['id_name'] : '';
+
+                if (!empty($id_field) && !empty($bean->$id_field)) {
+                    
+                    // Handle Contacts Relationship
+                    if ($defs['module'] == 'Contacts') {
+                        $contact = BeanFactory::getBean('Contacts', $bean->$id_field);
+                        if ($contact && !empty($contact->id)) {
+                            // Contacts use full_name property safely
+                            $contact_display = !empty($contact->full_name) ? $contact->full_name : $contact->get_summary_text();
+                        }
+                    }
+                    
+                    // Handle Fleet Relationship
+                    if ($defs['module'] == 'visp_fleet' || (isset($defs['link']) && strpos($defs['link'], 'fleet') !== false)) {
+                        $fleet = BeanFactory::getBean($defs['module'], $bean->$id_field);
+                        if ($fleet && !empty($fleet->id)) {
+                            $fleet_display = $fleet->get_summary_text();
+                        }
+                    }
                 }
             }
         }

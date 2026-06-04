@@ -33,9 +33,13 @@ class FleetMembershipHook
                             }
                         }
                         
-                        // Handle Fleet Relationship (Strictly matched to visp_fleet)
-                        if ($target_module === 'visp_fleet' || (!empty($target_module) && isset($defs['link']) && is_string($defs['link']) && strpos($defs['link'], 'fleet') !== false)) {
-                            $fleet = BeanFactory::getBean($target_module, $bean->$id_field);
+                        // FIX: Changed to "else if" to guarantee a Contact field can NEVER bleed into this Fleet block
+                        else if ($target_module === 'visp_fleet' || (empty($target_module) && isset($defs['link']) && is_string($defs['link']) && strpos($defs['link'], 'fleet') !== false)) {
+                            
+                            // If target module metadata was blanked out by a subpanel layout array, force fallback to visp_fleet string
+                            $module_to_load = ($target_module === 'visp_fleet') ? 'visp_fleet' : 'visp_fleet';
+                            
+                            $fleet = BeanFactory::getBean($module_to_load, $bean->$id_field);
                             if ($fleet && !empty($fleet->id)) {
                                 $fleet_display = $fleet->get_summary_text();
                             }

@@ -97,7 +97,7 @@ DESTINATION_DIR="/var/www/suitecrm/public/dist/extensions/vinttro-custom-ui/"
 if [ -d "$SOURCE_DIR" ]; then
     
     # FIX: Explicitly enforce parent directory structure creation before running rsync
-    sudo mkdir -p "/var/www/suitecrm/public/dist/extensions/"
+    sudo mkdir -p "/var/www/suitecrm/public/dist/extensions/vinttro-custom-ui/"
     sudo chown www-data:www-data "/var/www/suitecrm/public/dist/extensions/"
 
     # 2. Track rsync errors by appending them to your log file

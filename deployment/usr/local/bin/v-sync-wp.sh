@@ -143,4 +143,5 @@ sudo -u www-data wp option update tribe_events_single_event_slug "event" --path=
 wp rewrite flush --path=$PROD_PATH
 
 
+
 echo "✅ Secure Sync Complete!"

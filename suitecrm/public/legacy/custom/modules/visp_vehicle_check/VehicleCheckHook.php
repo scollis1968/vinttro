@@ -47,24 +47,13 @@ class VehicleCheckHook
             return;
         }
 
-        // --- FIELD SCANNER DEBUG LOG ---
-        // This will print every field containing keywords to help you catch naming typos instantly
-        $matchedFields = [];
-        foreach (array_keys($vehicle->field_defs) as $fName) {
-            if (preg_match('/(check|mile|service)/i', $fName)) {
-                $matchedFields[] = $fName;
-            }
-        }
-        $GLOBALS['log']->fatal("VCHook DBG: Actual Vehicle Fields Available: " . implode(', ', $matchedFields));
-
-
         // 1. Automatically populate the name of the check record
         if (!empty($bean->date_of_check)) {
             $checkDate = new DateTime($bean->date_of_check);
             $bean->name = (!empty($vehicle->name) ? $vehicle->name : "Vehicle") . ' - ' . $checkDate->format('Y-m-d');
         }
 
-        // Robust, warning-safe closures to read/write properties dynamically
+        // Warning-safe closures to look up custom fields dynamically (handling potential _c additions)
         $getVField = function($fieldName) use ($vehicle) {
             if (isset($vehicle->field_defs[$fieldName . '_c'])) {
                 return $vehicle->{$fieldName . '_c'};
@@ -84,18 +73,16 @@ class VehicleCheckHook
                 $vehicle->{$fieldName} = $value;
                 return true;
             }
-            // Fallback: assign to base property if definition wasn't found
             $vehicle->{$fieldName} = $value;
             return false;
         };
 
-        // Gather existing vehicle metrics
-        $currentVehicleDate = $getVField('date_last_checked');
+        // Gather existing vehicle metrics using updated field keys
+        $currentVehicleDate = $getVField('date_last_check');
         $newCheckMileage = (float)$bean->mileage;
         $newCheckDate = $bean->date_of_check;
 
-        // --- USER RULE CONDITIONAL CHECK ---
-        // Always update if mileage > 0 AND (vehicle date is empty OR the new check date is equal/greater)
+        // Condition Check: Mileage must be > 0 and date must be equal or newer
         $shouldUpdateVehicle = false;
         if ($newCheckMileage > 0) {
             if (empty($currentVehicleDate) || strpos($currentVehicleDate, '0000-00-00') !== false || $newCheckDate >= $currentVehicleDate) {
@@ -108,15 +95,16 @@ class VehicleCheckHook
         }
 
         if ($shouldUpdateVehicle) {
-            $setVField('date_last_checked', $newCheckDate);
+            // 2. Set base check data on parent vehicle using corrected keys
+            $setVField('date_last_check', $newCheckDate);
             $setVField('mileage_last_check', $newCheckMileage);
             $GLOBALS['log']->fatal("VCHook DBG: Staged Last Check Date ($newCheckDate) and Mileage ($newCheckMileage) onto Vehicle.");
 
-            // 3. Calculate and update service dates inside a protected bubble
+            // 3. Calculate and update service dates
             try {
                 $vDateLastService = $getVField('date_last_service');
-                $vServiceIntervalsMonths = $getVField('service_intervals_months');
-                $vMilesLastService = $getVField('miles_last_service');
+                $vServiceIntervalMonths = $getVField('service_interval_months');
+                $vMileageLastService = $getVField('mileage_last_service');
                 $vServiceIntervalMiles = $getVField('service_interval_miles');
 
                 if (!empty($vDateLastService) && strpos($vDateLastService, '0000-00-00') === false) {
@@ -124,15 +112,17 @@ class VehicleCheckHook
                     $optionA = null; 
                     $optionB = null;
 
-                    if (!empty($vServiceIntervalsMonths) && (int)$vServiceIntervalsMonths > 0) {
+                    // Option A: Time Interval Calculation
+                    if (!empty($vServiceIntervalMonths) && (int)$vServiceIntervalMonths > 0) {
                         $optionA = clone $dateLastService;
-                        $months = (int)$vServiceIntervalsMonths;
+                        $months = (int)$vServiceIntervalMonths;
                         $optionA->modify("+$months months");
                     }
 
-                    if (!empty($newCheckDate) && !empty($vMilesLastService)) {
+                    // Option B: Run-Rate Calculation
+                    if (!empty($newCheckDate) && !empty($vMileageLastService)) {
                         $dateOfCheck = new DateTime($newCheckDate);
-                        $milesDriven = $newCheckMileage - (float)$vMilesLastService;
+                        $milesDriven = $newCheckMileage - (float)$vMileageLastService;
                         $daysElapsed = $dateLastService->diff($dateOfCheck)->days;
                         if ($dateOfCheck < $dateLastService) { $daysElapsed = -$daysElapsed; }
 
@@ -141,6 +131,8 @@ class VehicleCheckHook
                             $optionB = clone $dateLastService;
                             $daysToAdd = (int)round($totalDaysAllowed);
                             $optionB->modify("+$daysToAdd days");
+                        } else {
+                            $GLOBALS['log']->fatal("VCHook DBG: Run-rate skipped. Miles Driven: $milesDriven, Days Elapsed: $daysElapsed");
                         }
                     }
 
@@ -155,22 +147,21 @@ class VehicleCheckHook
                         $GLOBALS['log']->fatal("VCHook DBG: Staged Next Service Date calculation onto Vehicle: " . $nextServiceString);
                     }
                 } else {
-                    $GLOBALS['log']->fatal("VCHook DBG: Vehicle date_last_service is empty or invalid. Skipping date math.");
+                    $GLOBALS['log']->fatal("VCHook DBG: Vehicle date_last_service is empty or default zero-date. Skipping service math.");
                 }
             } catch (Exception $dateEx) {
-                // If the math breaks, we log it but do NOT crash the script
-                $GLOBALS['log']->fatal("VCHook DBG: Warning handled during date math execution: " . $dateEx->getMessage());
+                $GLOBALS['log']->fatal("VCHook DBG: Handled exception during math execution: " . $dateEx->getMessage());
             }
         }
 
-        // 4. Safe Save Execution (Guaranteed to commit base properties regardless of math success)
+        // 4. Safe Save Execution
         try {
             self::$preventRecursion = true;
             $GLOBALS['log']->fatal("VCHook DBG: Saving vehicle record now...");
             $vehicle->save();
             $GLOBALS['log']->fatal("VCHook DBG: Vehicle record saved successfully.");
         } catch (Exception $e) {
-            $GLOBALS['log']->fatal("VCHook DBG: EXCEPTION CAUGHT during vehicle save: " . $e->getMessage());
+            $GLOBALS['log']->fatal("VCHook DBG: EXCEPTION CAUGHT during vehicle save processing: " . $e->getMessage());
         } finally {
             self::$preventRecursion = false;
         }

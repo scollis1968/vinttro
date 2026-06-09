@@ -6,38 +6,49 @@ class VehicleCheckHook
 {
     public function beforeSaveMethod($bean, $event, $arguments) 
     {
-        // 1. Fetch the parent vehicle record
-        // NOTE: Adjust 'visp_vehicle_id_c' if your relationship field uses a different database name
-        if (empty($bean->visp_vehicle_id_c)) {
+        // 1. Define your relationship link name (Found in Step 1)
+        $linkName = 'visp_vehicle_visp_vehicle_check'; 
+
+        // 2. Load the relationship via the join table
+        if (!$bean->load_relationship($linkName)) {
+            $GLOBALS['log']->fatal("VehicleCheckHook: Failed to load relationship link: $linkName");
             return;
         }
 
-        $vehicle = BeanFactory::getBean('visp_vehicle', $bean->visp_vehicle_id_c);
-        if (empty($vehicle->id)) {
+        // Get the ID of the related vehicle from the join table
+        $relatedIds = $bean->$linkName->get();
+        if (empty($relatedIds) || !is_array($relatedIds)) {
+            return; // No vehicle linked to this check yet
+        }
+
+        // Fetch the parent vehicle bean using the first ID found
+        $vehicleId = reset($relatedIds);
+        $vehicle = BeanFactory::getBean('visp_vehicle', $vehicleId);
+
+        if (empty($vehicle) || empty($vehicle->id)) {
             return;
         }
 
-        // 2. Automatically populate the name of the check: [Vehicle Name/Reg] - [yyyy-mm-dd]
+        // 3. Automatically populate the name of the check: [Vehicle Name/Reg] - [yyyy-mm-dd]
         if (!empty($bean->date_of_check)) {
             $checkDate = new DateTime($bean->date_of_check);
             $formattedDate = $checkDate->format('Y-m-d');
             
-            // Fallback to a generic title if the vehicle name isn't set yet
             $vehicleIdentifier = !empty($vehicle->name) ? $vehicle->name : "Vehicle";
             $bean->name = $vehicleIdentifier . ' - ' . $formattedDate;
         }
 
-        // 3. Update parent vehicle record with latest check data
+        // 4. Update parent vehicle record with latest check data
         $vehicle->date_last_checked = $bean->date_of_check;
         $vehicle->mileage_last_check = $bean->mileage;
 
-        // 4. Calculate and update visp_vehicle.date_next_service
+        // 5. Calculate and update visp_vehicle.date_next_service
         if (!empty($vehicle->date_last_service)) {
             $dateLastService = new DateTime($vehicle->date_last_service);
             $optionA = null;
             $optionB = null;
 
-            // --- OPTION A: Time-Based Interval (Last Service + Service Interval Months) ---
+            // --- OPTION A: Time-Based Interval ---
             if (!empty($vehicle->service_intervals_months) && (int)$vehicle->service_intervals_months > 0) {
                 $optionA = clone $dateLastService;
                 $months = (int)$vehicle->service_intervals_months;
@@ -56,15 +67,12 @@ class VehicleCheckHook
                 $daysElapsed = $dateLastService->diff($dateOfCheck)->days;
                 $milesDriven = $mileageLastCheck - $milesLastService;
 
-                // Check if the check date is after the service date
                 if ($dateOfCheck < $dateLastService) {
                     $daysElapsed = -$daysElapsed;
                 }
 
-                // Guardrails: Only calculate run-rate if vehicle has actually been driven 
-                // and time has passed since last service to avoid division by zero.
+                // Guardrail against division by zero or negative time elapsed
                 if ($milesDriven > 0 && $daysElapsed > 0 && $serviceIntervalMiles > 0) {
-                    // Total days allowed for this interval based on run-rate
                     $totalDaysAllowed = $serviceIntervalMiles * ($daysElapsed / $milesDriven);
                     
                     $optionB = clone $dateLastService;
@@ -89,7 +97,7 @@ class VehicleCheckHook
             }
         }
 
-        // 5. Save the updated parent vehicle bean
+        // 6. Save the updated parent vehicle bean
         $vehicle->save();
     }
 }

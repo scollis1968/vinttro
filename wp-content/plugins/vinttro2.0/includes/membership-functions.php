@@ -102,6 +102,97 @@ function vinttro_get_garage_panel($user_id) {
 /**
  * Logic for the Fleets Panels
  */
+/**
+ * 1. PURE LOGIC HELPER
+ * Determines the raw RAG status string ('R', 'A', 'G') for any given date field.
+ */
+function vinttro_get_date_rag($date_string, $type = 'future', $red_threshold = 7, $amber_threshold = 21) {
+    if (empty($date_string)) return 'G'; // Treat empty/blank as safe or manage separately
+    
+    $now = time();
+    $target_date = strtotime($date_string);
+    if (!$target_date) return 'G';
+
+    if ($type === 'past') {
+        $days_ago = floor(($now - $target_date) / (60 * 60 * 24));
+        if ($days_ago > $red_threshold)   return 'R';
+        if ($days_ago > $amber_threshold) return 'A';
+    } else {
+        $days_remaining = floor(($target_date - $now) / (60 * 60 * 24));
+        if ($target_date < $now || $days_remaining < $red_threshold) return 'R';
+        if ($days_remaining < $amber_threshold)                      return 'A';
+    }
+
+    return 'G';
+}
+
+/**
+ * 2. UPDATED DATE PILL RENDERER
+ * Now relies cleanly on the pure data helper above.
+ */
+function vinttro_render_date_pill($date_string, $type = 'future', $red_threshold = 7, $amber_threshold = 21) {
+    if (empty($date_string)) {
+        return '<span class="status-pill status-none">N/A</span>';
+    }
+
+    $target_date = strtotime($date_string);
+    if (!$target_date) return '<span class="status-pill status-none">Invalid Date</span>';
+    
+    $formatted_date = date('d/m/Y', $target_date);
+    $rag = vinttro_get_date_rag($date_string, $type, $red_threshold, $amber_threshold);
+
+    // Map RAG letters to your CSS classes
+    $class_map = [
+        'R' => 'status-urgent', // Red
+        'A' => 'status-soon',   // Amber
+        'G' => 'status-ok'      // Green
+    ];
+    $class = $class_map[$rag] ?? 'status-ok';
+
+    return sprintf('<span class="status-pill %s">%s</span>', $class, esc_html($formatted_date));
+}
+
+/**
+ * 3. THE VEHICLE SCORE CALCULATOR
+ * Translates a vehicle's complete status profile into a single priority integer.
+ */
+function vinttro_calculate_vehicle_priority_score($car) {
+    $score = 0;
+
+    // --- 🛠️ Tier 1: Outstanding Mechanical Issues (Highest Weight) ---
+    $issues = $car['outstanding_issues'] ?? [];
+    if (!empty($issues)) {
+        $severities = array_column($issues, 'severity');
+        if (in_array('high', $severities)) {
+            $score += 1000; // Crashing mechanical issues win instantly
+        } elseif (in_array('medium', $severities)) {
+            $score += 500;
+        } else {
+            $score += 300;
+        }
+    }
+
+    // --- 🚨 Tier 2: Next MOT RAG Matrix Values ---
+    $mot_rag = vinttro_get_date_rag($car['date_next_mot'] ?? '', 'future', 7, 21);
+    if ($mot_rag === 'R') $score += 200;
+    if ($mot_rag === 'A') $score += 100;
+
+    // --- 🔧 Tier 3: Next Service RAG Matrix Values ---
+    $service_rag = vinttro_get_date_rag($car['date_next_service'] ?? '', 'future', 7, 21);
+    if ($service_rag === 'R') $score += 20;
+    if ($service_rag === 'A') $score += 10;
+
+    // --- 📋 Tier 4: Last Check RAG Matrix Values ---
+    $check_rag = vinttro_get_date_rag($car['date_last_check'] ?? '', 'past', 21, 10);
+    if ($check_rag === 'R') $score += 2;
+    if ($check_rag === 'A') $score += 1;
+
+    return $score;
+}
+
+/**
+ * 4. THE MAIN PANEL RENDERER
+ */
 function vinttro_get_fleet_panels($user_id) {
     $fleets = get_user_meta($user_id, 'vinttro_fleets', true);
     if (empty($fleets) || !is_array($fleets)) return '';
@@ -110,34 +201,14 @@ function vinttro_get_fleet_panels($user_id) {
     foreach ($fleets as $fleet) : 
         $vehicles = $fleet['vehicles'] ?? [];
 
-        // 🔀 SORTING ENGINE: Bring vehicles with issues to the top
+        // 🔀 UNIFIED SORTING: Sort descending by total calculated weight score
         if (!empty($vehicles) && is_array($vehicles)) {
             usort($vehicles, function($a, $b) {
-                $a_has_issues = !empty($a['outstanding_issues']);
-                $b_has_issues = !empty($b['outstanding_issues']);
-
-                // If 'a' has issues and 'b' doesn't, 'a' goes up
-                if ($a_has_issues && !$b_has_issues) {
-                    return -1;
-                }
-                // If 'b' has issues and 'a' doesn't, 'b' goes up
-                if (!$a_has_issues && $b_has_issues) {
-                    return 1;
-                }
+                $score_a = vinttro_calculate_vehicle_priority_score($a);
+                $score_b = vinttro_calculate_vehicle_priority_score($b);
                 
-                // Secondary sort: If both have issues, put High Severity above Medium/Low
-                if ($a_has_issues && $b_has_issues) {
-                    $a_severities = array_column($a['outstanding_issues'], 'severity');
-                    $b_severities = array_column($b['outstanding_issues'], 'severity');
-                    
-                    $a_is_high = in_array('high', $a_severities);
-                    $b_is_high = in_array('high', $b_severities);
-                    
-                    if ($a_is_high && !$b_is_high) return -1;
-                    if (!$a_is_high && $b_is_high) return 1;
-                }
-
-                return 0; // Keep original order if status matches
+                if ($score_a === $score_b) return 0;
+                return ($score_a > $score_b) ? -1 : 1; // Highest scores to the top
             });
         }
     ?>
@@ -147,19 +218,16 @@ function vinttro_get_fleet_panels($user_id) {
                 <thead>
                     <tr>
                         <th>Vehicle (Reg)</th>
-                        <th>Last Check</th>
                         <th>Next MOT</th>
                         <th>Next Service</th>
+                        <th>Last Check</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php 
-                    // Loop through our newly sorted array instead of direct array fetch
-                    foreach ($vehicles as $car) : 
+                    <?php foreach ($vehicles as $car) : 
                         $issues = $car['outstanding_issues'] ?? [];
                         $has_issues = !empty($issues);
                         
-                        // Determine Status Class
                         $status_class = 'status-safe';
                         if ($has_issues) {
                             $severities = array_column($issues, 'severity');
@@ -175,9 +243,9 @@ function vinttro_get_fleet_panels($user_id) {
                                 </span>
                                 <span class="vehicle-status-dot <?php echo $status_class; ?>" title="<?php echo $has_issues ? 'Issues Reported' : 'All Clear'; ?>"></span>
                             </td>
-                            <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? '', 'past', 21, 10); ?></td>
                             <td><?php echo vinttro_render_date_pill($car['date_next_mot'] ?? '', 'future', 7, 21); ?></td>
                             <td><?php echo vinttro_render_date_pill($car['date_next_service'] ?? '', 'future', 7, 21); ?></td>
+                            <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? '', 'past', 21, 10); ?></td>
                         </tr>
 
                         <?php if ($has_issues) : ?>
@@ -211,53 +279,4 @@ function vinttro_get_fleet_panels($user_id) {
         </div>
     <?php endforeach;
     return ob_get_clean();
-}
-
-/**
- * Helper to determine color class and render the date in DD/MM/YYYY format
- *
- * @param string $date_string     The date from the database
- * @param string $type            'future' (MOT/Service) or 'past' (Last Check)
- * @param int    $red_threshold   Days threshold to trigger RED status
- * @param int    $amber_threshold Days threshold to trigger AMBER status
- */
-function vinttro_render_date_pill($date_string, $type = 'future', $red_threshold = 7, $amber_threshold = 21) {
-    if (empty($date_string)) {
-        return '<span class="status-pill status-none">N/A</span>';
-    }
-
-    $now = time(); 
-    $target_date = strtotime($date_string);
-    
-    // Safety check in case the date string is broken
-    if (!$target_date) return '<span class="status-pill status-none">Invalid Date</span>';
-
-    // Format output strictly to DD/MM/YYYY
-    $formatted_date = date('d/m/Y', $target_date);
-
-    if ($type === 'past') {
-        // Calculate how many days have passed since the event happened
-        $days_ago = floor(($now - $target_date) / (60 * 60 * 24));
-
-        if ($days_ago > $red_threshold) {
-            $class = 'status-urgent'; // Red (e.g., > 21 days ago)
-        } elseif ($days_ago > $amber_threshold) {
-            $class = 'status-soon';   // Amber (e.g., > 10 days ago)
-        } else {
-            $class = 'status-ok';     // Green
-        }
-    } else {
-        // Calculate how many days are left until the deadline hits
-        $days_remaining = floor(($target_date - $now) / (60 * 60 * 24));
-
-        if ($target_date < $now || $days_remaining < $red_threshold) {
-            $class = 'status-urgent'; // Red (e.g., overdue or < 7 days left)
-        } elseif ($days_remaining < $amber_threshold) {
-            $class = 'status-soon';   // Amber (e.g., < 21 days left)
-        } else {
-            $class = 'status-ok';     // Green
-        }
-    }
-
-    return sprintf('<span class="status-pill %s">%s</span>', $class, esc_html($formatted_date));
 }

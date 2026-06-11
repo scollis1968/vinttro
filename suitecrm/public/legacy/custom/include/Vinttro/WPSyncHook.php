@@ -228,6 +228,8 @@ class WPSyncHook {
                             ];
 
                             $this->callWPAPI($wpPayload);
+                            // 🟢 ADD THIS LINE TO VERIFY EXECUTION RESUMED
+                            file_put_contents($log, "          ✅ DISPATCH COMPLETE for: " . $contact->email1 . "\n", FILE_APPEND);
                         } else {
                             file_put_contents($log, "          ⚠️ WARNING: Contact found but Email field (email1) is blank.\n", FILE_APPEND);
                         }
@@ -241,8 +243,9 @@ class WPSyncHook {
         } else {
             file_put_contents($log, "     ❌ FAILED: Could not load link '$rel_fleet_memberships' on Fleet bean.\n", FILE_APPEND);
         }
+        file_put_contents($log, "          ✅  ALL members processed.\n", FILE_APPEND);
     }
-    
+
     /**
      * Helper to compile outstanding issues for a single vehicle
      */
@@ -290,10 +293,15 @@ class WPSyncHook {
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        // 🛡️ PROTECT CRM FROM FREEZING: Set strict timeouts
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // Max 5 seconds to establish connection
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);        // Max 15 seconds total execution time
+
+        $ch_headers = [
             'Content-Type: application/json',
             'Authorization: Basic ' . base64_encode("$username:$app_password")
-        ]);
+        ];
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $ch_headers);
 
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -306,4 +314,5 @@ class WPSyncHook {
         curl_close($ch);
         file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - WP Response Code: $http_code | Response: $response\n", FILE_APPEND);
     }
+
 }

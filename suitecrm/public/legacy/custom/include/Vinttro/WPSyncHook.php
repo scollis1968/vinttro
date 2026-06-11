@@ -164,11 +164,14 @@ class WPSyncHook {
     /**
      * Finds all fleet administrators and broadcasts the data payload to WordPress
      */
+/**
+     * Finds all fleet administrators and broadcasts the data payload to WordPress
+     */
     private function distributeToFleetAdmins($fleetBean, $fleetPayload) {
         $log = '/tmp/vinttro_ladder_debug.log';
         file_put_contents($log, " - [STEP 3] Distributing updates for Fleet: " . $fleetBean->name . "\n", FILE_APPEND);
 
-        // Name of relationship between Fleets and your new Membership module..
+        // Name of relationship between Fleets and your Membership module
         $rel_fleet_memberships = 'visp_fleet_visp_fleet_memberships';
         file_put_contents($log, "   - Loading Fleet -> Membership relationship: '$rel_fleet_memberships'\n", FILE_APPEND);
 
@@ -178,17 +181,38 @@ class WPSyncHook {
 
             foreach ($memberships as $membership) {
                 file_put_contents($log, "     -> Checking Personnel ID: " . $membership->id . " | label: " . $membership->name . "\n", FILE_APPEND);
-                file_put_contents($log, "        Raw value of is_fleetadmin field: '" . print_r($membership->is_fleetadmin, true) . "'\n", FILE_APPEND);
+                file_put_contents($log, "         Raw value of is_fleetadmin field: '" . print_r($membership->is_fleetadmin, true) . "'\n", FILE_APPEND);
 
                 // Check if the "is_fleetadmin" checkbox is checked
-                if (!empty($membership->is_fleetadmin) && ($membership->is_fleetadmin == 1 || $membership->is_fleetadmin === true || $membership->is_fleetadmin == '1')) {
-                    file_put_contents($log, "        ⭐ MATCH: Record is a Fleet Admin. Fetching Contact record...\n", FILE_APPEND);
+                if (!empty($membership->is_fleetadmin) && ($membership->is_fleetadmin == '1' || $membership->is_fleetadmin == 1 || $membership->is_fleetadmin === true)) {
+                    file_put_contents($log, "         ⭐ MATCH: Record is a Fleet Admin. Fetching Contact record...\n", FILE_APPEND);
                     
-                    // Name of relationship between Membership module and Contacts
-                    $rel_membership_contact = 'contacts_visp_fleet_memberships_1';
-                    file_put_contents($log, "        - Loading Membership -> Contact relationship: '$rel_membership_contact'\n", FILE_APPEND);
+                    $target_relationship = 'contacts_visp_fleet_memberships_1';
+                    $rel_membership_contact = '';
                     
-                    if ($membership->load_relationship($rel_membership_contact)) {
+                    // DYNAMIC LOOKUP: Find the exact link field name that maps to our relationship
+                    foreach ($membership->field_defs as $fieldName => $def) {
+                        if (isset($def['type']) && $def['type'] === 'link') {
+                            if (isset($def['relationship']) && $def['relationship'] === $target_relationship) {
+                                $rel_membership_contact = $fieldName;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Fallback: If no strict relationship match is found, look for any link field containing 'contact'
+                    if (empty($rel_membership_contact)) {
+                        foreach ($membership->field_defs as $fieldName => $def) {
+                            if (isset($def['type']) && $def['type'] === 'link' && strpos(strtolower($fieldName), 'contact') !== false) {
+                                $rel_membership_contact = $fieldName;
+                                break;
+                            }
+                        }
+                    }
+
+                    file_put_contents($log, "         - Discovered Link Field Name: '$rel_membership_contact' for relationship '$target_relationship'\n", FILE_APPEND);
+                    
+                    if (!empty($rel_membership_contact) && $membership->load_relationship($rel_membership_contact)) {
                         $contacts = $membership->$rel_membership_contact->getBeans();
                         $contact = reset($contacts); 
 
@@ -208,7 +232,7 @@ class WPSyncHook {
                             file_put_contents($log, "          ⚠️ WARNING: Contact found but Email field (email1) is blank.\n", FILE_APPEND);
                         }
                     } else {
-                        file_put_contents($log, "          ❌ FAILED: Could not load link '$rel_membership_contact' on Membership bean.\n", FILE_APPEND);
+                        file_put_contents($log, "          ❌ FAILED: Could not load link field '$rel_membership_contact' on Membership bean.\n", FILE_APPEND);
                     }
                 } else {
                     file_put_contents($log, "        skipping: User is not marked as a Fleet Admin.\n", FILE_APPEND);
@@ -218,7 +242,7 @@ class WPSyncHook {
             file_put_contents($log, "     ❌ FAILED: Could not load link '$rel_fleet_memberships' on Fleet bean.\n", FILE_APPEND);
         }
     }
-
+    
     /**
      * Helper to compile outstanding issues for a single vehicle
      */

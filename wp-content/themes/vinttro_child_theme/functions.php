@@ -237,7 +237,7 @@ add_action( 'wp_footer', function() {
 add_action( 'template_redirect', function() {
     $is_production = ( strpos( $_SERVER['HTTP_HOST'], 'uat.' ) === false );
     if ( ! $is_production || current_user_can('manage_options') ) return;
-    $restricted_paths = ['/exchange', '/dashboard', '/sell-your-car'];
+    $restricted_paths = ['/exchange', '/x-dashboard', '/sell-your-car'];
     $current_path = $_SERVER['REQUEST_URI'];
     if ( strpos($current_path, '/under-construction') !== false ) return;
     foreach ( $restricted_paths as $path ) {

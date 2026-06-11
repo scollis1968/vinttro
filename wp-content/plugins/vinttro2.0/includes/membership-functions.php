@@ -107,7 +107,40 @@ function vinttro_get_fleet_panels($user_id) {
     if (empty($fleets) || !is_array($fleets)) return '';
 
     ob_start();
-    foreach ($fleets as $fleet) : ?>
+    foreach ($fleets as $fleet) : 
+        $vehicles = $fleet['vehicles'] ?? [];
+
+        // 🔀 SORTING ENGINE: Bring vehicles with issues to the top
+        if (!empty($vehicles) && is_array($vehicles)) {
+            usort($vehicles, function($a, $b) {
+                $a_has_issues = !empty($a['outstanding_issues']);
+                $b_has_issues = !empty($b['outstanding_issues']);
+
+                // If 'a' has issues and 'b' doesn't, 'a' goes up
+                if ($a_has_issues && !$b_has_issues) {
+                    return -1;
+                }
+                // If 'b' has issues and 'a' doesn't, 'b' goes up
+                if (!$a_has_issues && $b_has_issues) {
+                    return 1;
+                }
+                
+                // Secondary sort: If both have issues, put High Severity above Medium/Low
+                if ($a_has_issues && $b_has_issues) {
+                    $a_severities = array_column($a['outstanding_issues'], 'severity');
+                    $b_severities = array_column($b['outstanding_issues'], 'severity');
+                    
+                    $a_is_high = in_array('high', $a_severities);
+                    $b_is_high = in_array('high', $b_severities);
+                    
+                    if ($a_is_high && !$b_is_high) return -1;
+                    if (!$a_is_high && $b_is_high) return 1;
+                }
+
+                return 0; // Keep original order if status matches
+            });
+        }
+    ?>
         <div class="dashboard-panel fleet-container" style="margin-bottom: 30px;">
             <h3>🚚 Fleet: <?php echo esc_html($fleet['name'] ?? 'Unnamed'); ?></h3>
             <table class="fleet-table">
@@ -120,7 +153,9 @@ function vinttro_get_fleet_panels($user_id) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach (($fleet['vehicles'] ?? []) as $car) : 
+                    <?php 
+                    // Loop through our newly sorted array instead of direct array fetch
+                    foreach ($vehicles as $car) : 
                         $issues = $car['outstanding_issues'] ?? [];
                         $has_issues = !empty($issues);
                         
@@ -152,7 +187,6 @@ function vinttro_get_fleet_panels($user_id) {
                                         <strong>Outstanding Issues:</strong>
                                         <ul class="issue-detailed-list">
                                             <?php foreach ($issues as $issue) : 
-                                                // Convert Issue Date format cleanly to DD/MM/YYYY
                                                 $issue_date = '';
                                                 if (!empty($issue['date_issue_reported'])) {
                                                     $issue_ts = strtotime($issue['date_issue_reported']);
@@ -178,7 +212,6 @@ function vinttro_get_fleet_panels($user_id) {
     <?php endforeach;
     return ob_get_clean();
 }
-
 
 /**
  * Helper to determine color class and render the date in DD/MM/YYYY format

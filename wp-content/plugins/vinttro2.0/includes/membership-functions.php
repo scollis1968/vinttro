@@ -114,9 +114,9 @@ function vinttro_get_fleet_panels($user_id) {
                 <thead>
                     <tr>
                         <th>Vehicle (Reg)</th>
+                        <th>Last Check</th>
                         <th>Next MOT</th>
                         <th>Next Service</th>
-                        <th>Last Check</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -140,9 +140,9 @@ function vinttro_get_fleet_panels($user_id) {
                                 </span>
                                 <span class="vehicle-status-dot <?php echo $status_class; ?>" title="<?php echo $has_issues ? 'Issues Reported' : 'All Clear'; ?>"></span>
                             </td>
-                            <td><?php echo vinttro_render_date_pill($car['date_next_mot'] ?? ''); ?></td>
-                            <td><?php echo vinttro_render_date_pill($car['date_next_service'] ?? ''); ?></td>
-                            <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? ''); ?></td>
+                            <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? '', 'past', 21, 10); ?></td>
+                            <td><?php echo vinttro_render_date_pill($car['date_next_mot'] ?? '', 'future', 7, 21); ?></td>
+                            <td><?php echo vinttro_render_date_pill($car['date_next_service'] ?? '', 'future', 7, 21); ?></td>
                         </tr>
 
                         <?php if ($has_issues) : ?>
@@ -151,12 +151,19 @@ function vinttro_get_fleet_panels($user_id) {
                                     <div class="issues-expanded-box">
                                         <strong>Outstanding Issues:</strong>
                                         <ul class="issue-detailed-list">
-                                            <?php foreach ($issues as $issue) : ?>
+                                            <?php foreach ($issues as $issue) : 
+                                                // Convert Issue Date format cleanly to DD/MM/YYYY
+                                                $issue_date = '';
+                                                if (!empty($issue['date_issue_reported'])) {
+                                                    $issue_ts = strtotime($issue['date_issue_reported']);
+                                                    $issue_date = $issue_ts ? date('d/m/Y', $issue_ts) : $issue['date_issue_reported'];
+                                                }
+                                            ?>
                                                 <li>
                                                     <span class="issue-severity-tag sev-<?php echo esc_attr($issue['severity']); ?>"></span>
                                                     <strong><?php echo esc_html($issue['name']); ?>:</strong> 
                                                     <?php echo esc_html($issue['description']); ?>
-                                                    <span class="issue-date">- Reported: <?php echo esc_html($issue['date_issue_reported'] ?? ''); ?></span>
+                                                    <span class="issue-date">- Reported: <?php echo esc_html($issue_date); ?></span>
                                                 </li>
                                             <?php endforeach; ?>
                                         </ul>
@@ -171,32 +178,53 @@ function vinttro_get_fleet_panels($user_id) {
     <?php endforeach;
     return ob_get_clean();
 }
+
+
 /**
- * Helper to determine color class and render the date
+ * Helper to determine color class and render the date in DD/MM/YYYY format
+ *
+ * @param string $date_string     The date from the database
+ * @param string $type            'future' (MOT/Service) or 'past' (Last Check)
+ * @param int    $red_threshold   Days threshold to trigger RED status
+ * @param int    $amber_threshold Days threshold to trigger AMBER status
  */
-function vinttro_render_date_pill($date_string) {
+function vinttro_render_date_pill($date_string, $type = 'future', $red_threshold = 7, $amber_threshold = 21) {
     if (empty($date_string)) {
         return '<span class="status-pill status-none">N/A</span>';
     }
 
-    $now = time();
+    $now = time(); 
     $target_date = strtotime($date_string);
     
-    // Safety check in case the date string is mangled
+    // Safety check in case the date string is broken
     if (!$target_date) return '<span class="status-pill status-none">Invalid Date</span>';
 
-    $diff = $target_date - $now;
-    $days_remaining = floor($diff / (60 * 60 * 24));
+    // Format output strictly to DD/MM/YYYY
+    $formatted_date = date('d/m/Y', $target_date);
 
-    if ($diff < 0) {
-        $class = 'status-past';
-    } elseif ($days_remaining < 7) {
-        $class = 'status-urgent';
-    } elseif ($days_remaining < 21) {
-        $class = 'status-soon';
+    if ($type === 'past') {
+        // Calculate how many days have passed since the event happened
+        $days_ago = floor(($now - $target_date) / (60 * 60 * 24));
+
+        if ($days_ago > $red_threshold) {
+            $class = 'status-urgent'; // Red (e.g., > 21 days ago)
+        } elseif ($days_ago > $amber_threshold) {
+            $class = 'status-soon';   // Amber (e.g., > 10 days ago)
+        } else {
+            $class = 'status-ok';     // Green
+        }
     } else {
-        $class = 'status-ok';
+        // Calculate how many days are left until the deadline hits
+        $days_remaining = floor(($target_date - $now) / (60 * 60 * 24));
+
+        if ($target_date < $now || $days_remaining < $red_threshold) {
+            $class = 'status-urgent'; // Red (e.g., overdue or < 7 days left)
+        } elseif ($days_remaining < $amber_threshold) {
+            $class = 'status-soon';   // Amber (e.g., < 21 days left)
+        } else {
+            $class = 'status-ok';     // Green
+        }
     }
 
-    return sprintf('<span class="status-pill %s">%s</span>', $class, esc_html($date_string));
+    return sprintf('<span class="status-pill %s">%s</span>', $class, esc_html($formatted_date));
 }

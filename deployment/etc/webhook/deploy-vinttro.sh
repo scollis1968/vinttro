@@ -24,7 +24,7 @@ fi
 # --- 1. Clone or Pull the Repository ---
 if [ ! -d "$STAGING_DIR/.git" ]; then
     log "Cloning repository...."
-    git clone $REPO_URL $STAGING_DIR
+    git clone -b $BRANCH$REPO_URL $STAGING_DIR
     if [ $? -ne 0 ]; then
         log "ERROR: Git clone failed."
         exit 1

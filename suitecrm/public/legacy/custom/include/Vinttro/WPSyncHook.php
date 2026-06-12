@@ -281,10 +281,26 @@ class WPSyncHook {
     }
 
     private function callWPAPI($payload) {
-        $url = "https://uat.vinttro.co.uk/wp-json/vinttro/v1/create-member/";
+        
 
-        $username = 'vinttro_admin';
-        $app_password = '6YSN vLuS Pa4d kMIk flMY TYoQ';
+        // 1. Try pulling from Environment Variables (.env / .env.local)
+        // Symfony populates $_ENV directly upon bootstrapping the SuiteCRM 8 application core
+        $url = $_ENV['WP_API_URL'] ?? getenv('WP_API_URL') ?? null;
+        $username = $_ENV['WP_API_USERNAME'] ?? getenv('WP_API_USERNAME') ?? null;
+        $app_password = $_ENV['WP_API_APP_PASSWORD'] ?? getenv('WP_API_APP_PASSWORD') ?? null;
+
+        // 2. Fallback to SuiteCRM Config array if Env variables aren't set
+        if (!$username || !$app_password) {
+            global $sugar_config;
+            $username = $sugar_config['wp_api']['username'] ?? '';
+            $app_password = $sugar_config['wp_api']['app_password'] ?? '';
+        }
+
+        // Safety check to ensure we don't fire an unauthenticated request
+        if (empty($username) || empty($app_password)) {
+            file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - API ERROR: Missing WordPress API Credentials.\n", FILE_APPEND);
+            return;
+        }
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

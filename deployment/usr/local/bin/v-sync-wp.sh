@@ -50,7 +50,8 @@ rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_IP:$UAT_PATH/wp-content/themes/ $PR
 
 # 2. Database Export and Transfer
 echo "2. 🗂️ Database Transfer"
-ssh $SSH_OPTS $UAT_USER@$UAT_IP "wp db export --path=$UAT_PATH /tmp/uat_dump.sql"
+# ssh $SSH_OPTS $UAT_USER@$UAT_IP "wp db export --path=$UAT_PATH /tmp/uat_dump.sql"
+ssh $SSH_OPTS $UAT_USER@$UAT_IP "wp db export --path=$UAT_PATH --exclude_tables=wp_users,wp_usermeta /tmp/uat_dump.sql"
 scp $SSH_OPTS $UAT_USER@$UAT_IP:/tmp/uat_dump.sql /tmp/uat_dump.sql
 
 

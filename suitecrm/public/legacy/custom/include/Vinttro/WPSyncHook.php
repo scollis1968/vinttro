@@ -2,30 +2,29 @@
 
 if (!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 
-// --- File inclusion logger ---
-file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - File was included\n", FILE_APPEND);
-
 class WPSyncHook {
     
+    // Global log file location for total tracking consistency
+    private $logFile = '/tmp/vinttro_ladder_debug.log';
+
     public function syncContactHook($bean, $event, $arguments) {
         $this->executeSyncForContact($bean);
     }
 
     public function syncVehicleHook($vehicleBean, $event, $arguments) {
-        $log = '/tmp/vinttro_ladder_debug.log';
-        file_put_contents($log, date('Y-m-d H:i:s') . " - [syncVehicleHook] triggered for Vehicle ID: " . $vehicleBean->id . "\n", FILE_APPEND);
+        file_put_contents($this->logFile, date('Y-m-d H:i:s') . " - [syncVehicleHook] triggered for Vehicle ID: " . $vehicleBean->id . "\n", FILE_APPEND);
         
-        $rel_name = 'visp_vehicle_contacts'; // The relationship link name back to Contacts
+        $rel_name = 'visp_vehicle_contacts'; 
 
         if ($vehicleBean->load_relationship($rel_name)) {
             $relatedContacts = $vehicleBean->$rel_name->getBeans();
-            file_put_contents($log, "   - [syncVehicleHook] Found " . count($relatedContacts) . " direct contacts linked to vehicle.\n", FILE_APPEND);
+            file_put_contents($this->logFile, "   - [syncVehicleHook] Found " . count($relatedContacts) . " direct contacts linked to vehicle.\n", FILE_APPEND);
 
             foreach ($relatedContacts as $contact) {
                 $this->executeSyncForContact($contact);
             }
         } else {
-            file_put_contents($log, "   - [syncVehicleHook] ❌ Failed loading direct contact relationship '$rel_name'\n", FILE_APPEND);
+            file_put_contents($this->logFile, "   - [syncVehicleHook] ❌ Failed loading direct contact relationship '$rel_name'\n", FILE_APPEND);
         }
     }
 
@@ -34,7 +33,7 @@ class WPSyncHook {
      */
     public function executeSyncForContact($contactBean) {
         if (empty($contactBean->portal_active_c)) {
-            return; // Skip if portal isn't active
+            return; 
         }
 
         $payload = [
@@ -50,7 +49,7 @@ class WPSyncHook {
     }
 
     public function syncToWordpress($bean, $event, $arguments) {
-        file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - syncToWordPress 1 trigered\n", FILE_APPEND);
+        file_put_contents($this->logFile, date('Y-m-d H:i:s') . " - syncToWordPress 1 triggered\n", FILE_APPEND);
         
         if (empty($bean->portal_active_c)) {
             return;
@@ -64,7 +63,6 @@ class WPSyncHook {
             'vehicles'          => [] 
         ];
 
-        file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - syncToWordPress 2 payload = " . json_encode($payload) . "\n" , FILE_APPEND);
         $rel_name = 'visp_vehicle_contacts'; 
         
         if ($bean->load_relationship($rel_name)) {
@@ -83,60 +81,43 @@ class WPSyncHook {
             }
         }
 
-        file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - syncToWordPress 3 payload = " . print_r($payload, true) . "\n" , FILE_APPEND);
         $this->callWPAPI($payload);
-        file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - syncToWordPress 4 All done! \n" , FILE_APPEND);
     }
 
-    /**
-     * Triggered automatically whenever a Vehicle record is saved
-     */
     public function syncVehicleFleetUpdate($vehicleBean, $event, $arguments) {
-        $log = '/tmp/vinttro_ladder_debug.log';
-        file_put_contents($log, "==================================================================\n", FILE_APPEND);
-        file_put_contents($log, date('Y-m-d H:i:s') . " - [STEP 1] Hook triggered on Vehicle. ID: " . $vehicleBean->id . " | Reg: " . $vehicleBean->name . "\n", FILE_APPEND);
+        file_put_contents($this->logFile, "==================================================================\n", FILE_APPEND);
+        file_put_contents($this->logFile, date('Y-m-d H:i:s') . " - [STEP 1] Hook triggered on Vehicle. ID: " . $vehicleBean->id . " | Reg: " . $vehicleBean->name . "\n", FILE_APPEND);
 
-        // 1. Name of relationship between Vehicles and Fleets
         $rel_vehicle_fleet = 'visp_fleet_visp_vehicle'; 
-        file_put_contents($log, " - Loading Vehicle -> Fleet relationship: '$rel_vehicle_fleet'\n", FILE_APPEND);
+        file_put_contents($this->logFile, " - Loading Vehicle -> Fleet relationship: '$rel_vehicle_fleet'\n", FILE_APPEND);
 
         if ($vehicleBean->load_relationship($rel_vehicle_fleet)) {
             $relatedFleets = $vehicleBean->$rel_vehicle_fleet->getBeans();
-            file_put_contents($log, "   🟢 SUCCESS: Found " . count($relatedFleets) . " linked fleet(s).\n", FILE_APPEND);
+            file_put_contents($this->logFile, "   🟢 SUCCESS: Found " . count($relatedFleets) . " linked fleet(s).\n", FILE_APPEND);
             
             foreach ($relatedFleets as $fleet) {
-                file_put_contents($log, "   -> Processing Fleet: ID: " . $fleet->id . " | Name: " . $fleet->name . "\n", FILE_APPEND);
-                
-                // Compile data structure
+                file_put_contents($this->logFile, "   -> Processing Fleet: ID: " . $fleet->id . " | Name: " . $fleet->name . "\n", FILE_APPEND);
                 $fleetPayload = $this->compileFleetDataStructure($fleet);
-                
-                // Route update out to admins
                 $this->distributeToFleetAdmins($fleet, $fleetPayload);
             }
         } else {
-            file_put_contents($log, "   ❌ FAILED: Could not load link '$rel_vehicle_fleet' on Vehicle bean.\n", FILE_APPEND);
+            file_put_contents($this->logFile, "   ❌ FAILED: Could not load link '$rel_vehicle_fleet' on Vehicle bean.\n", FILE_APPEND);
         }
     }
 
-    /**
-     * Compiles the full nested dataset for a specific Fleet
-     */
     private function compileFleetDataStructure($fleetBean) {
-        $log = '/tmp/vinttro_ladder_debug.log';
-        file_put_contents($log, " - [STEP 2] Compiling data structure for Fleet: " . $fleetBean->name . "\n", FILE_APPEND);
+        file_put_contents($this->logFile, " - [STEP 2] Compiling data structure for Fleet: " . $fleetBean->name . "\n", FILE_APPEND);
 
         $fleetStructure = [
             'name'     => $fleetBean->name,
             'vehicles' => []
         ];
 
-        // Name of relationship between Fleets and Vehicles
         $rel_fleet_vehicles = 'visp_fleet_visp_vehicle';
-        file_put_contents($log, "   - Loading Fleet -> Vehicles relationship: '$rel_fleet_vehicles'\n", FILE_APPEND);
         
         if ($fleetBean->load_relationship($rel_fleet_vehicles)) {
             $vehicles = $fleetBean->$rel_fleet_vehicles->getBeans();
-            file_put_contents($log, "     🟢 SUCCESS: Found " . count($vehicles) . " vehicle(s) inside this fleet.\n", FILE_APPEND);
+            file_put_contents($this->logFile, "     🟢 SUCCESS: Found " . count($vehicles) . " vehicle(s) inside this fleet.\n", FILE_APPEND);
             
             foreach ($vehicles as $vehicle) {
                 $fleetStructure['vehicles'][] = [
@@ -155,52 +136,34 @@ class WPSyncHook {
                 ];
             }
         } else {
-            file_put_contents($log, "     ❌ FAILED: Could not load link '$rel_fleet_vehicles' on Fleet bean.\n", FILE_APPEND);
+            file_put_contents($this->logFile, "     ❌ FAILED: Could not load link '$rel_fleet_vehicles' on Fleet bean.\n", FILE_APPEND);
         }
 
         return $fleetStructure;
     }
 
-    /**
-     * Finds all fleet administrators and broadcasts the data payload to WordPress
-     */
-/**
-     * Finds all fleet administrators and broadcasts the data payload to WordPress
-     */
     private function distributeToFleetAdmins($fleetBean, $fleetPayload) {
-        $log = '/tmp/vinttro_ladder_debug.log';
-        file_put_contents($log, " - [STEP 3] Distributing updates for Fleet: " . $fleetBean->name . "\n", FILE_APPEND);
+        file_put_contents($this->logFile, " - [STEP 3] Distributing updates for Fleet: " . $fleetBean->name . "\n", FILE_APPEND);
 
-        // Name of relationship between Fleets and your Membership module
         $rel_fleet_memberships = 'visp_fleet_visp_fleet_memberships';
-        file_put_contents($log, "   - Loading Fleet -> Membership relationship: '$rel_fleet_memberships'\n", FILE_APPEND);
 
         if ($fleetBean->load_relationship($rel_fleet_memberships)) {
             $memberships = $fleetBean->$rel_fleet_memberships->getBeans();
-            file_put_contents($log, "     🟢 SUCCESS: Found " . count($memberships) . " total personnel records.\n", FILE_APPEND);
+            file_put_contents($this->logFile, "     🟢 SUCCESS: Found " . count($memberships) . " total personnel records.\n", FILE_APPEND);
 
             foreach ($memberships as $membership) {
-                file_put_contents($log, "     -> Checking Personnel ID: " . $membership->id . " | label: " . $membership->name . "\n", FILE_APPEND);
-                file_put_contents($log, "         Raw value of is_fleetadmin field: '" . print_r($membership->is_fleetadmin, true) . "'\n", FILE_APPEND);
-
-                // Check if the "is_fleetadmin" checkbox is checked
                 if (!empty($membership->is_fleetadmin) && ($membership->is_fleetadmin == '1' || $membership->is_fleetadmin == 1 || $membership->is_fleetadmin === true)) {
-                    file_put_contents($log, "         ⭐ MATCH: Record is a Fleet Admin. Fetching Contact record...\n", FILE_APPEND);
                     
                     $target_relationship = 'contacts_visp_fleet_memberships_1';
                     $rel_membership_contact = '';
                     
-                    // DYNAMIC LOOKUP: Find the exact link field name that maps to our relationship
                     foreach ($membership->field_defs as $fieldName => $def) {
-                        if (isset($def['type']) && $def['type'] === 'link') {
-                            if (isset($def['relationship']) && $def['relationship'] === $target_relationship) {
-                                $rel_membership_contact = $fieldName;
-                                break;
-                            }
+                        if (isset($def['type']) && $def['type'] === 'link' && isset($def['relationship']) && $def['relationship'] === $target_relationship) {
+                            $rel_membership_contact = $fieldName;
+                            break;
                         }
                     }
 
-                    // Fallback: If no strict relationship match is found, look for any link field containing 'contact'
                     if (empty($rel_membership_contact)) {
                         foreach ($membership->field_defs as $fieldName => $def) {
                             if (isset($def['type']) && $def['type'] === 'link' && strpos(strtolower($fieldName), 'contact') !== false) {
@@ -209,15 +172,13 @@ class WPSyncHook {
                             }
                         }
                     }
-
-                    file_put_contents($log, "         - Discovered Link Field Name: '$rel_membership_contact' for relationship '$target_relationship'\n", FILE_APPEND);
                     
                     if (!empty($rel_membership_contact) && $membership->load_relationship($rel_membership_contact)) {
                         $contacts = $membership->$rel_membership_contact->getBeans();
                         $contact = reset($contacts); 
 
                         if ($contact && !empty($contact->email1)) {
-                            file_put_contents($log, "          🚀 DISPATCHING API: Targeting Admin Email: " . $contact->email1 . "\n", FILE_APPEND);
+                            file_put_contents($this->logFile, "          🚀 DISPATCHING API: Targeting Admin Email: " . $contact->email1 . "\n", FILE_APPEND);
                             
                             $wpPayload = [
                                 'email'             => $contact->email1,
@@ -227,38 +188,36 @@ class WPSyncHook {
                                 'fleets'            => [$fleetPayload]
                             ];
 
-                            $this->callWPAPI($wpPayload);
-                            // 🟢 ADD THIS LINE TO VERIFY EXECUTION RESUMED
-                            file_put_contents($log, "          ✅ DISPATCH COMPLETE for: " . $contact->email1 . "\n", FILE_APPEND);
+                            // 🛠️ TRAP RESPONSE: Execute API call and capture metrics inside the loop context
+                            $result = $this->callWPAPI($wpPayload);
+
+                            if ($result['success']) {
+                                file_put_contents($this->logFile, "          ✅ DISPATCH SUCCESS for: " . $contact->email1 . " | Response Code: " . $result['http_code'] . "\n", FILE_APPEND);
+                            } else {
+                                file_put_contents($this->logFile, "          ❌ DISPATCH CRITICAL FAILURE for: " . $contact->email1 . " | HTTP Code: " . $result['http_code'] . " | Response Msg: " . $result['response'] . " | Error: " . $result['error'] . "\n", FILE_APPEND);
+                            }
                         } else {
-                            file_put_contents($log, "          ⚠️ WARNING: Contact found but Email field (email1) is blank.\n", FILE_APPEND);
+                            file_put_contents($this->logFile, "          ⚠️ WARNING: Contact found but Email field (email1) is blank.\n", FILE_APPEND);
                         }
                     } else {
-                        file_put_contents($log, "          ❌ FAILED: Could not load link field '$rel_membership_contact' on Membership bean.\n", FILE_APPEND);
+                        file_put_contents($this->logFile, "          ❌ FAILED: Could not load link field '$rel_membership_contact' on Membership bean.\n", FILE_APPEND);
                     }
                 } else {
-                    file_put_contents($log, "        skipping: User is not marked as a Fleet Admin.\n", FILE_APPEND);
+                    file_put_contents($this->logFile, "        skipping: User [" . $membership->name . "] is not marked as a Fleet Admin.\n", FILE_APPEND);
                 }
             }
         } else {
-            file_put_contents($log, "     ❌ FAILED: Could not load link '$rel_fleet_memberships' on Fleet bean.\n", FILE_APPEND);
+            file_put_contents($this->logFile, "     ❌ FAILED: Could not load link '$rel_fleet_memberships' on Fleet bean.\n", FILE_APPEND);
         }
-        file_put_contents($log, "          ✅  ALL members processed.\n", FILE_APPEND);
+        file_put_contents($this->logFile, "          ✅  ALL members processed.\n", FILE_APPEND);
     }
 
-    /**
-     * Helper to compile outstanding issues for a single vehicle
-     */
     private function getVehicleIssues($vehicleBean) {
-        $log = '/tmp/vinttro_ladder_debug.log';
         $issuesData = [];
-        
-        // Name of relationship between Vehicles and Issues module
         $rel_vehicle_issues = 'visp_vehicle_visp_vehicle_issue'; 
         
         if ($vehicleBean->load_relationship($rel_vehicle_issues)) {
             $issues = $vehicleBean->$rel_vehicle_issues->getBeans();
-            
             foreach ($issues as $issue) {
                 $issuesData[] = [
                     'name'                => $issue->name,
@@ -267,8 +226,6 @@ class WPSyncHook {
                     'date_issue_reported' => $issue->date_entered
                 ];
             }
-        } else {
-            file_put_contents($log, "     ⚠️ Trace Note: Relationship '$rel_vehicle_issues' not loaded for Vehicle: " . $vehicleBean->name . "\n", FILE_APPEND);
         }
         return $issuesData;
     }
@@ -280,26 +237,39 @@ class WPSyncHook {
         return "https://vinttro.co.uk/wp-content/uploads/placeholder-car.png";
     }
 
-    private function callWPAPI($payload) {
-        
+    // Placeholders to retain structural integrity of your sync mapping execution
+    private function getIndividualGarage($contactBean) { return []; }
+    private function getRelatedFleets($contactBean) { return []; }
 
-        // 1. Try pulling from Environment Variables (.env / .env.local)
-        // Symfony populates $_ENV directly upon bootstrapping the SuiteCRM 8 application core
+    /**
+     * Diagnostic API Processor
+     * Returns execution stats array instead of returning void
+     */
+    private function callWPAPI($payload) {
+        // 1. Parse Env Variables
         $url = $_ENV['WP_API_URL'] ?? getenv('WP_API_URL') ?? null;
         $username = $_ENV['WP_API_USERNAME'] ?? getenv('WP_API_USERNAME') ?? null;
         $app_password = $_ENV['WP_API_APP_PASSWORD'] ?? getenv('WP_API_APP_PASSWORD') ?? null;
 
-        // 2. Fallback to SuiteCRM Config array if Env variables aren't set
+        // 2. Fallback to Legacy configuration if Env variables are dropped by framework bridge
+        global $sugar_config;
         if (!$username || !$app_password) {
-            global $sugar_config;
             $username = $sugar_config['wp_api']['username'] ?? '';
             $app_password = $sugar_config['wp_api']['app_password'] ?? '';
         }
+        if (!$url) {
+            $url = $sugar_config['wp_api']['url'] ?? '';
+        }
 
-        // Safety check to ensure we don't fire an unauthenticated request
-        if (empty($username) || empty($app_password)) {
-            file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - API ERROR: Missing WordPress API Credentials.\n", FILE_APPEND);
-            return;
+        // 🛡️ CRITICAL ERROR TRAPPING: Halt safely if variables are blank
+        if (empty($url) || empty($username) || empty($app_password)) {
+            $error_details = "Missing components -> URL: " . ($url ? 'OK' : 'EMPTY') . " | User: " . ($username ? 'OK' : 'EMPTY') . " | Pass: " . ($app_password ? 'OK' : 'EMPTY');
+            return [
+                'success'   => false,
+                'http_code' => 0,
+                'response'  => 'Local Execution Halt',
+                'error'     => $error_details
+            ];
         }
 
         $ch = curl_init($url);
@@ -308,10 +278,9 @@ class WPSyncHook {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-        // 🛡️ PROTECT CRM FROM FREEZING: Set strict timeouts
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // Max 5 seconds to establish connection
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);        // Max 15 seconds total execution time
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); 
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);        
 
         $ch_headers = [
             'Content-Type: application/json',
@@ -321,14 +290,19 @@ class WPSyncHook {
 
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error = null;
 
-        if(curl_errno($ch)) {
-            $error_msg = curl_error($ch);
-            file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - CURL ERROR: $error_msg\n", FILE_APPEND);
+        if (curl_errno($ch)) {
+            $curl_error = curl_error($ch);
         }
 
         curl_close($ch);
-        file_put_contents('/tmp/vinttro_file_load.log', date('Y-m-d H:i:s') . " - WP Response Code: $http_code | Response: $response\n", FILE_APPEND);
-    }
 
+        return [
+            'success'   => ($http_code >= 200 && $http_code < 300),
+            'http_code' => $http_code,
+            'response'  => $response,
+            'error'     => $curl_error ?? 'None'
+        ];
+    }
 }

@@ -6,12 +6,13 @@ class VehicleCheckHook
 {
     private static $preventRecursion = false;
 
-public function beforeSaveMethod($bean, $event, $arguments) 
+    public function beforeSaveMethod($bean, $event, $arguments) 
     {
         if (self::$preventRecursion) {
             return;
         }
 
+        // 1. Initial execution checkpoint
         $GLOBALS['log']->fatal("VCHook DBG: Hook triggered for Check Name: " . $bean->name);
 
         $linkName = 'visp_vehicle_visp_vehicle_check'; 
@@ -23,13 +24,13 @@ public function beforeSaveMethod($bean, $event, $arguments)
 
         $vehicleId = '';
 
-        // METHOD 1: Check database relationship framework (Works perfectly on updates / 2nd save)
+        // STRATEGY A: Check database relationship framework (Works on updates / 2nd save)
         $relatedIds = $bean->$linkName->get();
         if (!empty($relatedIds) && is_array($relatedIds)) {
             $vehicleId = reset($relatedIds);
         }
 
-        // METHOD 2: Check the Bean's native fields (Works on 1st save / creation for One-to-Many relationships)
+        // STRATEGY B: Check the Bean's native fields dynamically (Crucial for SuiteCRM 8 GraphQL 1st saves)
         if (empty($vehicleId) && !empty($bean->field_defs)) {
             foreach ($bean->field_defs as $fieldName => $def) {
                 if (isset($def['link']) && $def['link'] === $linkName && isset($def['type']) && $def['type'] === 'id') {
@@ -42,14 +43,13 @@ public function beforeSaveMethod($bean, $event, $arguments)
             }
         }
 
-        // METHOD 3: Multi-tiered Request Fallback (Handles various Legacy UI and API submission structures)
+        // STRATEGY C: Legacy UI and Request Fallbacks
         if (empty($vehicleId)) {
             if (!empty($_REQUEST['relate_id']) && isset($_REQUEST['relate_to']) && $_REQUEST['relate_to'] == 'visp_vehicle') {
                 $vehicleId = $_REQUEST['relate_id'];
             } elseif (!empty($_REQUEST['parent_id']) && isset($_REQUEST['parent_type']) && $_REQUEST['parent_type'] == 'visp_vehicle') {
                 $vehicleId = $_REQUEST['parent_id'];
             } elseif (!empty($_REQUEST[$linkName . 'visp_vehicle_ida'])) {
-                // Direct POST injection fallback matching standard SuiteCRM relational naming conventions
                 $vehicleId = $_REQUEST[$linkName . 'visp_vehicle_ida'];
             }
         }
@@ -59,21 +59,19 @@ public function beforeSaveMethod($bean, $event, $arguments)
             return; 
         }
 
-        // ... Rest of your code remains exactly the same ...
-
         $vehicle = BeanFactory::getBean('visp_vehicle', $vehicleId);
         if (empty($vehicle) || empty($vehicle->id)) {
             $GLOBALS['log']->fatal("VCHook DBG: Failed to instantiate vehicle object for ID: $vehicleId");
             return;
         }
 
-        // 1. Automatically populate the name of the check record
+        // Populating the name of the check record
         if (!empty($bean->date_of_check)) {
             $checkDate = new DateTime($bean->date_of_check);
             $bean->name = (!empty($vehicle->name) ? $vehicle->name : "Vehicle") . ' - ' . $checkDate->format('Y-m-d');
         }
 
-        // Warning-safe closures to look up custom fields dynamically (handling potential _c additions)
+        // Dynamic field lookup closures
         $getVField = function($fieldName) use ($vehicle) {
             if (isset($vehicle->field_defs[$fieldName . '_c'])) {
                 return $vehicle->{$fieldName . '_c'};
@@ -97,12 +95,11 @@ public function beforeSaveMethod($bean, $event, $arguments)
             return false;
         };
 
-        // Gather existing vehicle metrics using updated field keys
+        // Gather existing vehicle metrics
         $currentVehicleDate = $getVField('date_last_check');
         $newCheckMileage = (float)$bean->mileage;
         $newCheckDate = $bean->date_of_check;
 
-        // Condition Check: Mileage must be > 0 and date must be equal or newer
         $shouldUpdateVehicle = false;
         if ($newCheckMileage > 0) {
             if (empty($currentVehicleDate) || strpos($currentVehicleDate, '0000-00-00') !== false || $newCheckDate >= $currentVehicleDate) {
@@ -115,12 +112,10 @@ public function beforeSaveMethod($bean, $event, $arguments)
         }
 
         if ($shouldUpdateVehicle) {
-            // 2. Set base check data on parent vehicle using corrected keys
             $setVField('date_last_check', $newCheckDate);
             $setVField('mileage_last_check', $newCheckMileage);
             $GLOBALS['log']->fatal("VCHook DBG: Staged Last Check Date ($newCheckDate) and Mileage ($newCheckMileage) onto Vehicle.");
 
-            // 3. Calculate and update service dates
             try {
                 $vDateLastService = $getVField('date_last_service');
                 $vServiceIntervalMonths = $getVField('service_interval_months');
@@ -132,14 +127,12 @@ public function beforeSaveMethod($bean, $event, $arguments)
                     $optionA = null; 
                     $optionB = null;
 
-                    // Option A: Time Interval Calculation
                     if (!empty($vServiceIntervalMonths) && (int)$vServiceIntervalMonths > 0) {
                         $optionA = clone $dateLastService;
                         $months = (int)$vServiceIntervalMonths;
                         $optionA->modify("+$months months");
                     }
 
-                    // Option B: Run-Rate Calculation
                     if (!empty($newCheckDate) && !empty($vMileageLastService)) {
                         $dateOfCheck = new DateTime($newCheckDate);
                         $milesDriven = $newCheckMileage - (float)$vMileageLastService;
@@ -174,7 +167,7 @@ public function beforeSaveMethod($bean, $event, $arguments)
             }
         }
 
-        // 4. Safe Save Execution
+        // Safe Save Execution
         try {
             self::$preventRecursion = true;
             $GLOBALS['log']->fatal("VCHook DBG: Saving vehicle record now...");

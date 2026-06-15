@@ -6,7 +6,7 @@ class VehicleCheckHook
 {
     private static $preventRecursion = false;
 
-    public function beforeSaveMethod($bean, $event, $arguments) 
+public function beforeSaveMethod($bean, $event, $arguments) 
     {
         if (self::$preventRecursion) {
             return;
@@ -22,17 +22,35 @@ class VehicleCheckHook
         }
 
         $vehicleId = '';
+
+        // METHOD 1: Check database relationship framework (Works perfectly on updates / 2nd save)
         $relatedIds = $bean->$linkName->get();
         if (!empty($relatedIds) && is_array($relatedIds)) {
             $vehicleId = reset($relatedIds);
         }
 
-        // Fallback for subpanel creation requests
+        // METHOD 2: Check the Bean's native fields (Works on 1st save / creation for One-to-Many relationships)
+        if (empty($vehicleId) && !empty($bean->field_defs)) {
+            foreach ($bean->field_defs as $fieldName => $def) {
+                if (isset($def['link']) && $def['link'] === $linkName && isset($def['type']) && $def['type'] === 'id') {
+                    if (!empty($bean->$fieldName)) {
+                        $vehicleId = $bean->$fieldName;
+                        $GLOBALS['log']->fatal("VCHook DBG: Resolved parent Vehicle ID via bean field ($fieldName): " . $vehicleId);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // METHOD 3: Multi-tiered Request Fallback (Handles various Legacy UI and API submission structures)
         if (empty($vehicleId)) {
             if (!empty($_REQUEST['relate_id']) && isset($_REQUEST['relate_to']) && $_REQUEST['relate_to'] == 'visp_vehicle') {
                 $vehicleId = $_REQUEST['relate_id'];
             } elseif (!empty($_REQUEST['parent_id']) && isset($_REQUEST['parent_type']) && $_REQUEST['parent_type'] == 'visp_vehicle') {
                 $vehicleId = $_REQUEST['parent_id'];
+            } elseif (!empty($_REQUEST[$linkName . 'visp_vehicle_ida'])) {
+                // Direct POST injection fallback matching standard SuiteCRM relational naming conventions
+                $vehicleId = $_REQUEST[$linkName . 'visp_vehicle_ida'];
             }
         }
 
@@ -40,6 +58,8 @@ class VehicleCheckHook
             $GLOBALS['log']->fatal("VCHook DBG: Abandoning hook. No parent Vehicle ID could be resolved.");
             return; 
         }
+
+        // ... Rest of your code remains exactly the same ...
 
         $vehicle = BeanFactory::getBean('visp_vehicle', $vehicleId);
         if (empty($vehicle) || empty($vehicle->id)) {

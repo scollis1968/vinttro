@@ -1,4 +1,6 @@
 <?php
+// N.B. Alway run this script as www-data or the web server user to ensure file permissions are correct for compiled extensions and logic hooks.
+// sudo -u www-data php /var/www/suitecrm/public/legacy/cli_repair.php
 if (php_sapi_name() !== 'cli') {
     die("This script can only be run via CLI.\n");
 }

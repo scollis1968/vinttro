@@ -54,7 +54,7 @@ class VehicleCheckHook
                 if (!empty($checkBean) && !empty($vehicleBean)) {
                     $this->runSyncLogic($checkBean, $vehicleBean);
                     
-                    // Since this runs AFTER the check bean save, we manually save changes made to both records
+                    // Since this runs AFTER the check bean save, we manually save changes made to both records.
                     try {
                         self::$preventRecursion = true;
                         $checkBean->save();

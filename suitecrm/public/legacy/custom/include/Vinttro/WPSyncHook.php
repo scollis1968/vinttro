@@ -85,9 +85,12 @@ class WPSyncHook {
     }
 
     public function syncVehicleFleetUpdate($vehicleBean, $event, $arguments) {
+        file_put_contents('/tmp/hook_test.log', "Hook entered: " . $vehicleBean->id . "\n", FILE_APPEND);
+        // Prevent recursion
+        if (isset($vehicleBean->in_workflow)) return; 
+        $vehicleBean->in_workflow = true;
         file_put_contents($this->logFile, "==================================================================\n", FILE_APPEND);
         file_put_contents($this->logFile, date('Y-m-d H:i:s') . " - [STEP 1] Hook triggered on Vehicle. ID: " . $vehicleBean->id . " | Reg: " . $vehicleBean->name . "\n", FILE_APPEND);
-
         $rel_vehicle_fleet = 'visp_fleet_visp_vehicle'; 
         file_put_contents($this->logFile, " - Loading Vehicle -> Fleet relationship: '$rel_vehicle_fleet'\n", FILE_APPEND);
 
@@ -229,7 +232,7 @@ class WPSyncHook {
                         'id'                  => $issue->id,
                         'name'                => $issue->name,
                         'description'         => $issue->description,
-                        'severity'            => $issue->severity, 
+                        'severity'            => $issue->severity,  
                         'date_issue_reported' => $issue->date_entered
                     ];
                 }

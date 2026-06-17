@@ -172,7 +172,7 @@ function custom_login_redirect( $redirect_to, $request, $user ) {
     $fleet_data = get_user_meta( $user->ID, 'vinttro_fleets', true );
 
     if ( ! empty( $fleet_data ) ) {
-        return home_url( '/fleet/dashboard/' );
+        return home_url( '/visp/fleet-admin/' );
     }
 
     // 5. Default redirect for all other users.

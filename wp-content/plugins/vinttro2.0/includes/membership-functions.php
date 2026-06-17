@@ -275,9 +275,24 @@ function vinttro_get_fleet_panels($user_id) {
                     ?>
                         <tr class="vehicle-main-row <?php echo $has_issues ? 'has-issues' : 'no-issues'; ?>">
                             <td class="vehicle-cell">
-                                <span class="vehicle-reg" title="<?php echo esc_attr(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?>">
-                                    <?php echo esc_html($car['reg'] ?? 'N/A'); ?>
-                                </span>
+                                <?php 
+                                // Check if the CRM ID exists for this car
+                                $crm_id = $car['id'] ?? ''; 
+                                $reg_text = esc_html($car['reg'] ?? 'N/A');
+                                
+                                if (!empty($crm_id)) : ?>
+                                    <a href="https://uatcrm.vinttro.co.uk/#/visp_vehicle/record/<?php echo esc_attr($crm_id); ?>" 
+                                    target="_blank" 
+                                    title="View in CRM: <?php echo esc_attr(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?>"
+                                    style="text-decoration: none; color: inherit;">
+                                        <span class="vehicle-reg"><?php echo $reg_text; ?></span>
+                                    </a>
+                                <?php else : ?>
+                                    <span class="vehicle-reg" title="<?php echo esc_attr(($car['make'] ?? '') . ' ' . ($car['model'] ?? '')); ?>">
+                                        <?php echo $reg_text; ?>
+                                    </span>
+                                <?php endif; ?>
+
                                 <span class="vehicle-status-dot <?php echo $status_class; ?>" title="<?php echo $has_issues ? 'Issues Reported' : 'All Clear'; ?>"></span>
                             </td>
                             <td><?php echo vinttro_render_date_pill($car['date_next_mot'] ?? '', 'future', 7, 21); ?></td>

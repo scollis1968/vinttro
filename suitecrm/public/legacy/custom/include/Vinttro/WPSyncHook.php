@@ -220,12 +220,19 @@ class WPSyncHook {
         if ($vehicleBean->load_relationship($rel_vehicle_issues)) {
             $issues = $vehicleBean->$rel_vehicle_issues->getBeans();
             foreach ($issues as $issue) {
-                $issuesData[] = [
-                    'name'                => $issue->name,
-                    'description'         => $issue->description,
-                    'severity'            => $issue->severity, 
-                    'date_issue_reported' => $issue->date_entered
-                ];
+                
+                // Only add the issue if it has NOT been resolved
+                // Adjust this condition if your CRM uses a different indicator for 'resolved' 
+                // (e.g., status == 'Closed' or status == 'Resolved')
+                if (empty($issue->date_resolved)) {
+                    $issuesData[] = [
+                        'id'                  => $issue->id,
+                        'name'                => $issue->name,
+                        'description'         => $issue->description,
+                        'severity'            => $issue->severity, 
+                        'date_issue_reported' => $issue->date_entered
+                    ];
+                }
             }
         }
         return $issuesData;

@@ -84,27 +84,25 @@ class WPSyncHook {
         $this->callWPAPI($payload);
     }
 
-    public function syncVehicleFleetUpdate($vehicleBean, $event, $arguments) {
+        public function syncVehicleFleetUpdate($vehicleBean, $event, $arguments) {
 
-        $log = $this->logFile; // Cache for cleaner code
+        static $hasRun = false;
+
+        $log = $this->logFile;
         file_put_contents($log, date('Y-m-d H:i:s') . " - [START] ID: " . $vehicleBean->id . "\n", FILE_APPEND);
-        
-        // Test if it hits this line
-        file_put_contents($log, date('Y-m-d H:i:s') . " - [CHECKING RECURSION]\n", FILE_APPEND);
-        if (isset($vehicleBean->in_workflow)) {
-            file_put_contents($log, date('Y-m-d H:i:s') . " - [EXITING] Recursion blocked.\n", FILE_APPEND);
-            return; 
+
+        if ($hasRun) {
+            file_put_contents($log, date('Y-m-d H:i:s') . " - [EXITING] Already processed in this request.\n", FILE_APPEND);
+            return;
         }
-        
-        file_put_contents($log, date('Y-m-d H:i:s') . " - [SETTING FLAG]\n", FILE_APPEND);
-        $vehicleBean->in_workflow = true;
 
+        $hasRun = true;
+        file_put_contents($log, date('Y-m-d H:i:s') . " - [SETTING FLAG] Running primary logic...\n", FILE_APPEND);
+
+        // Now your logic proceeds
         file_put_contents($log, date('Y-m-d H:i:s') . " - [STEP 1] Loading fleet relationship...\n", FILE_APPEND);
-
-        file_put_contents($this->logFile, "==================================================================\n", FILE_APPEND);
-        file_put_contents($this->logFile, date('Y-m-d H:i:s') . " - [STEP 1] Hook triggered on Vehicle. ID: " . $vehicleBean->id . " | Reg: " . $vehicleBean->name . "\n", FILE_APPEND);
-        $rel_vehicle_fleet = 'visp_fleet_visp_vehicle'; 
-        file_put_contents($this->logFile, " - Loading Vehicle -> Fleet relationship: '$rel_vehicle_fleet'\n", FILE_APPEND);
+        
+        $rel_vehicle_fleet = 'visp_fleet_visp_vehicle';
 
         if ($vehicleBean->load_relationship($rel_vehicle_fleet)) {
             $relatedFleets = $vehicleBean->$rel_vehicle_fleet->getBeans();

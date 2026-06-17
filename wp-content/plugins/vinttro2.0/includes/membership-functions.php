@@ -45,6 +45,43 @@ add_shortcode('vinttro_dashboard', function() {
     <?php
     return ob_get_clean();
 });
+add_shortcode('fleet_dashboard', function() {
+    if (!is_user_logged_in()) {
+        return '<p>Please <a href="/login">log in</a> to view your dashboard.</p>';
+    }
+
+    $user_id = get_current_user_id();
+    $user_info = get_userdata($user_id);
+
+    ob_start(); 
+    ?>
+    <style>
+        .vinttro-dashboard { max-width: 1200px; margin: 0 auto; }
+        .dashboard-grid { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; /* This replaces the <br> for spacing */
+        }
+        /* Style for the two-column top row if you want them side-by-side */
+        .top-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
+
+    <div class="vinttro-dashboard">
+        <header class="dashboard-welcome" style="margin-bottom: 20px;">
+            <h2>Welcome back, <?php echo esc_html($user_info->first_name); ?>!</h2>
+        </header>
+
+        <div class="dashboard-grid">
+            <?php echo vinttro_get_fleet_panels($user_id); ?>           
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+});
 
 /**
  * Logic for the Reminders Panel

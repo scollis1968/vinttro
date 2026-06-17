@@ -144,32 +144,38 @@ function custom_inject_mobile_menu_links() {
 add_action( 'wp_footer', 'custom_inject_mobile_menu_links' );
 
 /**
- * Redirect users to specific dashboards after login based on email domain.
- *
- * @param string           $redirect_to The redirect destination URL.
- * @param string           $request     The requested redirect destination URL passed as a parameter.
- * @param WP_User|WP_Error $user        WP_User object if login was successful, WP_Error object otherwise.
- * @return string Filtered redirect URL.
+ * Redirect users to specific dashboards after login.
+ * * Logic:
+ * 1. Admins -> Default.
+ * 2. @vinttro.co.uk email -> /visp/dashboard/
+ * 3. User with 'vinttro_fleets' meta -> /fleet/dashboard/
+ * 4. Everyone else -> /dashboard/
  */
 function custom_login_redirect( $redirect_to, $request, $user ) {
     
     // 1. If there's a login error or the user object isn't valid, bail early.
-    if ( is_wp_error( $user ) || ! isset( $user->user_email ) ) {
+    if ( is_wp_error( $user ) || ! ( $user instanceof WP_User ) ) {
         return $redirect_to;
     }
 
-    // 2. Safely allow administrators to go to the back-end instead of being forced to a front-end dashboard.
-    if ( isset( $user->roles ) && in_array( 'administrator', (array) $user->roles ) ) {
+    // 2. Safely allow administrators to go to the back-end.
+    if ( in_array( 'administrator', (array) $user->roles ) ) {
         return $redirect_to; 
     }
 
-    // 3. Extract the user's email domain check.
+    // 3. Redirect VINTTRO domain users.
     if ( strpos( $user->user_email, '@vinttro.co.uk' ) !== false ) {
-        // Redirect .vinttro.co.uk email holders
         return home_url( '/visp/dashboard/' );
-    } else {
-        // Redirect all other standard users
-        return home_url( '/dashboard/' );
     }
+
+    // 4. Check if 'vinttro_fleets' exists and is not empty.
+    $fleet_data = get_user_meta( $user->ID, 'vinttro_fleets', true );
+
+    if ( ! empty( $fleet_data ) ) {
+        return home_url( '/fleet/dashboard/' );
+    }
+
+    // 5. Default redirect for all other users.
+    return home_url( '/dashboard/' );
 }
 add_filter( 'login_redirect', 'custom_login_redirect', 10, 3 );

@@ -121,6 +121,7 @@ class WPSyncHook {
             
             foreach ($vehicles as $vehicle) {
                 $fleetStructure['vehicles'][] = [
+                    'id'                     => $vehicle->id,   
                     'make'                   => $vehicle->make,
                     'model'                  => $vehicle->model,
                     'reg'                    => $vehicle->name,

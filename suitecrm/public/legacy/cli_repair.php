@@ -28,7 +28,11 @@ $current_user->getSystemUser();
 
 echo "🔄 Running Legacy Quick Repair and Rebuild with language contexts securely wrapped...\n";
 
+//$repair = new RepairAndClear();
+//$repair->repairAndClearAll(array('clearAll'), array('All Modules'), true, false);
+// Replace the old line with this specific target for your module:
 $repair = new RepairAndClear();
-$repair->repairAndClearAll(array('clearAll'), array('All Modules'), true, false);
+// Change the parameters: (actions, module_list, run_silent, rebuild_extensions_only)
+$repair->repairAndClearAll(['ext'], ['visp_vehicle'], false, false);
 
 echo "✅ Compiled extensions and rebuilt logic hooks successfully.\n";

@@ -9,7 +9,7 @@ TARGET_BRANCH="refs/heads/uat" # <-- SET YOUR REQUIRED BRANCH HERE
 BRANCH="uat"
 # ----------------------------------------------------------------
 # tip :- run the following command to execute this script and see the logs in real-time: 
-#    journalctl -u webhook -f
+#     journalctl -u webhook -f
 # ----------------------------------------------------------------
 
 # --- Logging Function ---
@@ -28,14 +28,14 @@ fi
 # --- 1. Clone or Pull the Repository ---
 if [ ! -d "$STAGING_DIR/.git" ]; then
     log "Cloning repository...."
-    git clone -b $BRANCH$REPO_URL $STAGING_DIR
+    git clone -b "$BRANCH" "$REPO_URL" "$STAGING_DIR"
     if [ $? -ne 0 ]; then
         log "ERROR: Git clone failed."
         exit 1
     fi
 else
     log "Pulling latest changes..."
-    cd $STAGING_DIR
+    cd "$STAGING_DIR" || exit 1
     git fetch origin
     git reset --hard origin/$BRANCH
     if [ $? -ne 0 ]; then
@@ -46,7 +46,7 @@ fi
 
 # --- 2. Extract and Deploy Custom WordPress Files (rsync) ---
 log "Deploying Vinttro Plugin..."
-rsync -a $STAGING_DIR/wp-content/plugins/vinttro2.0/ $LIVE_DIR/wp-content/plugins/vinttro2.0/
+rsync -a "$STAGING_DIR/wp-content/plugins/vinttro2.0/" "$LIVE_DIR/wp-content/plugins/vinttro2.0/"
 if [ $? -ne 0 ]; then
     log "ERROR: Plugin rsync failed."
     exit 1
@@ -73,7 +73,7 @@ fi
 log "Deploying SuiteCrm/VINTTRO customisation ..."
 SOURCE_DIR="/tmp/vinttro-repo/suitecrm/vinttro2.0/"
 DESTINATION_DIR="/var/www/suitecrm/vinttro2.0/"
-rsync -a $SOURCE_DIR $DESTINATION_DIR
+rsync -a "$SOURCE_DIR" "$DESTINATION_DIR"
 if [ $? -ne 0 ]; then
     log "ERROR: Deploying SuiteCrm/VINTTRO customisation failed."
     exit 1
@@ -109,7 +109,7 @@ chown -R www-data:www-data "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
 
 ##-------------------------------------------------------------------------
 # VINTTRO  SuiteCRM  public/legacy (Using Relative Overlay).
-cd /tmp/vinttro-repo
+cd /tmp/vinttro-repo || exit 1
 RELATIVE_SOURCE="suitecrm/public/legacy"
 TARGET_ROOT="/var/www"
 
@@ -127,32 +127,57 @@ chown -R www-data:www-data "$TARGET_ROOT/$RELATIVE_SOURCE" >> "$LOG_FILE" 2>&1
 ##-------------------------------------------------------------------------
 # --- 3. Automated Post-Deployment Automation & Framework Rebuilds ---
 # Note: Root can safely run "sudo -u www-data" without ever requiring a password
-log "Executing automated SuiteCRM Extensions Rebuild..."
+
+log "Executing dynamic automated SuiteCRM Extensions Rebuild..."
 sudo -u www-data php -r '
     define("sugarEntry", true);
     $_GET = array(); $_POST = array(); $_REQUEST = array(); $_COOKIE = array();
     if (isset($_SERVER)) { $_SERVER["argv"] = array(); }
     require_once("/var/www/suitecrm/public/legacy/include/entryPoint.php");
     require_once("/var/www/suitecrm/public/legacy/ModuleInstall/ModuleInstaller.php");
+
+    // 🔍 DYNAMIC DISCOVERY: Define standard core modules, then scan for all visp_* custom modules
+    $modules = array("Contacts"); // 💡 Add other non-visp standard modules here in the future (e.g., "Accounts")
+    
+    foreach (glob("/var/www/suitecrm/public/legacy/modules/visp_*", GLOB_ONLYDIR) as $dir) {
+        $modules[] = basename($dir);
+    }
+    $modules = array_unique($modules);
+
     $mi = new ModuleInstaller();
-    $mi->modules = array("Contacts");
+    $mi->modules = $modules;
     $mi->rebuild_extensions();
 ' >> "$LOG_FILE" 2>&1
 
-log "Rebuilding Master Logic Hooks Layout..."
+log "Rebuilding Dynamic Master Logic Hooks Layout Maps..."
 sudo -u www-data php -r '
-    $master = "/var/www/suitecrm/public/legacy/custom/modules/Contacts/logic_hooks.php";
-    $ext = "/var/www/suitecrm/public/legacy/custom/modules/Contacts/Ext/LogicHooks/logichooks.ext.php";
-    $hook_array = array(); $hook_version = 1;
-    if (file_exists($ext)) { include($ext); }
-    if (!empty($hook_array)) {
-        $content = "<?php\n\$hook_version = 1;\n\$hook_array = " . var_export($hook_array, true) . ";\n";
-        file_put_contents($master, $content);
+    // 🔍 DYNAMIC DISCOVERY: Mirror the scan to locate all target modules
+    $modules = array("Contacts");
+    foreach (glob("/var/www/suitecrm/public/legacy/modules/visp_*", GLOB_ONLYDIR) as $dir) {
+        $modules[] = basename($dir);
+    }
+    $modules = array_unique($modules);
+
+    foreach ($modules as $mod) {
+        $master = "/var/www/suitecrm/public/legacy/custom/modules/" . $mod . "/logic_hooks.php";
+        $ext = "/var/www/suitecrm/public/legacy/custom/modules/" . $mod . "/Ext/LogicHooks/logichooks.ext.php";
+        
+        $hook_array = array(); $hook_version = 1;
+        if (file_exists($ext)) { include($ext); }
+        
+        if (!empty($hook_array)) {
+            // Force create the custom module directory layout if it doesn't exist yet
+            if (!is_dir(dirname($master))) {
+                mkdir(dirname($master), 0775, true);
+            }
+            $content = "<?php\n\$hook_version = 1;\n\$hook_array = " . var_export($hook_array, true) . ";\n";
+            file_put_contents($master, $content);
+        }
     }
 ' >> "$LOG_FILE" 2>&1
 
 log "Syncing Core Backend Layout Assets to Frontend..."
-cd /var/www/suitecrm
+cd /var/www/suitecrm || exit 1
 sudo -u www-data php bin/console scrm:copy-legacy-assets >> "$LOG_FILE" 2>&1
 
 log "Flushing SuiteCRM 8 Production Container Cache..."

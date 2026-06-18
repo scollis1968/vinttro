@@ -166,7 +166,7 @@ sudo -u www-data php -r '
         if (file_exists($ext)) { include($ext); }
         
         if (!empty($hook_array)) {
-            // Force create the custom module directory layout if it doesn't exist yet
+            // Force create the custom module directory layout if it does not exist yet
             if (!is_dir(dirname($master))) {
                 mkdir(dirname($master), 0775, true);
             }

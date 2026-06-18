@@ -257,7 +257,16 @@ function vinttro_get_fleet_panels($user_id) {
             <table class="fleet-table">
                 <tbody>
                     <?php foreach ($vehicles as $car) : 
-                        // ... (Keep your status logic here) ...
+                        $issues = $car['outstanding_issues'] ?? [];
+                        $has_issues = !empty($issues);
+                        
+                        $status_class = 'status-safe';
+                        if ($has_issues) {
+                            $severities = array_column($issues, 'severity');
+                            if (in_array('high', $severities)) $status_class = 'status-critical';
+                            elseif (in_array('medium', $severities)) $status_class = 'status-warning';
+                            else $status_class = 'status-info';
+                        }
                     ?>
                         <tr class="vehicle-main-row <?php echo $has_issues ? 'has-issues' : 'no-issues'; ?>">
                             <td class="vehicle-cell">

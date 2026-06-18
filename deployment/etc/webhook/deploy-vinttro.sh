@@ -128,12 +128,16 @@ chown -R www-data:www-data "$TARGET_ROOT/$RELATIVE_SOURCE" >> "$LOG_FILE" 2>&1
 # --- 3. Automated Post-Deployment Automation & Framework Rebuilds ---
 # Note: Root can safely run "sudo -u www-data" without ever requiring a password
 
+log "Fixing front-end assets ownership paths..."
+chown -R www-data:www-data /var/www/suitecrm/public/extensions >> "$LOG_FILE" 2>&1
+
 log "Executing dynamic automated SuiteCRM Extensions Rebuild..."
 sudo -u www-data php -r '
     define("sugarEntry", true);
     $_GET = array(); $_POST = array(); $_REQUEST = array(); $_COOKIE = array();
     if (isset($_SERVER)) { $_SERVER["argv"] = array(); }
     require_once("/var/www/suitecrm/public/legacy/include/entryPoint.php");
+    require_once("/var/www/suitecrm/public/legacy/include/utils.php");
     require_once("/var/www/suitecrm/public/legacy/ModuleInstall/ModuleInstaller.php");
 
     $modules = array("Contacts"); 
@@ -151,6 +155,7 @@ sudo -u www-data php -r '
 
 log "Compiling Master Logic Hooks Direct From Extensions Source..."
 sudo -u www-data php -r '
+    define("sugarEntry", true);
     $modules = array("Contacts");
     foreach (glob("/var/www/suitecrm/public/legacy/modules/visp_*", GLOB_ONLYDIR) as $dir) {
         $modules[] = basename($dir);

@@ -7,6 +7,10 @@ LIVE_DIR="/var/www/wordpress"
 LOG_FILE="/var/log/vinttro-deploy.log"
 TARGET_BRANCH="refs/heads/uat" # <-- SET YOUR REQUIRED BRANCH HERE
 BRANCH="uat"
+# ----------------------------------------------------------------
+# tip :- run the following command to execute this script and see the logs in real-time: 
+#    journalctl -u webhook -f
+# ----------------------------------------------------------------
 
 # --- Logging Function ---
 log() {

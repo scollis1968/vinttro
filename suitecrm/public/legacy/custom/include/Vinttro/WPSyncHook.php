@@ -154,7 +154,7 @@ class WPSyncHook {
                 $data['main_driver_phone'] = '';
 
                 // Replace 'main_driver_c' with the actual field name found in Studio
-                $contact_id = $vehicle->main_driver_c ?? null; 
+                $contact_id = $vehicle->contact_id_c ?? null; 
 
                 if (!empty($contact_id)) {
                     $contact = BeanFactory::getBean('Contacts', $contact_id);

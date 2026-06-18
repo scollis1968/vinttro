@@ -133,7 +133,7 @@ class WPSyncHook {
             file_put_contents($this->logFile, "     🟢 SUCCESS: Found " . count($vehicles) . " vehicle(s) inside this fleet.\n", FILE_APPEND);
             
             foreach ($vehicles as $vehicle) {
-                $fleetStructure['vehicles'][] = [
+                $data = [
                     'id'                     => $vehicle->id,   
                     'make'                   => $vehicle->make,
                     'model'                  => $vehicle->model,
@@ -148,6 +148,23 @@ class WPSyncHook {
                     'date_ins_renewal'       => $vehicle->date_ins_renewal,
                     'outstanding_issues'     => $this->getVehicleIssues($vehicle)
                 ];
+                // --- NEW LOGIC: Fetch Main Driver ---
+                // --- UPDATED LOGIC: Using Relate Field ---
+                $data['main_driver'] = 'Unassigned';
+                $data['main_driver_phone'] = '';
+
+                // Replace 'main_driver_c' with the actual field name found in Studio
+                $contact_id = $vehicle->main_driver_c ?? null; 
+
+                if (!empty($contact_id)) {
+                    $contact = BeanFactory::getBean('Contacts', $contact_id);
+                    if ($contact && !empty($contact->id)) {
+                        $data['main_driver'] = trim($contact->first_name . ' ' . $contact->last_name);
+                        // Check mobile, then work
+                        $data['main_driver_phone'] = $contact->phone_mobile ?: ($contact->phone_work ?: '');
+                    }
+                }
+                $fleetStructure['vehicles'][] = $data;  
             }
         } else {
             file_put_contents($this->logFile, "     ❌ FAILED: Could not load link '$rel_fleet_vehicles' on Fleet bean.\n", FILE_APPEND);

@@ -152,6 +152,8 @@ class WPSyncHook {
                 // --- UPDATED LOGIC: Using Relate Field ---
                 $data['main_driver'] = 'Unassigned';
                 $data['main_driver_phone'] = '';
+                $data['main_driver_email'] = '';
+                
 
                 // Replace 'main_driver_c' with the actual field name found in Studio
                 $contact_id = $vehicle->contact_id_c ?? null; 
@@ -162,6 +164,7 @@ class WPSyncHook {
                         $data['main_driver'] = trim($contact->first_name . ' ' . $contact->last_name);
                         // Check mobile, then work
                         $data['main_driver_phone'] = $contact->phone_mobile ?: ($contact->phone_work ?: '');
+                        $data['main_driver_email'] = $contact->email1 ?? '';
                     }
                 }
                 $fleetStructure['vehicles'][] = $data;  

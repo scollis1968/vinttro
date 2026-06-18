@@ -136,12 +136,13 @@ sudo -u www-data php -r '
     require_once("/var/www/suitecrm/public/legacy/include/entryPoint.php");
     require_once("/var/www/suitecrm/public/legacy/ModuleInstall/ModuleInstaller.php");
 
-    // DYNAMIC DISCOVERY: Scan for all visp_* custom modules to clear core extensions
     $modules = array("Contacts"); 
     foreach (glob("/var/www/suitecrm/public/legacy/modules/visp_*", GLOB_ONLYDIR) as $dir) {
         $modules[] = basename($dir);
     }
     $modules = array_unique($modules);
+
+    echo "--- DISCOVERED MODULES FOR EXTENSIONS: " . implode(", ", $modules) . "\n";
 
     $mi = new ModuleInstaller();
     $mi->modules = $modules;
@@ -150,12 +151,13 @@ sudo -u www-data php -r '
 
 log "Compiling Master Logic Hooks Direct From Extensions Source..."
 sudo -u www-data php -r '
-    // DYNAMIC DISCOVERY: Discover target modules to build hook maps
     $modules = array("Contacts");
     foreach (glob("/var/www/suitecrm/public/legacy/modules/visp_*", GLOB_ONLYDIR) as $dir) {
         $modules[] = basename($dir);
     }
     $modules = array_unique($modules);
+
+    echo "--- TARGET MODULES FOR HOOK COMPILATION: " . implode(", ", $modules) . "\n";
 
     foreach ($modules as $mod) {
         $master = "/var/www/suitecrm/public/legacy/custom/modules/" . $mod . "/logic_hooks.php";
@@ -164,24 +166,27 @@ sudo -u www-data php -r '
         
         $hook_array = array(); $hook_version = 1;
         
-        // 🚀 FOOLPROOF COMPILATION: Read directly from your git-deployed source directory
         if (is_dir($ext_dir)) {
+            echo " -> Found extension folder for " . $mod . "\n";
             foreach (glob($ext_dir . "/*.php") as $ext_file) {
+                echo "   -> Including extension file: " . basename($ext_file) . "\n";
                 include($ext_file);
             }
         }
         
-        // Fallback check: If core extensions built it elsewhere, merge it in
         if (file_exists($compiled_ext)) { 
             include($compiled_ext); 
         }
         
         if (!empty($hook_array)) {
+            echo "   -> Writing master logic_hooks.php for " . $mod . "\n";
             if (!is_dir(dirname($master))) {
                 mkdir(dirname($master), 0775, true);
             }
             $content = "<?php\n\$hook_version = 1;\n\$hook_array = " . var_export($hook_array, true) . ";\n";
             file_put_contents($master, $content);
+        } else {
+            echo "   -> No hooks found to write for " . $mod . "\n";
         }
     }
 ' >> "$LOG_FILE" 2>&1

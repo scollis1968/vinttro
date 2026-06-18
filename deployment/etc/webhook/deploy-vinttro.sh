@@ -136,9 +136,8 @@ sudo -u www-data php -r '
     require_once("/var/www/suitecrm/public/legacy/include/entryPoint.php");
     require_once("/var/www/suitecrm/public/legacy/ModuleInstall/ModuleInstaller.php");
 
-    // 🔍 DYNAMIC DISCOVERY: Define standard core modules, then scan for all visp_* custom modules
-    $modules = array("Contacts"); // 💡 Add other non-visp standard modules here in the future (e.g., "Accounts")
-    
+    // DYNAMIC DISCOVERY: Scan for all visp_* custom modules to clear core extensions
+    $modules = array("Contacts"); 
     foreach (glob("/var/www/suitecrm/public/legacy/modules/visp_*", GLOB_ONLYDIR) as $dir) {
         $modules[] = basename($dir);
     }
@@ -149,9 +148,9 @@ sudo -u www-data php -r '
     $mi->rebuild_extensions();
 ' >> "$LOG_FILE" 2>&1
 
-log "Rebuilding Dynamic Master Logic Hooks Layout Maps..."
+log "Compiling Master Logic Hooks Direct From Extensions Source..."
 sudo -u www-data php -r '
-    // 🔍 DYNAMIC DISCOVERY: Mirror the scan to locate all target modules
+    // DYNAMIC DISCOVERY: Discover target modules to build hook maps
     $modules = array("Contacts");
     foreach (glob("/var/www/suitecrm/public/legacy/modules/visp_*", GLOB_ONLYDIR) as $dir) {
         $modules[] = basename($dir);
@@ -160,13 +159,24 @@ sudo -u www-data php -r '
 
     foreach ($modules as $mod) {
         $master = "/var/www/suitecrm/public/legacy/custom/modules/" . $mod . "/logic_hooks.php";
-        $ext = "/var/www/suitecrm/public/legacy/custom/modules/" . $mod . "/Ext/LogicHooks/logichooks.ext.php";
+        $ext_dir = "/var/www/suitecrm/public/legacy/custom/Extension/modules/" . $mod . "/Ext/LogicHooks";
+        $compiled_ext = "/var/www/suitecrm/public/legacy/custom/modules/" . $mod . "/Ext/LogicHooks/logichooks.ext.php";
         
         $hook_array = array(); $hook_version = 1;
-        if (file_exists($ext)) { include($ext); }
+        
+        // 🚀 FOOLPROOF COMPILATION: Read directly from your git-deployed source directory
+        if (is_dir($ext_dir)) {
+            foreach (glob($ext_dir . "/*.php") as $ext_file) {
+                include($ext_file);
+            }
+        }
+        
+        // Fallback check: If core extensions built it elsewhere, merge it in
+        if (file_exists($compiled_ext)) { 
+            include($compiled_ext); 
+        }
         
         if (!empty($hook_array)) {
-            // Force create the custom module directory layout if it does not exist yet
             if (!is_dir(dirname($master))) {
                 mkdir(dirname($master), 0775, true);
             }

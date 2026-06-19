@@ -230,7 +230,7 @@ function vinttro_calculate_vehicle_priority_score($car) {
  * 4. THE MAIN PANEL RENDERER
  */
 function vinttro_get_fleet_panels($user_id) {
-    // Fixed: Read from wp-config constant instead of $_ENV
+    // Read from wp-config constant instead of $_ENV
     $crm_base_url = defined('SUITECRM_BASE_URL') ? SUITECRM_BASE_URL : 'https://uatcrm.vinttro.co.uk';
     
     $fleets = get_user_meta($user_id, 'vinttro_fleets', true);
@@ -313,7 +313,7 @@ function vinttro_get_fleet_panels($user_id) {
                                             <a href="tel:<?php echo esc_attr(str_replace(' ', '', $driver_phone)); ?>" 
                                                title="Call: <?php echo esc_attr($driver_phone); ?>" 
                                                style="color: #0073aa; display: inline-block;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
                                             </a>
                                         <?php else : ?>
                                             <span title="No phone number available" style="color: #ccc; cursor: not-allowed; display: inline-block;">
@@ -373,6 +373,8 @@ function vinttro_get_fleet_panels($user_id) {
                                                     $issue_date = $issue_ts ? date('d/m/Y', $issue_ts) : $issue['date_issue_reported'];
                                                 }
 
+                                                $issue_id = $issue['id'] ?? '';
+
                                                 // 🎨 Icon configuration matching matrix
                                                 $sev = strtolower($issue['severity'] ?? 'info');
                                                 if ($sev === 'critical' || $sev === 'high') {
@@ -391,7 +393,17 @@ function vinttro_get_fleet_panels($user_id) {
                                                         <?php echo $icon_svg; ?>
                                                     </span>
                                                     <span style="color: #333;">
-                                                        <strong><?php echo esc_html($issue['name']); ?>:</strong> 
+                                                        <?php if (!empty($issue_id)) : ?>
+                                                            <a href="<?php echo esc_url(rtrim($crm_base_url, '/')) . '/#/visp_vehicle_issue/record/' . esc_attr($issue_id) . '?offset=1'; ?>" 
+                                                               target="_blank" 
+                                                               title="View Issue in CRM"
+                                                               style="color: inherit; text-decoration: none;">
+                                                                <strong><?php echo esc_html($issue['name']); ?>:</strong>
+                                                            </a>
+                                                        <?php else : ?>
+                                                            <strong><?php echo esc_html($issue['name']); ?>:</strong>
+                                                        <?php endif; ?>
+                                                        
                                                         <?php echo esc_html($issue['description']); ?>
                                                         <span class="issue-date" style="color: #777; font-size: 0.9em; margin-left: 6px;">- Reported: <?php echo esc_html($issue_date); ?></span>
                                                     </span>

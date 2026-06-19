@@ -17,9 +17,8 @@ add_shortcode('vinttro_dashboard', function() {
         .dashboard-grid { 
             display: flex; 
             flex-direction: column; 
-            gap: 20px; /* This replaces the <br> for spacing */
+            gap: 20px; 
         }
-        /* Style for the two-column top row if you want them side-by-side */
         .top-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -45,6 +44,7 @@ add_shortcode('vinttro_dashboard', function() {
     <?php
     return ob_get_clean();
 });
+
 add_shortcode('fleet_dashboard', function() {
     if (!is_user_logged_in()) {
         return '<p>Please <a href="/login">log in</a> to view your dashboard.</p>';
@@ -60,9 +60,8 @@ add_shortcode('fleet_dashboard', function() {
         .dashboard-grid { 
             display: flex; 
             flex-direction: column; 
-            gap: 20px; /* This replaces the <br> for spacing */
+            gap: 20px; 
         }
-        /* Style for the two-column top row if you want them side-by-side */
         .top-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -144,7 +143,7 @@ function vinttro_get_garage_panel($user_id) {
  * Determines the raw RAG status string ('R', 'A', 'G') for any given date field.
  */
 function vinttro_get_date_rag($date_string, $type = 'future', $red_threshold = 7, $amber_threshold = 21) {
-    if (empty($date_string)) return 'G'; // Treat empty/blank as safe or manage separately
+    if (empty($date_string)) return 'G'; 
     
     $now = time();
     $target_date = strtotime($date_string);
@@ -200,9 +199,9 @@ function vinttro_calculate_vehicle_priority_score($car) {
     $issues = $car['outstanding_issues'] ?? [];
     if (!empty($issues)) {
         $severities = array_column($issues, 'severity');
-        if (in_array('high', $severities)) {
+        if (in_array('high', $severities) || in_array('critical', $severities)) {
             $score += 1000; // Crashing mechanical issues win instantly
-        } elseif (in_array('medium', $severities)) {
+        } elseif (in_array('medium', $severities) || in_array('moderate', $severities)) {
             $score += 500;
         } else {
             $score += 300;
@@ -230,10 +229,9 @@ function vinttro_calculate_vehicle_priority_score($car) {
 /**
  * 4. THE MAIN PANEL RENDERER
  */
-
 function vinttro_get_fleet_panels($user_id) {
-    // Retrieve the base URL from the environment variable, fallback to UAT if not set
-    $crm_base_url = $_ENV['SUITECRM_BASE_URL'] ?? 'https://uatcrm.vinttro.co.uk';
+    // Fixed: Read from wp-config constant instead of $_ENV
+    $crm_base_url = defined('SUITECRM_BASE_URL') ? SUITECRM_BASE_URL : 'https://uatcrm.vinttro.co.uk';
     
     $fleets = get_user_meta($user_id, 'vinttro_fleets', true);
     if (empty($fleets) || !is_array($fleets)) return '';
@@ -273,8 +271,8 @@ function vinttro_get_fleet_panels($user_id) {
                         $status_class = 'status-safe';
                         if ($has_issues) {
                             $severities = array_column($issues, 'severity');
-                            if (in_array('high', $severities)) $status_class = 'status-critical';
-                            elseif (in_array('medium', $severities)) $status_class = 'status-warning';
+                            if (in_array('high', $severities) || in_array('critical', $severities)) $status_class = 'status-critical';
+                            elseif (in_array('medium', $severities) || in_array('moderate', $severities)) $status_class = 'status-warning';
                             else $status_class = 'status-info';
                         }
                     ?>
@@ -345,25 +343,60 @@ function vinttro_get_fleet_panels($user_id) {
                             <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? '', 'past', 21, 10); ?></td>
                         </tr>
 
-                        <?php if ($has_issues) : ?>
+                        <?php if ($has_issues) : 
+                            // 📊 Severity Priority Mapping
+                            $severity_priority = [
+                                'critical' => 1,
+                                'high'     => 2,
+                                'medium'   => 3,
+                                'moderate' => 3, 
+                                'low'      => 4,
+                                'info'     => 5
+                            ];
+
+                            // Reorder sub-issues so critical elements rank highest
+                            usort($issues, function($a, $b) use ($severity_priority) {
+                                $prio_a = $severity_priority[strtolower($a['severity'] ?? '')] ?? 99;
+                                $prio_b = $severity_priority[strtolower($b['severity'] ?? '')] ?? 99;
+                                return $prio_a <=> $prio_b;
+                            });
+                        ?>
                             <tr class="vehicle-issues-row">
                                 <td colspan="5"> 
                                     <div class="issues-expanded-box">
                                         <strong>Outstanding Issues:</strong>
-                                        <ul class="issue-detailed-list">
+                                        <ul class="issue-detailed-list" style="list-style: none; padding-left: 0; margin-top: 8px;">
                                             <?php foreach ($issues as $issue) : 
                                                 $issue_date = '';
                                                 if (!empty($issue['date_issue_reported'])) {
                                                     $issue_ts = strtotime($issue['date_issue_reported']);
                                                     $issue_date = $issue_ts ? date('d/m/Y', $issue_ts) : $issue['date_issue_reported'];
                                                 }
+
+                                                // 🎨 Icon configuration matching matrix
+                                                $sev = strtolower($issue['severity'] ?? 'info');
+                                                if ($sev === 'critical' || $sev === 'high') {
+                                                    $icon_color = '#dc3545'; // Crimson Red
+                                                    $icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 6px;"><path d="m12 14 4-4M12 10l4 4M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+                                                } elseif ($sev === 'medium' || $sev === 'moderate') {
+                                                    $icon_color = '#ffc107'; // Amber Orange
+                                                    $icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 6px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+                                                } else {
+                                                    $icon_color = '#0dcaf0'; // Info Blue
+                                                    $icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 6px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+                                                }
                                             ?>
-                                                <li>
-                                                    <span class="issue-severity-tag sev-<?php echo esc_attr($issue['severity']); ?>"></span>
-                                                    <strong><?php echo esc_html($issue['name']); ?>:</strong> 
-                                                    <?php echo esc_html($issue['description']); ?>
-                                                    <span class="issue-date">- Reported: <?php echo esc_html($issue_date); ?></span>
-                                                </li> <?php endforeach; ?>
+                                                <li style="display: flex; align-items: flex-start; margin-bottom: 8px; color: <?php echo $icon_color; ?>;">
+                                                    <span class="issue-icon" style="flex-shrink: 0; display: inline-flex; align-items: center; height: 20px;">
+                                                        <?php echo $icon_svg; ?>
+                                                    </span>
+                                                    <span style="color: #333;">
+                                                        <strong><?php echo esc_html($issue['name']); ?>:</strong> 
+                                                        <?php echo esc_html($issue['description']); ?>
+                                                        <span class="issue-date" style="color: #777; font-size: 0.9em; margin-left: 6px;">- Reported: <?php echo esc_html($issue_date); ?></span>
+                                                    </span>
+                                                </li>
+                                            <?php endforeach; ?>
                                         </ul>
                                     </div>
                                 </td>

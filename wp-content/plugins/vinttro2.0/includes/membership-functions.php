@@ -233,7 +233,7 @@ function vinttro_calculate_vehicle_priority_score($car) {
 
 function vinttro_get_fleet_panels($user_id) {
     // Retrieve the base URL from the environment variable, fallback to UAT if not set
-    $crm_base_url = $_ENV['SUITECRM_BASE_URL'] ?? 'https://uatcrm.vinttro.co.uk';
+    $crm_base_url = defined('SUITECRM_BASE_URL') ? constant('SUITECRM_BASE_URL') : 'https://crm.vinttro.co.uk';
     
     $fleets = get_user_meta($user_id, 'vinttro_fleets', true);
     if (empty($fleets) || !is_array($fleets)) return '';
@@ -315,64 +315,4 @@ function vinttro_get_fleet_panels($user_id) {
                                             <a href="tel:<?php echo esc_attr(str_replace(' ', '', $driver_phone)); ?>" 
                                                title="Call: <?php echo esc_attr($driver_phone); ?>" 
                                                style="color: #0073aa; display: inline-block;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            </a>
-                                        <?php else : ?>
-                                            <span title="No phone number available" style="color: #ccc; cursor: not-allowed; display: inline-block;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            </span>
-                                        <?php endif; ?>
-
-                                        <?php if (!empty($driver_email)) : ?>
-                                            <a href="mailto:<?php echo esc_attr($driver_email); ?>" 
-                                               title="Email: <?php echo esc_attr($driver_email); ?>" 
-                                               style="color: #0073aa; display: inline-block;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                                            </a>
-                                        <?php else : ?>
-                                            <span title="No email address available" style="color: #ccc; cursor: not-allowed; display: inline-block;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                                            </span>
-                                        <?php endif; ?>
-                                    </span>
-                                <?php else : ?>
-                                    <span style="color: #999;">-</span>
-                                <?php endif; ?>
-                            </td>
-
-                            <td><?php echo vinttro_render_date_pill($car['date_next_mot'] ?? '', 'future', 7, 21); ?></td>
-                            <td><?php echo vinttro_render_date_pill($car['date_next_service'] ?? '', 'future', 7, 21); ?></td>
-                            <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? '', 'past', 21, 10); ?></td>
-                        </tr>
-
-                        <?php if ($has_issues) : ?>
-                            <tr class="vehicle-issues-row">
-                                <td colspan="5"> <div class="issues-expanded-box">
-                                        <strong>Outstanding Issues:</strong>
-                                        <ul class="issue-detailed-list">
-                                            <?php foreach ($issues as $issue) : 
-                                                $issue_date = '';
-                                                if (!empty($issue['date_issue_reported'])) {
-                                                    $issue_ts = strtotime($issue['date_issue_reported']);
-                                                    $issue_date = $issue_ts ? date('d/m/Y', $issue_ts) : $issue['date_issue_reported'];
-                                                }
-                                            ?>
-                                                <li>
-                                                    <span class="issue-severity-tag sev-<?php echo esc_attr($issue['severity']); ?>"></span>
-                                                    <strong><?php echo esc_html($issue['name']); ?>:</strong> 
-                                                    <?php echo esc_html($issue['description']); ?>
-                                                    <span class="issue-date">- Reported: <?php echo esc_html($issue_date); ?></span>
-                                                </td>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endforeach;
-    return ob_get_clean();
-}
+                                                <svg xmlns="http://www.w

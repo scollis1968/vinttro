@@ -1,0 +1,136 @@
+/* ==========================================================================
+   Vinttro.co.uk - Custom Login Page Styling
+   ========================================================================== */
+
+/* 1. Container Card */
+.tml.tml-login {
+    max-width: 450px;
+    margin: 2rem auto;
+    padding: 2.5rem;
+    background: #ffffff; /* Change to your brand's card background */
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); /* Soft, modern shadow */
+    border: 1px solid #eef2f5;
+}
+
+/* 2. Form Spacing & Fields */
+.tml-login .tml-field-wrap {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Labels */
+.tml-login .tml-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #2c3e50; /* Base text color */
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Input Fields (Text & Password) */
+.tml-login input.tml-field {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    color: #495057;
+    transition: all 0.3s ease;
+}
+
+/* Input Focus State - Crucial for Brand Identity */
+.tml-login input.tml-field:focus {
+    outline: none;
+    border-color: #1a1a1a; /* Swap with your primary brand color */
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.1); /* Soft brand glow */
+}
+
+/* 3. Remember Me Checkbox Alignment */
+.tml-login .tml-rememberme-wrap {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: -0.5rem;
+    margin-bottom: 2rem;
+}
+
+.tml-login .tml-rememberme-wrap .tml-label {
+    margin-bottom: 0;
+    text-transform: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.tml-login input.tml-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #1a1a1a; /* Colors the checkbox to match brand */
+}
+
+/* 4. Primary Submit Button */
+.tml-login button.tml-button {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #1a1a1a; /* Swap with your primary brand color */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    letter-spacing: 0.02em;
+}
+
+.tml-login button.tml-button:hover {
+    background-color: #333333; /* Darker shade for hover state */
+}
+
+.tml-login button.tml-button:active {
+    transform: scale(0.98); /* Subtle click effect */
+}
+
+/* 5. Bottom Links (Register / Lost Password) */
+.tml-login ul.tml-links {
+    list-style: none;
+    padding: 0;
+    margin: 2rem 0 0 0;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #eef2f5;
+    padding-top: 1.5rem;
+}
+
+.tml-login ul.tml-links li a {
+    font-size: 0.85rem;
+    color: #6c757d;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.tml-login ul.tml-links li a:hover {
+    color: #1a1a1a; /* Brand hover color */
+    text-decoration: underline;
+}
+
+/* 6. Security/Honeypot Field Safety */
+#altEmail_container {
+    display: none !important; /* Ensures anti-spam field remains invisible */
+}
+
+.tml-alerts {
+    padding: 0.75rem 1rem;
+    background-color: #fff5f5;
+    border-left: 4px solid #e53e3e;
+    color: #c53030;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}

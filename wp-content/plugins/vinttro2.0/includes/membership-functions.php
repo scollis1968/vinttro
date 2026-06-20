@@ -70,9 +70,6 @@ add_shortcode('fleet_dashboard', function() {
     </style>
 
     <div class="vinttro-dashboard">
-        <header class="dashboard-welcome" style="margin-bottom: 20px;">
-            <h2>Welcome back, <?php echo esc_html($user_info->first_name); ?>!</h2>
-        </header>
 
         <div class="dashboard-grid">
             <?php echo vinttro_get_fleet_panels($user_id); ?>           

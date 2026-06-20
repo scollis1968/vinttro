@@ -2,14 +2,31 @@
    VINTTRO Nav-Bar Nested Profile Dropdown Layout Frame
    ========================================================================== */
 
-/* The outer positioning node container */
+/* Outer Positioning Node Container - Gap Calibration */
 .vinttro-global-account-node {
     position: absolute !important;
     top: 50% !important;
-    transform: translateY(-50%) !important; /* Locks vertical alignment axis exactly into row centers */
-    right: 65px !important;                 /* Anchors exactly 65px left of the standard burger toggle line */
+    transform: translateY(-50%) !important; /* Maintains absolute vertical center */
+    right: 52px !important;                 /* Updated: Pulls closer to the menu burger icon */
     z-index: 999999 !important;
     display: inline-block;
+}
+
+/* Card Menu Block Adjustment */
+.vinttro-account-dropdown {
+    position: absolute;
+    top: 44px;
+    right: -5px;  /* Calibrated: Snaps flush with the right edge layout boundary */
+    width: 230px;
+    background: #ffffff;
+    border: 1px solid #eef2f5;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    padding: 1.25rem;
+    display: none; 
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 /* Rounded Avatar Ring */

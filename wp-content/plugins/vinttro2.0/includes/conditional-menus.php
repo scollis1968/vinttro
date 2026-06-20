@@ -163,17 +163,18 @@ function custom_login_redirect( $redirect_to, $request, $user ) {
         return $redirect_to; 
     }
 
-    // 3. Redirect VINTTRO domain users.
-    if ( strpos( $user->user_email, '@vinttro.co.uk' ) !== false ) {
-        return home_url( '/visp/dashboard/' );
-    }
-
     // 4. Check if 'vinttro_fleets' exists and is not empty.
     $fleet_data = get_user_meta( $user->ID, 'vinttro_fleets', true );
 
     if ( ! empty( $fleet_data ) ) {
         return home_url( '/visp/fleet-admin/' );
     }
+
+    // 3. Redirect VINTTRO domain users.
+    if ( strpos( $user->user_email, '@vinttro.co.uk' ) !== false ) {
+        return home_url( '/visp/dashboard/' );
+    }
+
 
     // 5. Default redirect for all other users.
     return home_url( '/dashboard/' );

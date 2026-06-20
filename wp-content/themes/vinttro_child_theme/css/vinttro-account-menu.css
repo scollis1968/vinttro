@@ -1,0 +1,139 @@
+/* ==========================================================================
+   VINTTRO Dynamic Account Dropdown UI Frame
+   ========================================================================== */
+
+.vinttro-global-account-node {
+    position: fixed;
+    top: 14px;
+    right: 20px; /* Adjust coordinate if you need to slide it alongside your mobile trigger row */
+    z-index: 999999; /* Higher layer index to sit cleanly over header elements */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Rounded Avatar Ring */
+.vinttro-avatar-trigger-btn {
+    background: none;
+    border: 2px solid #C5A059; /* VINTTRO Premium Gold Accent */
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.vinttro-avatar-trigger-btn:hover {
+    transform: scale(1.06);
+    border-color: #ffffff;
+}
+
+.vinttro-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Card Menu Block Styling */
+.vinttro-account-dropdown {
+    position: absolute;
+    top: 55px;
+    right: 0;
+    width: 230px;
+    background: #ffffff;
+    border: 1px solid #eef2f5;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    padding: 1.25rem;
+    display: none; /* Controlled natively by the active toggle state */
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* JavaScript Trigger Hook Injection */
+.vinttro-account-dropdown.vinttro-menu-active {
+    display: block !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
+/* Card Header Information Metadata Layout */
+.vinttro-dropdown-identity-block {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.75rem;
+}
+
+.vinttro-user-greeting {
+    font-size: 0.75rem;
+    color: #8a8a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.vinttro-user-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-top: 0.1rem;
+}
+
+.vinttro-account-dropdown hr {
+    border: 0;
+    border-top: 1px solid #f1f3f5;
+    margin: 0.5rem 0;
+}
+
+/* Menu Control Links Structuring */
+.vinttro-dropdown-actions-list {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.vinttro-dropdown-actions-list li {
+    margin: 0.25rem 0 !important;
+    padding: 0 !important;
+}
+
+.vinttro-dropdown-actions-list li a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+    text-decoration: none !important;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.vinttro-dropdown-actions-list li a:hover {
+    background-color: #faf7f2; /* Ultra soft gold-tint wash profile */
+    color: #C5A059;
+}
+
+/* Clean Custom Isolation Rules for the Logout Selection Trigger */
+.vinttro-dropdown-actions-list li.vinttro-logout-item a {
+    color: #c92a2a;
+}
+
+.vinttro-dropdown-actions-list li.vinttro-logout-item a:hover {
+    background-color: #fff5f5;
+    color: #e03131;
+}
+
+/* Screen Layout Constraint Check for Smaller Mobile Windows */
+@media (max-width: 768px) {
+    .vinttro-global-account-node {
+        top: 10px;
+        right: 70px; /* Shifts layout inward on viewports to avoid colliding with mobmenu right sliders */
+    }
+}

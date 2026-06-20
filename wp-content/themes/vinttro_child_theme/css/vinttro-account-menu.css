@@ -1,31 +1,33 @@
 /* ==========================================================================
-   VINTTRO Dynamic Account Dropdown UI Frame - Layering Fix
+   VINTTRO Nav-Bar Nested Profile Dropdown Layout Frame
    ========================================================================== */
 
+/* The outer positioning node container */
 .vinttro-global-account-node {
-    position: fixed;
-    top: 6px;         /* Maintained vertical center alignment */
-    right: 120px;     /* Updated: Shifted left by about its own width to clear menu conflicts */
-    z-index: 300000;  /* Forces overlay precedence */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important; /* Locks vertical alignment axis exactly into row centers */
+    right: 65px !important;                 /* Anchors exactly 65px left of the standard burger toggle line */
+    z-index: 999999 !important;
+    display: inline-block;
 }
 
-/* Rounded Avatar Housing Trigger Button */
+/* Rounded Avatar Ring */
 .vinttro-avatar-trigger-btn {
     background: none;
-    border: 2px solid #C5A059; /* VINTTRO Premium Gold Accent */
+    border: 2px solid #C5A059; /* VINTTRO Primary Gold Accent */
     padding: 0;
     margin: 0;
     cursor: pointer;
     border-radius: 50%;
-    width: 36px;      /* Streamlined diameter for exact proportion scaling */
+    width: 36px;
     height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .vinttro-avatar-trigger-btn:hover {
@@ -39,11 +41,11 @@
     object-fit: cover;
 }
 
-/* Card Menu Block Styling */
+/* Card Menu Block Drops directly below the button */
 .vinttro-account-dropdown {
     position: absolute;
-    top: 45px;
-    right: -55px;     /* Aligns popup panel beneath the avatar button area */
+    top: 44px;
+    right: -15px; /* Keeps card panel crisp and uniform against edge layers */
     width: 230px;
     background: #ffffff;
     border: 1px solid #eef2f5;
@@ -53,18 +55,17 @@
     display: none; 
     opacity: 0;
     transform: translateY(-8px);
-    transition: opacity 0.25s ease, transform 0.25s ease;
-    z-index: 310000;  /* Ensure panel contents hover dynamically over all elements */
+    transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-/* JavaScript Trigger Hook Injection */
+/* JavaScript Menu Visibility Action Override */
 .vinttro-account-dropdown.vinttro-menu-active {
     display: block !important;
     opacity: 1 !important;
     transform: translateY(0) !important;
 }
 
-/* Card Header Information Metadata Layout */
+/* Card Information Subtext Typography */
 .vinttro-dropdown-identity-block {
     display: flex;
     flex-direction: column;
@@ -79,7 +80,7 @@
 }
 
 .vinttro-user-name {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: #1a1a1a;
     margin-top: 0.1rem;
@@ -93,7 +94,7 @@
 }
 
 .vinttro-dropdown-actions-list li {
-    margin: 0.25rem 0 !important;
+    margin: 0.15rem 0 !important;
     padding: 0 !important;
 }
 
@@ -101,8 +102,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0.6rem 0.5rem;
-    font-size: 0.9rem;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.88rem;
     font-weight: 500;
     color: #495057;
     text-decoration: none !important;
@@ -115,23 +116,16 @@
     color: #C5A059;
 }
 
-/* Custom Isolation Rules for the Logout Trigger */
+/* Clear Exit Actions Selection Isolation Row */
 .vinttro-dropdown-actions-list li.vinttro-logout-item a {
     color: #c92a2a;
+    border-top: 1px solid #f1f3f5;
+    border-radius: 0;
+    margin-top: 0.4rem;
+    padding-top: 0.75rem;
 }
 
 .vinttro-dropdown-actions-list li.vinttro-logout-item a:hover {
     background-color: #fff5f5;
     color: #e03131;
-}
-
-/* Screen Layout Constraint Check for Desktop Layouts */
-@media (min-width: 769px) {
-    .vinttro-global-account-node {
-        top: 14px;
-        right: 25px;   /* Clean alignment line alongside desktop navigation grids */
-    }
-    .vinttro-account-dropdown {
-        right: 0;      /* Flush right card presentation array fallback */
-    }
 }

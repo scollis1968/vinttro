@@ -4,9 +4,9 @@
 
 .vinttro-global-account-node {
     position: fixed;
-    top: 6px;         /* Calibrated vertical center align inside standard mobile bars */
-    right: 75px;      /* Maintained horizontal spacing clearance away from burger lines */
-    z-index: 300000;  /* Elevated past the mobile menu wrapper layers to force overlay */
+    top: 6px;         /* Maintained vertical center alignment */
+    right: 120px;     /* Updated: Shifted left by about its own width to clear menu conflicts */
+    z-index: 300000;  /* Forces overlay precedence */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 

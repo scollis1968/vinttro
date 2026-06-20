@@ -1,16 +1,16 @@
 /* ==========================================================================
-   VINTTRO Dynamic Account Dropdown UI Frame - Calibration Patch
+   VINTTRO Dynamic Account Dropdown UI Frame - Layering Fix
    ========================================================================== */
 
 .vinttro-global-account-node {
     position: fixed;
-    top: 5px;       /* Perfectly balances the vertical rhythm inside the mobile bar */
-    right: 75px;    /* Shifts the avatar safely to the left of the burger button */
-    z-index: 9990;  /* Sits inside the bar wrapper layer without blocking slides */
+    top: 6px;         /* Calibrated vertical center align inside standard mobile bars */
+    right: 75px;      /* Maintained horizontal spacing clearance away from burger lines */
+    z-index: 300000;  /* Elevated past the mobile menu wrapper layers to force overlay */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Rounded Avatar Ring */
+/* Rounded Avatar Housing Trigger Button */
 .vinttro-avatar-trigger-btn {
     background: none;
     border: 2px solid #C5A059; /* VINTTRO Premium Gold Accent */
@@ -18,18 +18,18 @@
     margin: 0;
     cursor: pointer;
     border-radius: 50%;
-    width: 38px;    /* Streamlined slightly to fit seamlessly into the header bar */
-    height: 38px;
+    width: 36px;      /* Streamlined diameter for exact proportion scaling */
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .vinttro-avatar-trigger-btn:hover {
-    transform: scale(1.06);
+    transform: scale(1.05);
     border-color: #ffffff;
 }
 
@@ -42,8 +42,8 @@
 /* Card Menu Block Styling */
 .vinttro-account-dropdown {
     position: absolute;
-    top: 48px;
-    right: -55px;   /* Centers the dropdown menu safely under the shifted avatar icon */
+    top: 45px;
+    right: -55px;     /* Aligns popup panel beneath the avatar button area */
     width: 230px;
     background: #ffffff;
     border: 1px solid #eef2f5;
@@ -54,7 +54,7 @@
     opacity: 0;
     transform: translateY(-8px);
     transition: opacity 0.25s ease, transform 0.25s ease;
-    z-index: 1000000; /* Pushes the dropdown panel to the top when explicitly opened */
+    z-index: 310000;  /* Ensure panel contents hover dynamically over all elements */
 }
 
 /* JavaScript Trigger Hook Injection */
@@ -129,9 +129,9 @@
 @media (min-width: 769px) {
     .vinttro-global-account-node {
         top: 14px;
-        right: 25px; /* Moves it back into a standard crisp alignment line when full header displays */
+        right: 25px;   /* Clean alignment line alongside desktop navigation grids */
     }
     .vinttro-account-dropdown {
-        right: 0;   /* Restores flush right layout border alignment on desktops */
+        right: 0;      /* Flush right card presentation array fallback */
     }
 }

@@ -396,3 +396,111 @@ add_shortcode( 'vinttro_search', function() {
 if ( file_exists( get_stylesheet_directory() . '/inc/twilio-rtc.php' ) ) {
     require_once get_stylesheet_directory() . '/inc/twilio-rtc.php';
 }
+
+
+/**
+ * Conditionally enqueue the account profile dropdown styles for logged-in members only.
+ */
+function vinttro_enqueue_account_menu_styles() {
+    
+    // Performance Guard: If the visitor is a guest, do not load this file
+    if ( is_user_logged_in() ) {
+        wp_enqueue_style(
+            'vinttro-account-menu-styles',
+            get_stylesheet_directory_uri() . '/css/vinttro-account-menu.css',
+            array(),          // Dependencies
+            '1.0.0',          // Version control number for cache busting
+            'all'             // Media target spectrum
+        );
+    }
+}
+add_action( 'wp_enqueue_scripts', 'vinttro_enqueue_account_menu_styles' );
+
+
+/**
+ * Dynamic VINTTRO Pinned Header Profile Dropdown Array
+ */
+function vinttro_render_account_avatar_menu() {
+    // Break early if the visitor is an unauthenticated guest
+    if ( ! is_user_logged_in() ) {
+        return;
+    }
+
+    $current_user = wp_get_current_user();
+    // Pull high-res 45px display picture matching user identity
+    $avatar_url   = get_avatar_url( $current_user->ID, array( 'size' => 45 ) );
+    
+    // System Endpoint URL Mapping
+    $settings_page_url = home_url( '/visp/dashboard/' ); // Tweak this slug line to point to your exact profile page
+    $account_logout_url = wp_logout_url( home_url() );   // Safe routing bounce-back to home node post-logout
+    ?>
+    
+    <div class="vinttro-global-account-node">
+        <button class="vinttro-avatar-trigger-btn" aria-label="Toggle Account Submenu" aria-expanded="false">
+            <img src="<?php echo esc_url( $avatar_url ); ?>" alt="User Avatar" class="vinttro-avatar-img">
+        </button>
+        
+        <div class="vinttro-account-dropdown" aria-hidden="true">
+            <div class="vinttro-dropdown-identity-block">
+                <span class="vinttro-user-greeting">Welcome back,</span>
+                <span class="vinttro-user-name"><?php echo esc_html( $current_user->display_name ); ?></span>
+            </div>
+            
+            <ul class="vinttro-dropdown-actions-list">
+                <li>
+                    <a href="<?php echo esc_url( $settings_page_url ); ?>">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        Profile Settings
+                    </a>
+                </li>
+                <li class="vinttro-logout-item">
+                    <a href="<?php echo esc_url( $account_logout_url ); ?>">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        Log Out
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        const trigger = document.querySelector('.vinttro-avatar-trigger-btn');
+        const dropdown = document.querySelector('.vinttro-account-dropdown');
+        
+        if (!trigger || !dropdown) return;
+
+        function toggleMenu(e) {
+            e.stopPropagation();
+            const isOpen = dropdown.classList.toggle('vinttro-menu-active');
+            trigger.setAttribute('aria-expanded', isOpen);
+            dropdown.setAttribute('aria-hidden', !isOpen);
+        }
+
+        function closeMenu() {
+            dropdown.classList.remove('vinttro-menu-active');
+            trigger.setAttribute('aria-expanded', 'false');
+            dropdown.setAttribute('aria-hidden', 'true');
+        }
+
+        trigger.addEventListener('click', toggleMenu);
+        
+        // Contextual click monitoring: Close box instantly if clicked outside target viewport radius
+        document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target) && !trigger.contains(e.target)) {
+                closeMenu();
+            }
+        });
+
+        // Accessibility patch: Close overlay using standard Escape key tracking
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') { closeMenu(); }
+        });
+    });
+    </script>
+    
+    <?php
+}
+// Inject elements cleanly before standard document wrapper final rendering termination passes
+add_action( 'wp_footer', 'vinttro_render_account_avatar_menu' );
+

@@ -239,4 +239,41 @@
     margin-left: auto;
     color: #999;
     font-size: 0.75rem;
+}/* ==========================================================================
+   VINTTRO Dashboard spacing & layout management
+   ========================================================================== */
+
+/* 1. Eliminate Top Dead Space Injected by Gutenberg Preset Blocks */
+body.page-template-vinttro-visp-template main#wp--skip-link--target {
+    margin-top: 1.5rem !important; /* Overrides the massive native --wp--preset--spacing--60 margin */
+}
+
+body.page-template-vinttro-visp-template .wp-site-blocks > .wp-block-group:first-child {
+    padding-top: 1rem !important; /* Compresses top gap around the black header logo element */
+}
+
+/* 2. Contain the Fleet Table Spillage */
+.vinttro-admin-dashboard-view .fleet-container {
+    width: 100%;
+    overflow-x: auto;              /* Creates an elegant interior swipe scroll wrapper on small viewports */
+    -webkit-overflow-scrolling: touch; /* Ensures smooth touch responsiveness on iOS screens */
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #eef2f5;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+/* 3. Keep Table Text Crisp and Readable */
+.vinttro-admin-dashboard-view .fleet-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 750px; /* Prevents columns from smashing into tiny unreadable vertical strips on phone viewports */
+}
+
+.vinttro-admin-dashboard-view .fleet-table th,
+.vinttro-admin-dashboard-view .fleet-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    white-space: nowrap; /* Prevents long vehicle names or dates from wrapping awkwardly */
 }

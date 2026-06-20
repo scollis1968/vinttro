@@ -63,6 +63,18 @@ function vinttro_enqueue_tml_styles() {
 }
 add_action( 'wp_enqueue_scripts', 'vinttro_enqueue_tml_styles' );
 
+/**
+ * Clean up the Theme My Login username input field text string.
+ */
+function vinttro_filter_tml_labels( $translated_text, $text, $domain ) {
+    if ( 'Username or Email Address' === $text ) {
+        $translated_text = 'Username';
+    }
+    return $translated_text;
+}
+add_filter( 'gettext', 'vinttro_filter_tml_labels', 20, 3 );
+
+
 // 2. SUITECRM V8 API INTEGRATION
 add_action('user_register', 'suitecrm_store_user_id_after_registration', 10, 1);
 function suitecrm_store_user_id_after_registration($user_id) {

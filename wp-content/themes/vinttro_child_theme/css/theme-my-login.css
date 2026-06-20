@@ -81,7 +81,7 @@
     font-size: 1rem;
     font-weight: 600;
     color: #ffffff;
-    background-color: #1a1a1a; /* Swap with your primary brand color */
+    background-color: #916D1C; /* Swap with your primary brand color */
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -90,7 +90,7 @@
 }
 
 .tml-login button.tml-button:hover {
-    background-color: #333333; /* Darker shade for hover state */
+    background-color: #B5924B; /* Darker shade for hover state */
 }
 
 .tml-login button.tml-button:active {
@@ -133,4 +133,13 @@
     border-radius: 4px;
     margin-bottom: 1.5rem;
     font-size: 0.9rem;
+}
+/* Inject micro-copy help text directly below the username input field */
+.tml-login .tml-log-wrap::after {
+    content: "You can also log in with your registered email address.";
+    font-size: 0.8rem;
+    color: #8a8a8a;
+    margin-top: 0.45rem;
+    font-weight: 400;
+    line-height: 1.3;
 }

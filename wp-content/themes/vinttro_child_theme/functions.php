@@ -26,6 +26,43 @@ add_action( 'wp_enqueue_scripts', function() {
     }
 }, 20 );
 
+/**
+ * Conditionally enqueue Theme My Login custom styles only when needed.
+ */
+function vinttro_enqueue_tml_styles() {
+    
+    // 1. Check if the current page contains the TML shortcode
+    $has_tml_shortcode = false;
+    if ( is_singular() ) {
+        $post = get_post();
+        if ( $post && has_shortcode( $post->post_content, 'theme-my-login' ) ) {
+            $has_tml_shortcode = true;
+        }
+    }
+
+    // 2. Check if the page matches your standard TML page slugs 
+    // (Adjust these slugs if you renamed them in your TML settings)
+    $is_tml_page = is_page( array( 'login', 'register', 'lostpassword', 'reset-password' ) );
+
+    // 3. Check if the native TML action is actively firing
+    $is_tml_action = false;
+    if ( function_exists( 'tml_get_action' ) && tml_get_action() ) {
+        $is_tml_action = true;
+    }
+
+    // If any of our safety checks pass, safely load the standalone stylesheet
+    if ( $has_tml_shortcode || $is_tml_page || $is_tml_action ) {
+        wp_enqueue_style(
+            'vinttro-tml-custom-styles',
+            get_stylesheet_directory_uri() . '/css/theme-my-login.css',
+            array(),          // Dependencies (Leave empty unless you want it to load strictly after another file)
+            '1.0.0',          // Version number (Change this to bust browser cache when making changes)
+            'all'             // Media type
+        );
+    }
+}
+add_action( 'wp_enqueue_scripts', 'vinttro_enqueue_tml_styles' );
+
 // 2. SUITECRM V8 API INTEGRATION
 add_action('user_register', 'suitecrm_store_user_id_after_registration', 10, 1);
 function suitecrm_store_user_id_after_registration($user_id) {

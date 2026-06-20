@@ -1,12 +1,12 @@
 /* ==========================================================================
-   VINTTRO Dynamic Account Dropdown UI Frame
+   VINTTRO Dynamic Account Dropdown UI Frame - Calibration Patch
    ========================================================================== */
 
 .vinttro-global-account-node {
     position: fixed;
-    top: 14px;
-    right: 20px; /* Adjust coordinate if you need to slide it alongside your mobile trigger row */
-    z-index: 999999; /* Higher layer index to sit cleanly over header elements */
+    top: 5px;       /* Perfectly balances the vertical rhythm inside the mobile bar */
+    right: 75px;    /* Shifts the avatar safely to the left of the burger button */
+    z-index: 9990;  /* Sits inside the bar wrapper layer without blocking slides */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -18,13 +18,13 @@
     margin: 0;
     cursor: pointer;
     border-radius: 50%;
-    width: 44px;
-    height: 44px;
+    width: 38px;    /* Streamlined slightly to fit seamlessly into the header bar */
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -42,18 +42,19 @@
 /* Card Menu Block Styling */
 .vinttro-account-dropdown {
     position: absolute;
-    top: 55px;
-    right: 0;
+    top: 48px;
+    right: -55px;   /* Centers the dropdown menu safely under the shifted avatar icon */
     width: 230px;
     background: #ffffff;
     border: 1px solid #eef2f5;
     border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     padding: 1.25rem;
-    display: none; /* Controlled natively by the active toggle state */
+    display: none; 
     opacity: 0;
     transform: translateY(-8px);
     transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 1000000; /* Pushes the dropdown panel to the top when explicitly opened */
 }
 
 /* JavaScript Trigger Hook Injection */
@@ -84,12 +85,6 @@
     margin-top: 0.1rem;
 }
 
-.vinttro-account-dropdown hr {
-    border: 0;
-    border-top: 1px solid #f1f3f5;
-    margin: 0.5rem 0;
-}
-
 /* Menu Control Links Structuring */
 .vinttro-dropdown-actions-list {
     list-style: none !important;
@@ -116,11 +111,11 @@
 }
 
 .vinttro-dropdown-actions-list li a:hover {
-    background-color: #faf7f2; /* Ultra soft gold-tint wash profile */
+    background-color: #faf7f2; 
     color: #C5A059;
 }
 
-/* Clean Custom Isolation Rules for the Logout Selection Trigger */
+/* Custom Isolation Rules for the Logout Trigger */
 .vinttro-dropdown-actions-list li.vinttro-logout-item a {
     color: #c92a2a;
 }
@@ -130,10 +125,13 @@
     color: #e03131;
 }
 
-/* Screen Layout Constraint Check for Smaller Mobile Windows */
-@media (max-width: 768px) {
+/* Screen Layout Constraint Check for Desktop Layouts */
+@media (min-width: 769px) {
     .vinttro-global-account-node {
-        top: 10px;
-        right: 70px; /* Shifts layout inward on viewports to avoid colliding with mobmenu right sliders */
+        top: 14px;
+        right: 25px; /* Moves it back into a standard crisp alignment line when full header displays */
+    }
+    .vinttro-account-dropdown {
+        right: 0;   /* Restores flush right layout border alignment on desktops */
     }
 }

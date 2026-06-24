@@ -11,7 +11,8 @@ class WPSyncHook {
     }
 
     public function syncVehicleHook($vehicleBean, $event, $arguments) {
-        VinttroLogger::fatal("[syncVehicleHook] triggered for Vehicle ID:: $vehicleId");
+        // FIX: Fixed undefined variable reference
+        VinttroLogger::fatal("[syncVehicleHook] triggered for Vehicle ID:: " . $vehicleBean->id);
         $rel_name = 'visp_vehicle_contacts'; 
 
         if ($vehicleBean->load_relationship($rel_name)) {
@@ -47,7 +48,8 @@ class WPSyncHook {
     }
 
     public function syncToWordpress($bean, $event, $arguments) {
-        VinttroLogger::fatal("[syncToWordpress] triggered for Contact ID:: $contactId");
+        // FIX: Fixed undefined variable reference
+        VinttroLogger::fatal("[syncToWordpress] triggered for Contact ID:: " . $bean->id);
 
         if (empty($bean->portal_active_c)) {
             return;
@@ -82,11 +84,10 @@ class WPSyncHook {
         $this->callWPAPI($payload);
     }
 
-        public function syncVehicleFleetUpdate($vehicleBean, $event, $arguments) {
-
+    public function syncVehicleFleetUpdate($vehicleBean, $event, $arguments) {
         static $hasRun = false;
 
-         VinttroLogger::fatal("[syncVehicleFleetUpdate] [START] ID: " . $vehicleBean->id);
+        VinttroLogger::fatal("[syncVehicleFleetUpdate] [START] ID: " . $vehicleBean->id);
 
         if ($hasRun) {
             VinttroLogger::fatal("[syncVehicleFleetUpdate] [EXITING] Already processed in this request.");
@@ -95,8 +96,6 @@ class WPSyncHook {
 
         $hasRun = true;
         VinttroLogger::fatal("[syncVehicleFleetUpdate] [SETTING FLAG] Running primary logic...");
-
-        // Now your logic proceeds
         VinttroLogger::fatal("[syncVehicleFleetUpdate] [STEP 1] Loading fleet relationship...");
         
         $rel_vehicle_fleet = 'visp_fleet_visp_vehicle';
@@ -145,21 +144,17 @@ class WPSyncHook {
                     'date_ins_renewal'       => $vehicle->date_ins_renewal,
                     'outstanding_issues'     => $this->getVehicleIssues($vehicle)
                 ];
-                // --- NEW LOGIC: Fetch Main Driver ---
-                // --- UPDATED LOGIC: Using Relate Field ---
+                
                 $data['main_driver'] = 'Unassigned';
                 $data['main_driver_phone'] = '';
                 $data['main_driver_email'] = '';
                 
-
-                // Replace 'main_driver_c' with the actual field name found in Studio
                 $contact_id = $vehicle->contact_id_c ?? null; 
 
                 if (!empty($contact_id)) {
                     $contact = BeanFactory::getBean('Contacts', $contact_id);
                     if ($contact && !empty($contact->id)) {
                         $data['main_driver'] = trim($contact->first_name . ' ' . $contact->last_name);
-                        // Check mobile, then work
                         $data['main_driver_phone'] = $contact->phone_mobile ?: ($contact->phone_work ?: '');
                         $data['main_driver_email'] = $contact->email1 ?? '';
                     }
@@ -181,6 +176,9 @@ class WPSyncHook {
         if ($fleetBean->load_relationship($rel_fleet_memberships)) {
             $memberships = $fleetBean->$rel_fleet_memberships->getBeans();
             VinttroLogger::fatal("[distributeToFleetAdmins] 🟢 SUCCESS: Found " . count($memberships) . " total personnel records.");
+
+            // OPTIMIZATION: Keep track of processed emails to prevent multi-admin duplicated API bursts
+            $processedEmails = [];
 
             foreach ($memberships as $membership) {
                 if (!empty($membership->is_fleetadmin) && ($membership->is_fleetadmin == '1' || $membership->is_fleetadmin == 1 || $membership->is_fleetadmin === true)) {
@@ -209,23 +207,31 @@ class WPSyncHook {
                         $contact = reset($contacts); 
 
                         if ($contact && !empty($contact->email1)) {
-                            VinttroLogger::fatal("[distributeToFleetAdmins] 🚀 DISPATCHING API: Targeting Admin Email: " . $contact->email1 . "\n");
+                            $email = trim($contact->email1);
+
+                            // OPTIMIZATION: If we already messaged this email in this execution slice, skip it!
+                            if (in_array($email, $processedEmails)) {
+                                VinttroLogger::fatal("[distributeToFleetAdmins] Skipping duplicate admin communications path for: " . $email);
+                                continue;
+                            }
+                            $processedEmails[] = $email;
+
+                            VinttroLogger::fatal("[distributeToFleetAdmins] 🚀 DISPATCHING API: Targeting Admin Email: " . $email . "\n");
 
                             $wpPayload = [
-                                'email'             => $contact->email1,
+                                'email'             => $email,
                                 'first_name'        => $contact->first_name,
                                 'last_name'         => $contact->last_name,
                                 'membership_status' => $contact->membership_status_c ?? 'Active',
                                 'fleets'            => [$fleetPayload]
                             ];
 
-                            // 🛠️ TRAP RESPONSE: Execute API call and capture metrics inside the loop context
                             $result = $this->callWPAPI($wpPayload);
 
                             if ($result['success']) {
-                                VinttroLogger::fatal("[distributeToFleetAdmins] ✅ DISPATCH SUCCESS for: " . $contact->email1 . " | Response Code: " . $result['http_code'] . "\n");
+                                VinttroLogger::fatal("[distributeToFleetAdmins] ✅ DISPATCH SUCCESS for: " . $email . " | Response Code: " . $result['http_code'] . "\n");
                             } else {
-                                VinttroLogger::fatal("[distributeToFleetAdmins] ❌ DISPATCH CRITICAL FAILURE for: " . $contact->email1 . " | HTTP Code: " . $result['http_code'] . " | Response Msg: " . $result['response'] . " | Error: " . $result['error'] . "\n");
+                                VinttroLogger::fatal("[distributeToFleetAdmins] ❌ DISPATCH CRITICAL FAILURE for: " . $email . " | HTTP Code: " . $result['http_code'] . " | Response Msg: " . $result['response'] . " | Error: " . $result['error'] . "\n");
                             }
                         } else {
                             VinttroLogger::fatal("[distributeToFleetAdmins] ⚠️ WARNING: Contact found but Email field (email1) is blank.\n");
@@ -234,7 +240,7 @@ class WPSyncHook {
                         VinttroLogger::fatal("[distributeToFleetAdmins] ❌ FAILED: Could not load link field '$rel_membership_contact' on Membership bean.\n");
                     }
                 } else {
-                    VinttroLogger::fatal("[distributeToFleetAdmins]        skipping: User [" . $membership->name . "] is not marked as a Fleet Admin.\n");
+                    VinttroLogger::fatal("[distributeToFleetAdmins]         skipping: User [" . $membership->name . "] is not marked as a Fleet Admin.\n");
                 }
             }
         } else {
@@ -250,10 +256,6 @@ class WPSyncHook {
         if ($vehicleBean->load_relationship($rel_vehicle_issues)) {
             $issues = $vehicleBean->$rel_vehicle_issues->getBeans();
             foreach ($issues as $issue) {
-                
-                // Only add the issue if it has NOT been resolved
-                // Adjust this condition if your CRM uses a different indicator for 'resolved' 
-                // (e.g., status == 'Closed' or status == 'Resolved')
                 if (empty($issue->date_resolved)) {
                     $issuesData[] = [
                         'id'                  => $issue->id,
@@ -275,21 +277,17 @@ class WPSyncHook {
         return "https://vinttro.co.uk/wp-content/uploads/placeholder-car.png";
     }
 
-    // Placeholders to retain structural integrity of your sync mapping execution
     private function getIndividualGarage($contactBean) { return []; }
     private function getRelatedFleets($contactBean) { return []; }
 
     /**
-     * Diagnostic API Processor
-     * Returns execution stats array instead of returning void
+     * Diagnostic API Processor with Optimized Real-time HTTP Timeouts
      */
     private function callWPAPI($payload) {
-        // 1. Parse Env Variables
         $url = $_ENV['WP_API_URL'] ?? getenv('WP_API_URL') ?? null;
         $username = $_ENV['WP_API_USERNAME'] ?? getenv('WP_API_USERNAME') ?? null;
         $app_password = $_ENV['WP_API_APP_PASSWORD'] ?? getenv('WP_API_APP_PASSWORD') ?? null;
 
-        // 2. Fallback to Legacy configuration if Env variables are dropped by framework bridge
         global $sugar_config;
         if (!$username || !$app_password) {
             $username = $sugar_config['wp_api']['username'] ?? '';
@@ -299,7 +297,6 @@ class WPSyncHook {
             $url = $sugar_config['wp_api']['url'] ?? '';
         }
 
-        // 🛡️ CRITICAL ERROR TRAPPING: Halt safely if variables are blank
         if (empty($url) || empty($username) || empty($app_password)) {
             $error_details = "Missing components -> URL: " . ($url ? 'OK' : 'EMPTY') . " | User: " . ($username ? 'OK' : 'EMPTY') . " | Pass: " . ($app_password ? 'OK' : 'EMPTY');
             return [
@@ -317,8 +314,10 @@ class WPSyncHook {
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); 
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);        
+        
+        // OPTIMIZATION: Drastically cut down timeouts so slow network routes can't freeze the CRM front-end
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2); 
+        curl_setopt($ch, CURLOPT_TIMEOUT, 4);        
 
         $ch_headers = [
             'Content-Type: application/json',

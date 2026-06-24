@@ -23,7 +23,19 @@ class VehicleCheckHook
         if (!empty($vehicleId)) {
             $GLOBALS['log']->fatal("VCHook DBG: beforeSave running for existing link. Vehicle ID: $vehicleId");
             $vehicle = BeanFactory::getBean('visp_vehicle', $vehicleId);
+            
             $this->runSyncLogic($bean, $vehicle);
+
+            // FIX 2: Actually save the vehicle changes in beforeSave context
+            try {
+                self::$preventRecursion = true;
+                $vehicle->save();
+                $GLOBALS['log']->fatal("VCHook DBG: beforeSave successfully synced and saved vehicle.");
+            } catch (Exception $e) {
+                $GLOBALS['log']->fatal("VCHook DBG: Save exception in beforeSave vehicle save: " . $e->getMessage());
+            } finally {
+                self::$preventRecursion = false;
+            }
         }
     }
 
@@ -32,7 +44,6 @@ class VehicleCheckHook
     {
         if (self::$preventRecursion) return;
 
-        // Ensure we are working with the correct relationship link layout
         if (isset($arguments['link']) && $arguments['link'] === 'visp_vehicle_visp_vehicle_check') {
             $vehicleId = '';
             $checkId = '';
@@ -54,7 +65,6 @@ class VehicleCheckHook
                 if (!empty($checkBean) && !empty($vehicleBean)) {
                     $this->runSyncLogic($checkBean, $vehicleBean);
                     
-                    // Since this runs AFTER the check bean save, we manually save changes made to both records.
                     try {
                         self::$preventRecursion = true;
                         $checkBean->save();
@@ -70,13 +80,17 @@ class VehicleCheckHook
         }
     }
 
-    // CORE AUTOMATION ENGINE: Contains your mathematical calculations and naming logic
+    // CORE AUTOMATION ENGINE
     private function runSyncLogic($bean, $vehicle)
     {
-        // 1. Automatically populate the name of the check record
+        $timedate = TimeDate::getInstance();
+
+        // 1. Automatically populate the name of the check record safely
         if (!empty($bean->date_of_check)) {
-            $checkDate = new DateTime($bean->date_of_check);
-            $bean->name = (!empty($vehicle->name) ? $vehicle->name : "Vehicle") . ' - ' . $checkDate->format('Y-m-d');
+            $normalizedCheckDate = $timedate->to_db_date($bean->date_of_check, false);
+            if ($normalizedCheckDate) {
+                $bean->name = (!empty($vehicle->name) ? $vehicle->name : "Vehicle") . ' - ' . $normalizedCheckDate;
+            }
         }
 
         $getVField = function($fieldName) use ($vehicle) {
@@ -102,15 +116,19 @@ class VehicleCheckHook
         $newCheckMileage = (float)$bean->mileage;
         $newCheckDate = $bean->date_of_check;
 
+        // FIX 1: Normalize both dates into YYYY-MM-DD string format before comparing alphabetically
+        $newCheckDateDb = $timedate->to_db_date($newCheckDate, false);
+        $currentVehicleDateDb = $timedate->to_db_date($currentVehicleDate, false);
+
         $shouldUpdateVehicle = false;
-        if ($newCheckMileage > 0) {
-            if (empty($currentVehicleDate) || strpos($currentVehicleDate, '0000-00-00') !== false || $newCheckDate >= $currentVehicleDate) {
+        if ($newCheckMileage > 0 && !empty($newCheckDateDb)) {
+            if (empty($currentVehicleDateDb) || strpos($currentVehicleDateDb, '0000-00-00') !== false || $newCheckDateDb >= $currentVehicleDateDb) {
                 $shouldUpdateVehicle = true;
             }
         }
 
         if ($shouldUpdateVehicle) {
-            $setVField('date_last_check', $newCheckDate);
+            $setVField('date_last_check', $newCheckDateDb);
             $setVField('mileage_last_check', $newCheckMileage);
 
             try {
@@ -119,8 +137,10 @@ class VehicleCheckHook
                 $vMileageLastService = $getVField('mileage_last_service');
                 $vServiceIntervalMiles = $getVField('service_interval_miles');
 
-                if (!empty($vDateLastService) && strpos($vDateLastService, '0000-00-00') === false) {
-                    $dateLastService = new DateTime($vDateLastService);
+                $vDateLastServiceDb = $timedate->to_db_date($vDateLastService, false);
+
+                if (!empty($vDateLastServiceDb) && strpos($vDateLastServiceDb, '0000-00-00') === false) {
+                    $dateLastService = new DateTime($vDateLastServiceDb);
                     $optionA = null; 
                     $optionB = null;
 
@@ -130,8 +150,8 @@ class VehicleCheckHook
                         $optionA->modify("+$months months");
                     }
 
-                    if (!empty($newCheckDate) && !empty($vMileageLastService)) {
-                        $dateOfCheck = new DateTime($newCheckDate);
+                    if (!empty($newCheckDateDb) && !empty($vMileageLastService)) {
+                        $dateOfCheck = new DateTime($newCheckDateDb);
                         $milesDriven = $newCheckMileage - (float)$vMileageLastService;
                         $daysElapsed = $dateLastService->diff($dateOfCheck)->days;
                         if ($dateOfCheck < $dateLastService) { $daysElapsed = -$daysElapsed; }

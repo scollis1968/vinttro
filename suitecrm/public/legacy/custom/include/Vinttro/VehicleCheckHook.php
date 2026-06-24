@@ -128,7 +128,9 @@ class VehicleCheckHook
                 $shouldUpdateVehicle = true;
             }
         }
-
+        
+        VinttroLogger::fatal("VCHook DBG : shouldUpdateVehicle = " . ($shouldUpdateVehicle ? 'true' : 'false') . ", newCheckDateDb = $newCheckDateDb, currentVehicleDateDb = $currentVehicleDateDb, newCheckMileage = $newCheckMileage");
+        
         if ($shouldUpdateVehicle) {
             $setVField('date_last_check', $newCheckDateDb);
             $setVField('mileage_last_check', $newCheckMileage);

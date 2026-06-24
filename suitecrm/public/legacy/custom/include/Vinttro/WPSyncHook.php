@@ -5,26 +5,26 @@ if (!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 class WPSyncHook {
     
     // Global log file location for total tracking consistency
-    private $logFile = '/tmp/vinttro_ladder_debug.log';
+    // Require the logger utility
+    require_once 'custom/include/Vinttro/VinttroLogger.php';
 
     public function syncContactHook($bean, $event, $arguments) {
         $this->executeSyncForContact($bean);
     }
 
     public function syncVehicleHook($vehicleBean, $event, $arguments) {
-        file_put_contents($this->logFile, date('Y-m-d H:i:s') . " - [syncVehicleHook] triggered for Vehicle ID: " . $vehicleBean->id . "\n", FILE_APPEND);
-        
+        VinttroLogger::fatal("[syncVehicleHook] triggered for Vehicle ID:: $vehicleId");
         $rel_name = 'visp_vehicle_contacts'; 
 
         if ($vehicleBean->load_relationship($rel_name)) {
             $relatedContacts = $vehicleBean->$rel_name->getBeans();
-            file_put_contents($this->logFile, "   - [syncVehicleHook] Found " . count($relatedContacts) . " direct contacts linked to vehicle.\n", FILE_APPEND);
+            VinttroLogger::fatal("[syncVehicleHook] Found " . count($relatedContacts) . " direct contacts linked to vehicle.");
 
             foreach ($relatedContacts as $contact) {
                 $this->executeSyncForContact($contact);
             }
         } else {
-            file_put_contents($this->logFile, "   - [syncVehicleHook] ❌ Failed loading direct contact relationship '$rel_name'\n", FILE_APPEND);
+            VinttroLogger::fatal("[syncVehicleHook] ❌ Failed loading direct contact relationship '$rel_name'");
         }
     }
 
@@ -49,8 +49,8 @@ class WPSyncHook {
     }
 
     public function syncToWordpress($bean, $event, $arguments) {
-        file_put_contents($this->logFile, date('Y-m-d H:i:s') . " - syncToWordPress 1 triggered\n", FILE_APPEND);
-        
+        VinttroLogger::fatal("[syncToWordpress] triggered for Contact ID:: $contactId");
+
         if (empty($bean->portal_active_c)) {
             return;
         }
@@ -106,20 +106,20 @@ class WPSyncHook {
 
         if ($vehicleBean->load_relationship($rel_vehicle_fleet)) {
             $relatedFleets = $vehicleBean->$rel_vehicle_fleet->getBeans();
-            file_put_contents($this->logFile, "   🟢 SUCCESS: Found " . count($relatedFleets) . " linked fleet(s).\n", FILE_APPEND);
+            VinttroLogger::fatal("[syncVehicleFleetUpdate] Found " . count($relatedFleets) . " linked fleet(s).");
             
             foreach ($relatedFleets as $fleet) {
-                file_put_contents($this->logFile, "   -> Processing Fleet: ID: " . $fleet->id . " | Name: " . $fleet->name . "\n", FILE_APPEND);
+                VinttroLogger::fatal("[syncVehicleFleetUpdate] Processing Fleet: ID: " . $fleet->id . " | Name: " . $fleet->name);
                 $fleetPayload = $this->compileFleetDataStructure($fleet);
                 $this->distributeToFleetAdmins($fleet, $fleetPayload);
             }
         } else {
-            file_put_contents($this->logFile, "   ❌ FAILED: Could not load link '$rel_vehicle_fleet' on Vehicle bean.\n", FILE_APPEND);
+            VinttroLogger::fatal("[syncVehicleFleetUpdate] ❌ FAILED: Could not load link '$rel_vehicle_fleet' on Vehicle bean.");
         }
     }
 
     private function compileFleetDataStructure($fleetBean) {
-        file_put_contents($this->logFile, " - [STEP 2] Compiling data structure for Fleet: " . $fleetBean->name . "\n", FILE_APPEND);
+        VinttroLogger::fatal("[compileFleetDataStructure] Compiling data structure for Fleet: " . $fleetBean->name);
 
         $fleetStructure = [
             'name'     => $fleetBean->name,
@@ -130,8 +130,8 @@ class WPSyncHook {
         
         if ($fleetBean->load_relationship($rel_fleet_vehicles)) {
             $vehicles = $fleetBean->$rel_fleet_vehicles->getBeans();
-            file_put_contents($this->logFile, "     🟢 SUCCESS: Found " . count($vehicles) . " vehicle(s) inside this fleet.\n", FILE_APPEND);
-            
+            VinttroLogger::fatal("[compileFleetDataStructure] 🟢 SUCCESS: Found " . count($vehicles) . " vehicle(s) inside this fleet.");
+
             foreach ($vehicles as $vehicle) {
                 $data = [
                     'id'                     => $vehicle->id,   
@@ -170,20 +170,20 @@ class WPSyncHook {
                 $fleetStructure['vehicles'][] = $data;  
             }
         } else {
-            file_put_contents($this->logFile, "     ❌ FAILED: Could not load link '$rel_fleet_vehicles' on Fleet bean.\n", FILE_APPEND);
+            VinttroLogger::fatal("[compileFleetDataStructure] ❌ FAILED: Could not load link '$rel_fleet_vehicles' on Fleet bean.");
         }
 
         return $fleetStructure;
     }
 
     private function distributeToFleetAdmins($fleetBean, $fleetPayload) {
-        file_put_contents($this->logFile, " - [STEP 3] Distributing updates for Fleet: " . $fleetBean->name . "\n", FILE_APPEND);
+        VinttroLogger::fatal("[distributeToFleetAdmins] Distributing updates for Fleet: " . $fleetBean->name);
 
         $rel_fleet_memberships = 'visp_fleet_visp_fleet_memberships';
 
         if ($fleetBean->load_relationship($rel_fleet_memberships)) {
             $memberships = $fleetBean->$rel_fleet_memberships->getBeans();
-            file_put_contents($this->logFile, "     🟢 SUCCESS: Found " . count($memberships) . " total personnel records.\n", FILE_APPEND);
+            VinttroLogger::fatal("[distributeToFleetAdmins] 🟢 SUCCESS: Found " . count($memberships) . " total personnel records.");
 
             foreach ($memberships as $membership) {
                 if (!empty($membership->is_fleetadmin) && ($membership->is_fleetadmin == '1' || $membership->is_fleetadmin == 1 || $membership->is_fleetadmin === true)) {

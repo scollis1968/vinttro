@@ -4,7 +4,7 @@ if (!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 // Require the logger utility
 require_once 'custom/include/Vinttro/VinttroLogger.php';
 
-/ TEMPORARY DIAGNOSTIC SPY LINE
+// TEMPORARY DIAGNOSTIC SPY LINE
 error_log("!!! VINTTRO SPY: PHP has explicitly opened and loaded WPSyncHook.php !!!");
 
 class WPSyncHook {

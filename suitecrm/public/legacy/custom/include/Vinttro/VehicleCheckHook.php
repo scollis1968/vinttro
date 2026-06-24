@@ -28,7 +28,6 @@ class VehicleCheckHook
             
             $this->runSyncLogic($bean, $vehicle);
 
-            // FIX 2: Actually save the vehicle changes in beforeSave context
             try {
                 self::$preventRecursion = true;
                 $vehicle->save();
@@ -87,17 +86,21 @@ class VehicleCheckHook
     {
         $timedate = TimeDate::getInstance();
 
-        // 1. Automatically populate the name of the check record safely
-        if (!empty($bean->date_of_check)) {
-            $normalizedCheckDate = $timedate->to_db_date($bean->date_of_check, false);
-            if ($normalizedCheckDate) {
-                $bean->name = (!empty($vehicle->name) ? $vehicle->name : "Vehicle") . ' - ' . $normalizedCheckDate;
-            }
-        }
+        // Safe field lookup closure for the Check Record ($bean)
+        $getBField = function($fieldName) use ($bean) {
+            if (isset($bean->field_defs[$fieldName . '_c'])) return $bean->{$fieldName . '_c'};
+            if (isset($bean->field_defs[$fieldName])) return $bean->{$fieldName};
+            if (isset($bean->{$fieldName . '_c'})) return $bean->{$fieldName . '_c'};
+            if (isset($bean->{$fieldName})) return $bean->{$fieldName};
+            return null; 
+        };
 
+        // Safe field lookup closure for the Vehicle Record ($vehicle)
         $getVField = function($fieldName) use ($vehicle) {
             if (isset($vehicle->field_defs[$fieldName . '_c'])) return $vehicle->{$fieldName . '_c'};
             if (isset($vehicle->field_defs[$fieldName])) return $vehicle->{$fieldName};
+            if (isset($vehicle->{$fieldName . '_c'})) return $vehicle->{$fieldName . '_c'};
+            if (isset($vehicle->{$fieldName})) return $vehicle->{$fieldName};
             return null; 
         };
 
@@ -114,13 +117,28 @@ class VehicleCheckHook
             return false;
         };
 
-        $currentVehicleDate = $getVField('date_last_check');
-        $newCheckMileage = (float)$bean->mileage;
-        $newCheckDate = $bean->date_of_check;
+        // Smart Date Normalizer utility
+        $normalizeDateToDb = function($dateStr) use ($timedate) {
+            if (empty($dateStr)) return '';
+            // If it's already in standard YYYY-MM-DD format (with or without timestamps), use it directly
+            if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $dateStr, $matches)) {
+                return $matches[1];
+            }
+            // Otherwise, let the framework convert it from localized user format
+            return $timedate->to_db_date($dateStr, false) ?: '';
+        };
 
-        // FIX 1: Normalize both dates into YYYY-MM-DD string format before comparing alphabetically
-        $newCheckDateDb = $timedate->to_db_date($newCheckDate, false);
-        $currentVehicleDateDb = $timedate->to_db_date($currentVehicleDate, false);
+        $rawCheckDate = $getBField('date_of_check');
+        $newCheckDateDb = $normalizeDateToDb($rawCheckDate);
+        $newCheckMileage = (float)$getBField('mileage');
+
+        // Automatically populate the name of the check record safely
+        if (!empty($newCheckDateDb)) {
+            $bean->name = (!empty($vehicle->name) ? $vehicle->name : "Vehicle") . ' - ' . $newCheckDateDb;
+        }
+
+        $currentVehicleDate = $getVField('date_last_check');
+        $currentVehicleDateDb = $normalizeDateToDb($currentVehicleDate);
 
         $shouldUpdateVehicle = false;
         if ($newCheckMileage > 0 && !empty($newCheckDateDb)) {
@@ -141,7 +159,7 @@ class VehicleCheckHook
                 $vMileageLastService = $getVField('mileage_last_service');
                 $vServiceIntervalMiles = $getVField('service_interval_miles');
 
-                $vDateLastServiceDb = $timedate->to_db_date($vDateLastService, false);
+                $vDateLastServiceDb = $normalizeDateToDb($vDateLastService);
 
                 if (!empty($vDateLastServiceDb) && strpos($vDateLastServiceDb, '0000-00-00') === false) {
                     $dateLastService = new DateTime($vDateLastServiceDb);
@@ -178,7 +196,7 @@ class VehicleCheckHook
                     }
                 }
             } catch (Exception $dateEx) {
-                VinttroLogger:: fatal("VCHook DBG: Handled exception during math execution: " . $dateEx->getMessage());
+                VinttroLogger::fatal("VCHook DBG: Handled exception during math execution: " . $dateEx->getMessage());
             }
         }
     }

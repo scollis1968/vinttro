@@ -1,13 +1,11 @@
 <?php
 
 if (!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+// Require the logger utility
+require_once 'custom/include/Vinttro/VinttroLogger.php';
 
 class WPSyncHook {
     
-    // Global log file location for total tracking consistency
-    // Require the logger utility
-    require_once 'custom/include/Vinttro/VinttroLogger.php';
-
     public function syncContactHook($bean, $event, $arguments) {
         $this->executeSyncForContact($bean);
     }

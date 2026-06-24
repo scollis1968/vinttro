@@ -1,6 +1,8 @@
 <?php
 
 if (!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
+// Require the logger utility
+require_once 'custom/include/Vinttro/VinttroLogger.php';
 
 class VehicleCheckHook 
 {
@@ -21,7 +23,7 @@ class VehicleCheckHook
         }
 
         if (!empty($vehicleId)) {
-            $GLOBALS['log']->fatal("VCHook DBG: beforeSave running for existing link. Vehicle ID: $vehicleId");
+            VinttroLogger::fatal("VCHook DBG: beforeSave running for existing link. Vehicle ID: $vehicleId");
             $vehicle = BeanFactory::getBean('visp_vehicle', $vehicleId);
             
             $this->runSyncLogic($bean, $vehicle);
@@ -30,9 +32,9 @@ class VehicleCheckHook
             try {
                 self::$preventRecursion = true;
                 $vehicle->save();
-                $GLOBALS['log']->fatal("VCHook DBG: beforeSave successfully synced and saved vehicle.");
+                VinttroLogger::fatal("VCHook DBG: beforeSave successfully synced and saved vehicle.");
             } catch (Exception $e) {
-                $GLOBALS['log']->fatal("VCHook DBG: Save exception in beforeSave vehicle save: " . $e->getMessage());
+                VinttroLogger::fatal("VCHook DBG: Save exception in beforeSave vehicle save: " . $e->getMessage());
             } finally {
                 self::$preventRecursion = false;
             }
@@ -57,7 +59,7 @@ class VehicleCheckHook
             }
 
             if (!empty($vehicleId) && !empty($checkId)) {
-                $GLOBALS['log']->fatal("VCHook DBG: afterRelationshipAdd triggered. Vehicle: $vehicleId, Check: $checkId");
+                VinttroLogger::fatal("VCHook DBG: afterRelationshipAdd triggered. Vehicle: $vehicleId, Check: $checkId");
                 
                 $checkBean = BeanFactory::getBean('visp_vehicle_check', $checkId);
                 $vehicleBean = BeanFactory::getBean('visp_vehicle', $vehicleId);
@@ -69,9 +71,9 @@ class VehicleCheckHook
                         self::$preventRecursion = true;
                         $checkBean->save();
                         $vehicleBean->save();
-                        $GLOBALS['log']->fatal("VCHook DBG: Subpanel first-save automation successfully synced.");
+                        VinttroLogger::fatal("VCHook DBG: Subpanel first-save automation successfully synced.");
                     } catch (Exception $e) {
-                        $GLOBALS['log']->fatal("VCHook DBG: Save exception in relationship hook: " . $e->getMessage());
+                        VinttroLogger::fatal("VCHook DBG: Save exception in relationship hook: " . $e->getMessage());
                     } finally {
                         self::$preventRecursion = false;
                     }
@@ -174,7 +176,7 @@ class VehicleCheckHook
                     }
                 }
             } catch (Exception $dateEx) {
-                $GLOBALS['log']->fatal("VCHook DBG: Handled exception during math execution: " . $dateEx->getMessage());
+                VinttroLogger:: fatal("VCHook DBG: Handled exception during math execution: " . $dateEx->getMessage());
             }
         }
     }

@@ -86,19 +86,18 @@ class WPSyncHook {
 
         static $hasRun = false;
 
-        $log = $this->logFile;
-        file_put_contents($log, date('Y-m-d H:i:s') . " - [START] ID: " . $vehicleBean->id . "\n", FILE_APPEND);
+         VinttroLogger::fatal("[syncVehicleFleetUpdate] [START] ID: " . $vehicleBean->id);
 
         if ($hasRun) {
-            file_put_contents($log, date('Y-m-d H:i:s') . " - [EXITING] Already processed in this request.\n", FILE_APPEND);
+            VinttroLogger::fatal("[syncVehicleFleetUpdate] [EXITING] Already processed in this request.");
             return;
         }
 
         $hasRun = true;
-        file_put_contents($log, date('Y-m-d H:i:s') . " - [SETTING FLAG] Running primary logic...\n", FILE_APPEND);
+        VinttroLogger::fatal("[syncVehicleFleetUpdate] [SETTING FLAG] Running primary logic...");
 
         // Now your logic proceeds
-        file_put_contents($log, date('Y-m-d H:i:s') . " - [STEP 1] Loading fleet relationship...\n", FILE_APPEND);
+        VinttroLogger::fatal("[syncVehicleFleetUpdate] [STEP 1] Loading fleet relationship...");
         
         $rel_vehicle_fleet = 'visp_fleet_visp_vehicle';
 
@@ -210,8 +209,8 @@ class WPSyncHook {
                         $contact = reset($contacts); 
 
                         if ($contact && !empty($contact->email1)) {
-                            file_put_contents($this->logFile, "          🚀 DISPATCHING API: Targeting Admin Email: " . $contact->email1 . "\n", FILE_APPEND);
-                            
+                            VinttroLogger::fatal("[distributeToFleetAdmins] 🚀 DISPATCHING API: Targeting Admin Email: " . $contact->email1 . "\n");
+
                             $wpPayload = [
                                 'email'             => $contact->email1,
                                 'first_name'        => $contact->first_name,
@@ -224,24 +223,24 @@ class WPSyncHook {
                             $result = $this->callWPAPI($wpPayload);
 
                             if ($result['success']) {
-                                file_put_contents($this->logFile, "          ✅ DISPATCH SUCCESS for: " . $contact->email1 . " | Response Code: " . $result['http_code'] . "\n", FILE_APPEND);
+                                VinttroLogger::fatal("[distributeToFleetAdmins] ✅ DISPATCH SUCCESS for: " . $contact->email1 . " | Response Code: " . $result['http_code'] . "\n");
                             } else {
-                                file_put_contents($this->logFile, "          ❌ DISPATCH CRITICAL FAILURE for: " . $contact->email1 . " | HTTP Code: " . $result['http_code'] . " | Response Msg: " . $result['response'] . " | Error: " . $result['error'] . "\n", FILE_APPEND);
+                                VinttroLogger::fatal("[distributeToFleetAdmins] ❌ DISPATCH CRITICAL FAILURE for: " . $contact->email1 . " | HTTP Code: " . $result['http_code'] . " | Response Msg: " . $result['response'] . " | Error: " . $result['error'] . "\n");
                             }
                         } else {
-                            file_put_contents($this->logFile, "          ⚠️ WARNING: Contact found but Email field (email1) is blank.\n", FILE_APPEND);
+                            VinttroLogger::fatal("[distributeToFleetAdmins] ⚠️ WARNING: Contact found but Email field (email1) is blank.\n");
                         }
                     } else {
-                        file_put_contents($this->logFile, "          ❌ FAILED: Could not load link field '$rel_membership_contact' on Membership bean.\n", FILE_APPEND);
+                        VinttroLogger::fatal("[distributeToFleetAdmins] ❌ FAILED: Could not load link field '$rel_membership_contact' on Membership bean.\n");
                     }
                 } else {
-                    file_put_contents($this->logFile, "        skipping: User [" . $membership->name . "] is not marked as a Fleet Admin.\n", FILE_APPEND);
+                    VinttroLogger::fatal("[distributeToFleetAdmins]        skipping: User [" . $membership->name . "] is not marked as a Fleet Admin.\n");
                 }
             }
         } else {
-            file_put_contents($this->logFile, "     ❌ FAILED: Could not load link '$rel_fleet_memberships' on Fleet bean.\n", FILE_APPEND);
+            VinttroLogger::fatal("[distributeToFleetAdmins]     ❌ FAILED: Could not load link '$rel_fleet_memberships' on Fleet bean.\n");
         }
-        file_put_contents($this->logFile, "          ✅  ALL members processed.\n", FILE_APPEND);
+        VinttroLogger::fatal("[distributeToFleetAdmins]          ✅  ALL members processed.\n");
     }
 
     private function getVehicleIssues($vehicleBean) {

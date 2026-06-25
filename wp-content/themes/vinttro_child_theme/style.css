@@ -97,13 +97,13 @@ p:empty {
 /* The Engineered Button Look */
 .insure-btn {
     background: #ffffff !important;
-    border: 1px solid #d4af37 !important; /* Elegant VINTTRO Gold */
+    border: 1px solid #916D1C !important; /* Elegant VINTTRO Gold */
     border-radius: 0px !important;        /* Sharp luxury edges, no curves */
     padding: 22px 15px !important;
-    color: #111111 !important;
+    color: #916D1C !important;
     font-size: 12px !important;
     font-weight: 600 !important;
-    text-transform: uppercase !important;
+    /* text-transform: uppercase !important; */
     letter-spacing: 0.15em !important;    /* Breathable, architectural tracking */
     cursor: pointer;
     box-shadow: none !important;
@@ -115,8 +115,8 @@ p:empty {
 
 /* Sophisticated Inversion Hover State */
 .insure-btn:hover {
-    background: #111111 !important;       /* Deep rich black */
-    border-color: #111111 !important;
+    background: #595959 !important;       /* Deep rich black */
+    border-color: #916D1C !important;
     color: #ffffff !important;             /* Text flips to clean white */
     letter-spacing: 0.2em !important;      /* Subtle kinetic widening on hover */
     transform: translateY(-2px);

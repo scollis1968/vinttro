@@ -11,6 +11,7 @@ class VehicleCheckHook
     // INTERCEPTOR 1: Handles updates and manual second saves cleanly
     public function beforeSaveMethod($bean, $event, $arguments) 
     {
+        VinttroLogger::fatal("VCHook DBG: before preventRecursion check. Current state: " . (self::$preventRecursion ? 'true' : 'false'));
         if (self::$preventRecursion) return;
 
         $linkName = 'visp_vehicle_visp_vehicle_check'; 
@@ -21,7 +22,7 @@ class VehicleCheckHook
         if (!empty($relatedIds) && is_array($relatedIds)) {
             $vehicleId = reset($relatedIds);
         }
-
+        VinttroLogger::fatal("VCHook DBG: beforeSave check. Vehicle ID: $vehicleId");   
         if (!empty($vehicleId)) {
             VinttroLogger::fatal("VCHook DBG: beforeSave running for existing link. Vehicle ID: $vehicleId");
             $vehicle = BeanFactory::getBean('visp_vehicle', $vehicleId);

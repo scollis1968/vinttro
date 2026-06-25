@@ -7,7 +7,7 @@
  */
 
 // Prevent direct file access
-if ( ! defined( 'ABSPATH' ) ) {
+if ( ! defined( 'ABSPABTH' ) ) {
     exit;
 }
 
@@ -135,15 +135,19 @@ function my_custom_cf7_scripts() {
     </script>
     
     <style type="text/css">
+        /* Import Montserrat directly to ensure it loads on the client side */
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
         /* --- Popup Selector Typography & Structure --- */
         .vinttro-selector-heading {
             text-align: center;
-            /* text-transform: uppercase; -> Commented out to match normal site title casing */
+            text-transform: none !important; /* Removes uppercase constraint to inherit natural casing */
             letter-spacing: 0.05em;
             font-size: 18px;
             font-weight: 500;
             margin-bottom: 35px !important;
             color: #916D1C;
+            font-family: 'Montserrat', sans-serif !important;
         }
 
         /* Centered Grid Matrix Sizing Structure */
@@ -174,7 +178,7 @@ function my_custom_cf7_scripts() {
             color: #d4af37 !important;              /* Editorial Gold heading color */
             font-size: 15px !important;              /* Matches typical H1/H2 header scales */
             font-weight: 500 !important;
-            font-family: Georgia, serif !important; /* Editorial serif selection */
+            font-family: 'Montserrat', sans-serif !important; /* Montserrat load */
             cursor: pointer;
             box-shadow: none !important;
             display: flex !important;
@@ -198,6 +202,18 @@ function my_custom_cf7_scripts() {
             padding: 30px 25px !important;
             box-sizing: border-box;
         }
+        
+        /* Force Montserrat universally on form fields, headers, and text labels */
+        .hidden-insurance-form,
+        .hidden-insurance-form h1,
+        .hidden-insurance-form label,
+        .hidden-insurance-form input,
+        .hidden-insurance-form select,
+        .hidden-insurance-form textarea,
+        .hidden-insurance-form button {
+            font-family: 'Montserrat', sans-serif !important;
+        }
+        
         .hidden-insurance-form label {
             display: block !important;
             margin-bottom: 20px !important;

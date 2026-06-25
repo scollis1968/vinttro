@@ -65,3 +65,50 @@ Text Domain: vinttro_child_theme
 p:empty {
     display: none !important;
 }
+
+
+/* Layout for the button grid */
+.insurance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    padding: 20px 0;
+}
+
+/* Styling the buttons to look like modern cards */
+.insure-btn {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.insure-btn:hover {
+    background: #e2e6ea;
+    border-color: #adb5bd;
+    transform: translateY(-2px);
+}
+
+.insure-btn .icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+/* Keep forms hidden initially */
+.hidden-insurance-form {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

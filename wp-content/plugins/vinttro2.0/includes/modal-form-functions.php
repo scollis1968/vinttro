@@ -168,14 +168,13 @@ function my_custom_cf7_scripts() {
         /* --- Option 3 Minimalist Button Aesthetics --- */
         .insure-btn {
             background: #ffffff !important;
-            border: 1px solid #d4af37 !important; /* Premium VINTTRO Gold accent */
-            border-radius: 0px !important;        /* Sharp, luxury flat corners matching Theme 3 */
+            border: 1px solid #d4af37 !important;   /* Premium VINTTRO Gold accent */
+            border-radius: 0px !important;          /* Sharp, luxury flat corners matching Theme 3 */
             padding: 22px 15px !important;
-            color: #111111 !important;
-            font-size: 11px !important;            /* Elegant micro-typography */
-            font-weight: 600 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.15em !important;
+            color: #d4af37 !important;              /* Dynamic Gold Heading color */
+            font-size: 15px !important;              /* Enlarged to look more like the editorial H1/H2 headers */
+            font-weight: 500 !important;
+            font-family: Georgia, serif !important; /* Editorial serif selection */
             cursor: pointer;
             box-shadow: none !important;
             display: flex !important;
@@ -188,10 +187,9 @@ function my_custom_cf7_scripts() {
         }
 
         .insure-btn:hover {
-            background: #111111 !important;
+            background: #111111 !important;         /* Deep rich charcoal black on hover */
             border-color: #111111 !important;
-            color: #ffffff !important;
-            letter-spacing: 0.2em !important;     /* Subtle kinetic expansion on mouse-over */
+            color: #d4af37 !important;               /* Keeps Gold text popping beautifully on black background */
             transform: translateY(-2px);
         }
 

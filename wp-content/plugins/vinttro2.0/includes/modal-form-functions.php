@@ -143,7 +143,7 @@ function my_custom_cf7_scripts() {
             font-size: 18px;
             font-weight: 500;
             margin-bottom: 35px !important;
-            color: #111111;
+            color: #916D1C;
         }
 
         /* Centered Grid Matrix Sizing Structure */

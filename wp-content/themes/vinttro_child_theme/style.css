@@ -75,31 +75,63 @@ p:empty {
     padding: 20px 0;
 }
 
-/* Styling the buttons to look like modern cards */
-.insure-btn {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    padding: 20px;
+/* Heading Polish Inside Popup */
+.vinttro-selector-heading {
     text-align: center;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
     font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    font-weight: 500;
+    margin-bottom: 35px !important;
+    color: #111111;
 }
 
+/* Luxury Grid Layout */
+.insurance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    padding: 10px 0;
+}
+
+/* The Engineered Button Look */
+.insure-btn {
+    background: #ffffff !important;
+    border: 1px solid #d4af37 !important; /* Elegant VINTTRO Gold */
+    border-radius: 0px !important;        /* Sharp luxury edges, no curves */
+    padding: 22px 15px !important;
+    color: #111111 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.15em !important;    /* Breathable, architectural tracking */
+    cursor: pointer;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+/* Sophisticated Inversion Hover State */
 .insure-btn:hover {
-    background: #e2e6ea;
-    border-color: #adb5bd;
+    background: #111111 !important;       /* Deep rich black */
+    border-color: #111111 !important;
+    color: #ffffff !important;             /* Text flips to clean white */
+    letter-spacing: 0.2em !important;      /* Subtle kinetic widening on hover */
     transform: translateY(-2px);
 }
 
-.insure-btn .icon {
-    font-size: 32px;
-    margin-bottom: 10px;
+/* Mobile Alignment Guard */
+@media (max-width: 480px) {
+    .insurance-grid {
+        grid-template-columns: 1fr;        /* Stack vertically into clean blocks on phones */
+        gap: 15px;
+    }
+    .insure-btn {
+        padding: 18px 15px !important;
+    }
 }
 
 /* Keep forms hidden initially */

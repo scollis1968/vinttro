@@ -265,7 +265,7 @@ class WPSyncHook {
                         'name'                => $issue->name,
                         'description'         => $issue->description,
                         'severity'            => $issue->severity,  
-                        'date_issue_reported' => $issue->date_entered
+                        'date_issue_reported' => $issue->reported_date
                     ];
                 }
             }

@@ -1,10 +1,19 @@
 <?php
+/**
+ * Plugin Name: VINTTRO Custom Modal Enhancements
+ * Description: Core helper scripts to manage viewport configurations, CF7 conditional layouts, and multi-step modal routing.
+ * Version: 2.1
+ * Author: VINTTRO Dev
+ */
+
+// Prevent direct file access
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
 // 1. Define the function to output the meta tag
 function my_custom_viewport_meta_tag() {
-    // The meta tag to prevent zooming and fix fixed-position element centering
-    // todo - remove commented line after testing
-    //echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">';
+    // Prevent unprompted mobile zooming while allowing standard responsive resizing
     echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=6.0">';
 }
 
@@ -18,38 +27,38 @@ add_action( 'wp_head', 'my_custom_viewport_meta_tag' );
  * @return int|null The form ID on success, or null if not found.
  */
 function get_cf7_id_by_title_contains( $title_substring ) {
-    // 1. Set up the WordPress query arguments
     $args = array(
-        'post_type'      => 'wpcf7_contact_form', // The custom post type for CF7 forms
+        'post_type'      => 'wpcf7_contact_form', 
         'post_status'    => 'publish',
-        's'              => $title_substring,     // Use the 's' (search) argument for LIKE matching
-        'posts_per_page' => 1,                    // Get the first matching form
-        'fields'         => 'ids',                // Only return the post IDs
+        's'              => $title_substring,     
+        'posts_per_page' => 1,                    
+        'fields'         => 'ids',                
     );
 
-    // 2. Execute the query
     $forms = get_posts( $args );
 
-    // 3. Return the ID if found
     if ( ! empty( $forms ) ) {
-        return (int) $forms[0]; // Return the first matching ID
+        return (int) $forms[0]; 
     }
 
-    // 4. Return null if not found
     return null;
 }
 
+/**
+ * Output JavaScript event scripts and Custom Stylesheets inside wp_footer.
+ * This guarantees scripts execute cleanly after both CF7 and Popup Builder load.
+ */
 function my_custom_cf7_scripts() {
     ?>
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', function() {
+            // --- CONDITIONAL FIELD TRIGGERS ---
             const conditionalGroups = document.querySelectorAll('.conditional-field');
 
             conditionalGroups.forEach(group => {
                 const targetName = group.getAttribute('data-depends-on');
                 const targetValue = group.getAttribute('data-if-value');
 
-                // Function to check the current value and toggle visibility
                 const toggleField = () => {
                     const checkedRadio = document.querySelector(`input[name="${targetName}"]:checked`);
                     const currentValue = checkedRadio ? checkedRadio.value : null;
@@ -74,8 +83,39 @@ function my_custom_cf7_scripts() {
         });
 
         /**
-         * VINTTRO Custom Modal Form Switcher
-         * Safely scoped globally so popup HTML execution blocks can target it via onclick actions
+         * VINTTRO State Management Helper
+         * Resets the multi-step view back to Step 1 (The Category Buttons screen)
+         */
+        function resetVinttroFormState() {
+            const selectorScreen = document.getElementById('insurance-selector');
+            if (selectorScreen) {
+                selectorScreen.style.display = 'block';
+            }
+            
+            // Hide all individual contact form wrapper blocks
+            document.querySelectorAll('.hidden-insurance-form').forEach(form => {
+                form.style.display = 'none';
+            });
+        }
+
+        // Bind standard DOM event hooks dispatched by the Popup Builder engine
+        document.addEventListener('sgpbWillOpen', resetVinttroFormState);
+        window.addEventListener('sgpbWillOpen', resetVinttroFormState);
+        document.addEventListener('sgpbDidClose', resetVinttroFormState);
+
+        // Fallback jQuery bindings in case Popup Builder triggers its hooks on the jQuery namespace
+        if (typeof jQuery !== 'undefined') {
+            jQuery(document).on('sgpbWillOpen', function() {
+                resetVinttroFormState();
+            });
+            jQuery(document).on('sgpbDidClose', function() {
+                resetVinttroFormState();
+            });
+        }
+
+        /**
+         * Handles routing from selection buttons directly to the respective forms.
+         * Explicitly bound to the global window scope.
          */
         window.openInsuranceForm = function(type) {
             const selectorScreen = document.getElementById('insurance-selector');
@@ -88,12 +128,108 @@ function my_custom_cf7_scripts() {
                 selectedForm.style.display = 'block';
             }
             
-            // Force Popup Builder to recalculate responsive layouts and dynamic element height updates
+            // Allow dynamic CF7 layout structures to settle before recalculating popup modal heights
             setTimeout(function() {
                 window.dispatchEvent(new Event('resize'));
             }, 50);
         };
     </script>
+    
+    <style type="text/css">
+        /* --- Popup Selector Typography & Structure --- */
+        .vinttro-selector-heading {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 35px !important;
+            color: #111111;
+        }
+
+        /* Centered Desktop Layout Wrapper (Option 3 Centering Engine) */
+        .insurance-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 10px 0;
+            justify-content: center; /* Horizontally centers buttons inside larger desktop containers */
+            margin: 0 auto !important;
+            max-width: 760px; /* Constrains boundaries for optimal alignment */
+            width: 100%;
+        }
+
+        /* --- Option 3 Minimalist Button Aesthetics --- */
+        .insure-btn {
+            background: #ffffff !important;
+            border: 1px solid #d4af37 !important; /* Premium VINTTRO Gold accent */
+            border-radius: 0px !important;        /* Crisp, sharp borders matching Theme 3 */
+            padding: 22px 15px !important;
+            color: #111111 !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.15em !important;
+            cursor: pointer;
+            box-shadow: none !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+            flex: 1 1 200px; /* Responsive resizing basis */
+            max-width: 240px; /* Prevents awkward wide-stretching on wide desktop monitors */
+        }
+
+        .insure-btn:hover {
+            background: #111111 !important;
+            border-color: #111111 !important;
+            color: #ffffff !important;
+            letter-spacing: 0.2em !important; /* Kinetic expansion on mouse-over */
+            transform: translateY(-2px);
+        }
+
+        /* --- Dynamic Styling For Hidden Input Forms --- */
+        .form-padding-wrapper {
+            padding: 30px 25px !important;
+            box-sizing: border-box;
+        }
+        .hidden-insurance-form label {
+            display: block !important;
+            margin-bottom: 20px !important;
+            width: 100% !important;
+            font-weight: 500;
+        }
+        .hidden-insurance-form input[type="text"],
+        .hidden-insurance-form input[type="email"],
+        .hidden-insurance-form input[type="tel"],
+        .hidden-insurance-form input[type="date"],
+        .hidden-insurance-form select,
+        .hidden-insurance-form textarea {
+            width: 100% !important;
+            margin-top: 8px !important;
+            padding: 12px !important;
+            box-sizing: border-box !important;
+        }
+        .hidden-insurance-form hr {
+            margin: 25px 0 !important;
+            border: 0;
+            border-top: 1px solid #eee;
+        }
+
+        /* Mobile Adaptive Layout Adjustments */
+        @media (max-width: 580px) {
+            .insurance-grid {
+                flex-direction: column; /* Stacks button cards into beautiful touchscreen tap rows */
+                align-items: center;
+                gap: 15px;
+            }
+            .insure-btn {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 18px 15px !important;
+            }
+        }
+    </style>
     <?php
 }
 add_action('wp_footer', 'my_custom_cf7_scripts');

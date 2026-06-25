@@ -79,12 +79,11 @@ p:empty {
 .vinttro-selector-heading {
     text-align: center;
     font-family: inherit;
-    text-transform: uppercase;
     letter-spacing: 0.15em;
     font-size: 16px;
     font-weight: 500;
     margin-bottom: 35px !important;
-    color: #111111;
+    color: #d4af37;
 }
 
 /* Luxury Grid Layout */

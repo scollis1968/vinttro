@@ -114,8 +114,7 @@ function my_custom_cf7_scripts() {
         }
 
         /**
-         * Handles routing from selection buttons directly to the respective forms.
-         * Explicitly bound to the global window scope.
+         * Safely scoped globally so popup HTML execution blocks can target it via onclick actions
          */
         window.openInsuranceForm = function(type) {
             const selectorScreen = document.getElementById('insurance-selector');
@@ -147,24 +146,30 @@ function my_custom_cf7_scripts() {
             color: #111111;
         }
 
-        /* Centered 3-Column Desktop Grid Sizing Structure */
+        /* Centered Grid Matrix Sizing Structure */
         .insurance-grid {
             display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important; /* Force a single, even 3-column row on desktop */
+            grid-template-columns: repeat(3, 1fr) !important; /* Forces 3 symmetrical columns on desktop */
+            grid-auto-rows: 1fr !important;                   /* Forces all buttons to be the exact same height */
             gap: 20px !important;
             padding: 10px 0 !important;
-            justify-content: center; /* Centers grid track blocks horizontally */
+            justify-content: center !important;               /* Centers grid items horizontally */
             margin: 0 auto !important;
-            max-width: 720px !important; /* Constrains column widths for luxury card proportions */
+            max-width: 820px !important;                      /* Constrains max width for premium layout proportions */
             width: 100% !important;
             box-sizing: border-box !important;
+        }
+
+        /* Prevent rogue <br> tags from acting as grid cells (Critical wpautop bypass) */
+        .insurance-grid br {
+            display: none !important;
         }
 
         /* --- Option 3 Minimalist Button Aesthetics --- */
         .insure-btn {
             background: #ffffff !important;
             border: 1px solid #d4af37 !important; /* Premium VINTTRO Gold accent */
-            border-radius: 0px !important;        /* Sharp, luxury flat corners */
+            border-radius: 0px !important;        /* Sharp, luxury flat corners matching Theme 3 */
             padding: 22px 15px !important;
             color: #111111 !important;
             font-size: 11px !important;            /* Elegant micro-typography */
@@ -176,9 +181,9 @@ function my_custom_cf7_scripts() {
             display: flex !important;
             align-items: center;
             justify-content: center;
-            min-height: 70px !important;           /* Restricts buttons to identical baseline heights */
             box-sizing: border-box !important;
             margin: 0 !important;
+            width: 100% !important;
             transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
         }
 
@@ -186,7 +191,7 @@ function my_custom_cf7_scripts() {
             background: #111111 !important;
             border-color: #111111 !important;
             color: #ffffff !important;
-            letter-spacing: 0.2em !important; /* Kinetic expansion on mouse-over */
+            letter-spacing: 0.2em !important;     /* Subtle kinetic expansion on mouse-over */
             transform: translateY(-2px);
         }
 
@@ -218,17 +223,23 @@ function my_custom_cf7_scripts() {
             border-top: 1px solid #eee;
         }
 
-        /* Mobile Adaptive Layout Adjustments */
-        @media (max-width: 640px) {
+        /* Tablet Layout adjustments */
+        @media (max-width: 800px) {
             .insurance-grid {
-                grid-template-columns: 1fr !important; /* Stack button cards into vertical touch-target rows */
+                grid-template-columns: repeat(2, 1fr) !important; /* Clean 2-column grid on tablets */
+            }
+        }
+
+        /* Mobile Adaptive Layout Adjustments */
+        @media (max-width: 580px) {
+            .insurance-grid {
+                grid-template-columns: 1fr !important; /* Stack button cards into full-width tap rows on mobile */
                 gap: 15px !important;
                 max-width: 320px !important;           /* Elegant vertical column boundary constraint */
                 margin: 0 auto !important;
             }
             .insure-btn {
                 padding: 18px 15px !important;
-                min-height: 60px !important;
             }
         }
     </style>

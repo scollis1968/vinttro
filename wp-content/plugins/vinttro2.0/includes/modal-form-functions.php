@@ -147,37 +147,39 @@ function my_custom_cf7_scripts() {
             color: #111111;
         }
 
-        /* Centered Desktop Layout Wrapper (Option 3 Centering Engine) */
+        /* Centered 3-Column Desktop Grid Sizing Structure */
         .insurance-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            padding: 10px 0;
-            justify-content: center; /* Horizontally centers buttons inside larger desktop containers */
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important; /* Force a single, even 3-column row on desktop */
+            gap: 20px !important;
+            padding: 10px 0 !important;
+            justify-content: center; /* Centers grid track blocks horizontally */
             margin: 0 auto !important;
-            max-width: 760px; /* Constrains boundaries for optimal alignment */
-            width: 100%;
+            max-width: 720px !important; /* Constrains column widths for luxury card proportions */
+            width: 100% !important;
+            box-sizing: border-box !important;
         }
 
         /* --- Option 3 Minimalist Button Aesthetics --- */
         .insure-btn {
             background: #ffffff !important;
             border: 1px solid #d4af37 !important; /* Premium VINTTRO Gold accent */
-            border-radius: 0px !important;        /* Crisp, sharp borders matching Theme 3 */
+            border-radius: 0px !important;        /* Sharp, luxury flat corners */
             padding: 22px 15px !important;
             color: #111111 !important;
-            font-size: 12px !important;
+            font-size: 11px !important;            /* Elegant micro-typography */
             font-weight: 600 !important;
             text-transform: uppercase !important;
             letter-spacing: 0.15em !important;
             cursor: pointer;
             box-shadow: none !important;
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
+            min-height: 70px !important;           /* Restricts buttons to identical baseline heights */
+            box-sizing: border-box !important;
+            margin: 0 !important;
             transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
-            flex: 1 1 200px; /* Responsive resizing basis */
-            max-width: 240px; /* Prevents awkward wide-stretching on wide desktop monitors */
         }
 
         .insure-btn:hover {
@@ -217,16 +219,16 @@ function my_custom_cf7_scripts() {
         }
 
         /* Mobile Adaptive Layout Adjustments */
-        @media (max-width: 580px) {
+        @media (max-width: 640px) {
             .insurance-grid {
-                flex-direction: column; /* Stacks button cards into beautiful touchscreen tap rows */
-                align-items: center;
-                gap: 15px;
+                grid-template-columns: 1fr !important; /* Stack button cards into vertical touch-target rows */
+                gap: 15px !important;
+                max-width: 320px !important;           /* Elegant vertical column boundary constraint */
+                margin: 0 auto !important;
             }
             .insure-btn {
-                width: 100% !important;
-                max-width: 100% !important;
                 padding: 18px 15px !important;
+                min-height: 60px !important;
             }
         }
     </style>

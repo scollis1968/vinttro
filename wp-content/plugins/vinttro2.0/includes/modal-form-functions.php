@@ -138,9 +138,9 @@ function my_custom_cf7_scripts() {
         /* --- Popup Selector Typography & Structure --- */
         .vinttro-selector-heading {
             text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            font-size: 16px;
+            /* text-transform: uppercase; -> Commented out to match normal site title casing */
+            letter-spacing: 0.05em;
+            font-size: 18px;
             font-weight: 500;
             margin-bottom: 35px !important;
             color: #111111;
@@ -169,10 +169,10 @@ function my_custom_cf7_scripts() {
         .insure-btn {
             background: #ffffff !important;
             border: 1px solid #d4af37 !important;   /* Premium VINTTRO Gold accent */
-            border-radius: 0px !important;          /* Sharp, luxury flat corners matching Theme 3 */
+            border-radius: 4px !important;          /* Elegant, soft-rounded corners */
             padding: 22px 15px !important;
-            color: #d4af37 !important;              /* Dynamic Gold Heading color */
-            font-size: 15px !important;              /* Enlarged to look more like the editorial H1/H2 headers */
+            color: #d4af37 !important;              /* Editorial Gold heading color */
+            font-size: 15px !important;              /* Matches typical H1/H2 header scales */
             font-weight: 500 !important;
             font-family: Georgia, serif !important; /* Editorial serif selection */
             cursor: pointer;
@@ -187,9 +187,9 @@ function my_custom_cf7_scripts() {
         }
 
         .insure-btn:hover {
-            background: #111111 !important;         /* Deep rich charcoal black on hover */
-            border-color: #111111 !important;
-            color: #d4af37 !important;               /* Keeps Gold text popping beautifully on black background */
+            background: #f5f5f5 !important;         /* Soft, light grey background on hover */
+            border-color: #d4af37 !important;       /* Retains the distinctive gold frame outline */
+            color: #111111 !important;              /* Charcoal black text for perfect readability and contrast */
             transform: translateY(-2px);
         }
 

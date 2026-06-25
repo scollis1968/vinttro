@@ -7,7 +7,7 @@
  */
 
 // Prevent direct file access
-if ( ! defined( 'ABSPABTH' ) ) {
+if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 

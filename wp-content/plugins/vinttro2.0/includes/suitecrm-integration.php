@@ -1,23 +1,4 @@
-Here is the mapped layout of your exact SuiteCRM field names from the Module Builder table, along with the fully updated integration code to match.
 
-### Field Mapping
-
-| Old Placeholder Name | Actual SuiteCRM Field Name | Type | Purpose |
-| --- | --- | --- | --- |
-| `status_c` | **`status`** | Dropdown | Records processing state (e.g., `pending`) |
-| `entry_type_c` | **`data_type`** | TextField | Discriminator for the scheduler (`quote_request` / `vehicle_check`) |
-| `raw_payload_data_c` | **`raw_data`** | TextArea | Holds the raw JSON form dump |
-| `source_c` | **`source_system`** | Dropdown | Identifies the origin system |
-
-> ⚠️ **Important Note on Dropdowns:** For the `status` and `source_system` fields, ensure that the values sent (`pending` and `WordPress`) exactly match the **Item Name (Key)** options configured inside your SuiteCRM Dropdown Editor, otherwise the API may reject them or leave them blank.
-
----
-
-### Refactored Plugin Code
-
-Replace the contents of your `/wp-content/plugins/vinttro2.0/includes/suitecrm-integration.php` file with this version tailored exactly to your schema:
-
-```php
 <?php
 /**
  * Plugin Name: SuiteCRM Integration for CF7 (Refactored)

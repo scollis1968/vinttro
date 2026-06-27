@@ -57,7 +57,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         }
 
         // Map basic metrics from your CF7 payload
-        $vehicleCheck->mileage_c = isset($rawData['mileage']) ? intval($rawData['mileage']) : 0;
+        $vehicleCheck->mileage_c = isset($rawData['current-mileage']) ? intval($rawData['current-mileage']) : 0;
         $vehicleCheck->oil_level_status_c = $rawData['oil-status'] ?? '';
         $vehicleCheck->tyre_condition_status_c = $rawData['tyre-status'] ?? '';
         // Add additional check sheet field mappings here...

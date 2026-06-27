@@ -76,9 +76,9 @@ class WPSyncHook {
                     'make'         => $vehicle->make,
                     'model'        => $vehicle->model,
                     'reg'          => $vehicle->name,
-                    'mot_expiry'   => $vehicle->date_mot,
-                    'next_service' => $vehicle->date_service,
-                    'ins_expiry'   => $vehicle->date_registered,
+                    'mot_expiry'   => $this->formatToIsoDate($vehicle->date_mot),
+                    'next_service' => $this->formatToIsoDate($vehicle->date_service),
+                    'ins_expiry'   => $this->formatToIsoDate($vehicle->date_registered),
                     'image_url'    => $this->getVehicleImageUrl($vehicle)
                 ];
             }
@@ -137,14 +137,14 @@ class WPSyncHook {
                     'make'                   => $vehicle->make,
                     'model'                  => $vehicle->model,
                     'reg'                    => $vehicle->name,
-                    'date_last_check'        => $vehicle->date_last_check,
-                    'date_last_mot'          => $vehicle->date_last_mot,
-                    'date_last_service'      => $vehicle->date_last_service,
-                    'date_last_tax'          => $vehicle->date_last_tax,
-                    'date_next_mot'          => $vehicle->date_next_mot,
-                    'date_next_service'      => $vehicle->date_next_service,
-                    'date_next_tax'          => $vehicle->date_next_tax,
-                    'date_ins_renewal'       => $vehicle->date_ins_renewal,
+                    'date_last_check'        => $this->formatToIsoDate($vehicle->date_last_check),
+                    'date_last_mot'          => $this->formatToIsoDate($vehicle->date_last_mot),
+                    'date_last_service'      => $this->formatToIsoDate($vehicle->date_last_service),
+                    'date_last_tax'          => $this->formatToIsoDate($vehicle->date_last_tax),
+                    'date_next_mot'          => $this->formatToIsoDate($vehicle->date_next_mot),
+                    'date_next_service'      => $this->formatToIsoDate($vehicle->date_next_service),
+                    'date_next_tax'          => $this->formatToIsoDate($vehicle->date_next_tax),
+                    'date_ins_renewal'       => $this->formatToIsoDate($vehicle->date_ins_renewal),
                     'outstanding_issues'     => $this->getVehicleIssues($vehicle)
                 ];
                 
@@ -249,7 +249,7 @@ class WPSyncHook {
         } else {
             VinttroLogger::fatal("[distributeToFleetAdmins]     ❌ FAILED: Could not load link '$rel_fleet_memberships' on Fleet bean.\n");
         }
-        VinttroLogger::fatal("[distributeToFleetAdmins]          ✅  ALL members processed.\n");
+        VinttroLogger::fatal("[distributeToFleetAdmins]           ✅  ALL members processed.\n");
     }
 
     private function getVehicleIssues($vehicleBean) {
@@ -265,7 +265,7 @@ class WPSyncHook {
                         'name'                => $issue->name,
                         'description'         => $issue->description,
                         'severity'            => $issue->severity,  
-                        'date_issue_reported' => $issue->reported_date
+                        'date_issue_reported' => $this->formatToIsoDate($issue->reported_date)
                     ];
                 }
             }
@@ -284,11 +284,42 @@ class WPSyncHook {
     private function getRelatedFleets($contactBean) { return []; }
 
     /**
+     * Standardizes any SuiteCRM date (user preference format or DB format) to YYYY-MM-DD for WordPress.
+     */
+    private function formatToIsoDate($dateString) {
+        if (empty($dateString)) {
+            return '';
+        }
+
+        // 1. Check if it's already in structural YYYY-MM-DD database format
+        if (preg_match('/^([0-9]{4}-[0-9]{2}-[0-9]{2})/', trim($dateString), $matches)) {
+            return $matches[1];
+        }
+
+        // 2. Use SuiteCRM TimeDate wrapper to normalize current user settings gracefully back to DB standard
+        global $timedate;
+        if (!empty($timedate)) {
+            $dbDate = $timedate->to_db_date($dateString, false);
+            if (!empty($dbDate)) {
+                return $dbDate;
+            }
+        }
+
+        // 3. Failover native PHP DateTime fallback 
+        try {
+            $date = new DateTime($dateString);
+            return $date->format('Y-m-d');
+        } catch (Exception $e) {
+            return $dateString; // Return raw format if absolutely unparseable
+        }
+    }
+
+    /**
      * Diagnostic API Processor with Optimized Real-time HTTP Timeouts
      */
     private function callWPAPI($payload) {
         $url = $_ENV['WP_API_URL'] ?? getenv('WP_API_URL') ?? null;
-        $username = $_ENV['WP_API_USERNAME'] ?? getenv('WP_API_USERNAME') ?? null;
+        $username = $_ENV['WP_API_USERNAME'] ?? getenv('WP_API_USERNAME'] ?? null;
         $app_password = $_ENV['WP_API_APP_PASSWORD'] ?? getenv('WP_API_APP_PASSWORD') ?? null;
 
         global $sugar_config;

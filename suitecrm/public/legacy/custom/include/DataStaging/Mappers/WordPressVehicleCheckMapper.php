@@ -46,7 +46,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         }
         
         if (!empty($driverId)) {
-            $vehicleCheck->driver_id_c = $driverId;
+            $vehicleCheck->check_by_contact = $driverId;
         } else {
             $vehicleCheck->unmatched_driver_name_c = !empty($driverName) ? $driverName : 'Unspecified Driver';
         }
@@ -54,22 +54,22 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         // --- EXACT MAPS MATCHING YOUR CF7 JSON PAYLOAD ---
         // Double-check the left side fields (_c) match your exact database column names in Studio!
         
-        $vehicleCheck->mileage_c = isset($rawData['current-mileage']) ? intval($this->flatten($rawData['current-mileage'])) : 0;
+        $vehicleCheck->mileage = isset($rawData['current-mileage']) ? intval($this->flatten($rawData['current-mileage'])) : 0;
         
-        $vehicleCheck->oil_level_status_c        = $this->flatten($rawData['oil-level'] ?? '');
-        $vehicleCheck->coolant_level_status_c    = $this->flatten($rawData['coolant-level'] ?? '');
-        $vehicleCheck->wiper_fluid_status_c      = $this->flatten($rawData['wiper-fluid-level'] ?? '');
-        $vehicleCheck->wiper_condition_status_c  = $this->flatten($rawData['wiper-condition'] ?? '');
-        $vehicleCheck->lights_status_c           = $this->flatten($rawData['lights'] ?? '');
-        $vehicleCheck->horn_status_c             = $this->flatten($rawData['horn'] ?? '');
-        $vehicleCheck->tyre_condition_status_c   = $this->flatten($rawData['tyre-condition'] ?? '');
-        $vehicleCheck->tyre_pressure_status_c    = $this->flatten($rawData['tyre-pressure'] ?? '');
-        $vehicleCheck->first_aid_kit_c           = $this->flatten($rawData['first-aid-kit'] ?? '');
+        $vehicleCheck->oil_level_status        = $this->flatten($rawData['oil-level'] ?? '');
+        $vehicleCheck->coolant_level_status    = $this->flatten($rawData['coolant-level'] ?? '');
+        $vehicleCheck->wiper_fluid_status      = $this->flatten($rawData['wiper-fluid-level'] ?? '');
+        $vehicleCheck->wiper_condition_status  = $this->flatten($rawData['wiper-condition'] ?? '');
+        $vehicleCheck->lights_status           = $this->flatten($rawData['lights'] ?? '');
+        $vehicleCheck->horn_status             = $this->flatten($rawData['horn'] ?? '');
+        $vehicleCheck->tyre_condition_status   = $this->flatten($rawData['tyre-condition'] ?? '');
+        $vehicleCheck->tyre_pressure_status    = $this->flatten($rawData['tyre-pressure'] ?? '');
+        $vehicleCheck->first_aid_kit           = $this->flatten($rawData['first-aid-kit'] ?? '');
         
         // Warnings & Damage descriptions
-        $vehicleCheck->warning_description_c     = $this->flatten($rawData['warning-description'] ?? '');
-        $vehicleCheck->damage_description_c      = $this->flatten($rawData['damage-description'] ?? '');
-        $vehicleCheck->additional_info_c         = $this->flatten($rawData['additional-info'] ?? '');
+        $vehicleCheck->warning_description     = $this->flatten($rawData['warning-description'] ?? '');
+        $vehicleCheck->damage_description      = $this->flatten($rawData['damage-description'] ?? '');
+        $vehicleCheck->additional_info         = $this->flatten($rawData['additional-info'] ?? '');
 
         $vehicleCheck->save();
 

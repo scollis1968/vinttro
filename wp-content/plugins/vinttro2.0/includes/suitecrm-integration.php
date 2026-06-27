@@ -1,8 +1,7 @@
-
 <?php
 /**
- * Plugin Name: SuiteCRM Integration for CF7 (Refactored)
- * Description: Drops raw form submissions directly into visp_data_staging using exact database field mappings.
+ * Plugin Name: SuiteCRM Integration for CF7
+ * Description: Drops raw form submissions dynamically into visp_data_staging via hidden form fields.
  */
 
 add_action('wpcf7_before_send_mail', 'suitecrm_forward_to_staging');
@@ -11,51 +10,64 @@ function suitecrm_forward_to_staging($contact_form) {
     error_log("SuiteCRM Integration: Form submission hook triggered.");
 
     $submission = WPCF7_Submission::get_instance();
-    if (!$submission) return;
-
-    $form_id   = $contact_form->id();
-    $form_data = $submission->get_posted_data();
-
-    // 1. Map Form IDs to data types and tracking names
-    switch ($form_id) {
-        case 2303:
-            $entry_type = 'quote_request';
-            $entry_name = 'Web Quote Request - ' . ($form_data['last-name'] ?? 'Unknown');
-            break;
-        
-        case 1234: // REPLACE with your actual Vehicle Check Sheet CF7 Form ID
-            $entry_type = 'vehicle_check';
-            $entry_name = 'Vehicle Check Sheet - ' . ($form_data['vehicle-reg__1'] ?? 'Unknown Reg');
-            break;
-
-        default:
-            // If the form ID isn't one we care about mapping, exit early.
-            return;
+    if (!$submission) {
+        return;
     }
 
-    // 2. Fetch Cached OAuth Access Token
+    $form_data = $submission->get_posted_data();
+
+    // 1. Extract the data_type dynamically from the form submission or global $_POST
+    $entry_type = !empty($form_data['data_type']) ? $form_data['data_type'] : ($_POST['data_type'] ?? '');
+    $entry_type = sanitize_text_field($entry_type);
+
+    // If there is no data_type hidden field, this form is not meant for SuiteCRM. Exit early.
+    if (empty($entry_type)) {
+        error_log("SuiteCRM Integration: Skipping form submission. No 'data_type' field found.");
+        return;
+    }
+
+    error_log("SuiteCRM Integration: Processing dynamic entry type: " . $entry_type);
+
+    // 2. Generate a clean, dynamic record name for SuiteCRM based on the data payload
+    $readable_type = ucwords(str_replace('_', ' ', $entry_type));
+    if (!empty($form_data['last-name'])) {
+        $entry_name = "{$readable_type} - " . sanitize_text_field($form_data['last-name']);
+    } elseif (!empty($form_data['vehicle-reg__1'])) {
+        $entry_name = "{$readable_type} - " . sanitize_text_field($form_data['vehicle-reg__1']);
+    } else {
+        $entry_name = "{$readable_type} Submission - " . current_time('mysql');
+    }
+
+    // 3. Fetch Cached OAuth Access Token
     $token = suitecrm_get_access_token();
     if (!$token) {
         error_log("SuiteCRM Integration CRITICAL: Failed to retrieve API access token.");
         return;
     }
 
-    // 3. Build payload matching exact visp_data_staging fields
-    $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
+    // 4. Verify Configuration Constant
+    if (defined('SUITECRM_URL')) {
+        $url = rtrim(SUITECRM_URL, '/') . '/V8/module';
+    } else {
+        error_log("SuiteCRM Integration CRITICAL: SUITECRM_URL constant is not defined.");
+        return;
+    }
+
+    // 5. Build payload matching exact visp_data_staging fields
     $payload = [
         'data' => [
             'type' => 'visp_data_staging',
             'attributes' => [
                 'name'          => $entry_name,
-                'status'        => 'pending',               // Match exact key in your status dropdown
-                'data_type'     => $entry_type,            // String token used by your scheduler logic
-                'raw_data'      => json_encode($form_data), // The raw text area block dump
-                'source_system' => 'WordPress'              // Match exact key in your source dropdown
+                'status'        => 'pending',
+                'data_type'     => $entry_type,
+                'raw_data'      => json_encode($form_data),
+                'source_system' => 'WordPress'
             ]
         ]
     ];
 
-    // 4. POST payload to SuiteCRM
+    // 6. POST payload to SuiteCRM
     $response = wp_remote_post($url, [
         'headers' => [
             'Authorization' => 'Bearer ' . $token,
@@ -70,7 +82,7 @@ function suitecrm_forward_to_staging($contact_form) {
         error_log('SuiteCRM Integration Staging Error: ' . $response->get_error_message());
     } else {
         $status_code = wp_remote_retrieve_response_code($response);
-        error_log("SuiteCRM Integration Success: Form ID {$form_id} forwarded to staging. HTTP Status: {$status_code}");
+        error_log("SuiteCRM Integration Success: Dynamic data type '{$entry_type}' forwarded to staging. HTTP Status: {$status_code}");
     }
 }
 
@@ -111,7 +123,6 @@ function suitecrm_get_access_token() {
     $token = $body['access_token'] ?? null;
 
     if ($token) {
-        // Cache for 55 minutes (3300 seconds) to avoid immediate race-conditions on expiration
         set_transient('suitecrm_api_token', $token, 3300);
     } else {
         error_log('SuiteCRM API Auth Error: No Token returned in body ' . json_encode($body));

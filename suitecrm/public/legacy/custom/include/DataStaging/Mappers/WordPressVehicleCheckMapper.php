@@ -54,7 +54,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         // --- EXACT MAPS MATCHING YOUR CF7 JSON PAYLOAD ---
         // Double-check the left side fields (_c) match your exact database column names in Studio!
         
-        $vehicleCheck->mileage = isset($rawData['current-mileage']) ? intval($this->flatten($rawData['current-mileage'])) : 0;
+        $vehicleCheck->mileage = isset($rawData['current-mileage']) ? intval($this->flatten($rawData['current-mileage'])) : 11;
         
         $vehicleCheck->oil_level_status        = $this->flatten($rawData['oil-level'] ?? '');
         $vehicleCheck->coolant_level_status    = $this->flatten($rawData['coolant-level'] ?? '');

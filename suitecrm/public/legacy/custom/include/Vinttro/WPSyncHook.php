@@ -319,7 +319,7 @@ class WPSyncHook {
      */
     private function callWPAPI($payload) {
         $url = $_ENV['WP_API_URL'] ?? getenv('WP_API_URL') ?? null;
-        $username = $_ENV['WP_API_USERNAME'] ?? getenv('WP_API_USERNAME'] ?? null;
+        $username = $_ENV['WP_API_USERNAME'] ?? getenv('WP_API_USERNAME') ?? null;
         $app_password = $_ENV['WP_API_APP_PASSWORD'] ?? getenv('WP_API_APP_PASSWORD') ?? null;
 
         global $sugar_config;

@@ -8,10 +8,6 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
 
     /**
      * Aligned process method matching your scheduler's exact footprint
-     *
-     * @param array $rawData The pre-decoded array from your scheduler
-     * @param \SugarBean $stagingRecord The parent staging record bean
-     * @return string Success message to be written to the tracking field
      */
     public function process(array $rawData, \SugarBean $stagingRecord): string {
         
@@ -20,7 +16,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         }
 
         // Extract and sanitize registration number
-        $registration = strtoupper(trim($rawData['vehicle-reg__1'] ?? $rawData['vehicle_reg'] ?? $rawData['registration'] ?? ''));
+        $registration = strtoupper(trim($this->flatten($rawData['registration'] ?? '')));
         if (empty($registration)) {
             throw new \Exception("Missing core vehicle registration field in form data submission.");
         }
@@ -31,11 +27,11 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
             throw new \Exception("Lookup Failed: Vehicle with registration '{$registration}' does not exist in SuiteCRM.");
         }
 
-        // 2. Locate Active Fleet Context
+        // 2. Locate Active Fleet Context (Placeholder for your logic)
         $fleetId = $this->findActiveFleetForVehicle($vehicleBean->id);
         
         // 3. Match Driver Name string to Fleet Member
-        $driverName = $rawData['driver-name'] ?? $rawData['your-name'] ?? '';
+        $driverName = $this->flatten($rawData['driver-name'] ?? $rawData['your-name'] ?? '');
         $driverId = $this->attemptDriverMatching($fleetId, $driverName);
 
         // 4. Populate and Create the Vehicle Check Record
@@ -52,25 +48,48 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         if (!empty($driverId)) {
             $vehicleCheck->driver_id_c = $driverId;
         } else {
-            // Fallback field so accountability isn't lost if lookup drops out
             $vehicleCheck->unmatched_driver_name_c = !empty($driverName) ? $driverName : 'Unspecified Driver';
         }
 
-        // Map basic metrics from your CF7 payload
-        $vehicleCheck->mileage_c = isset($rawData['current-mileage']) ? intval($rawData['current-mileage']) : 0;
-        $vehicleCheck->oil_level_status_c = $rawData['oil-status'] ?? '';
-        $vehicleCheck->tyre_condition_status_c = $rawData['tyre-status'] ?? '';
-        // Add additional check sheet field mappings here...
+        // --- EXACT MAPS MATCHING YOUR CF7 JSON PAYLOAD ---
+        // Double-check the left side fields (_c) match your exact database column names in Studio!
+        
+        $vehicleCheck->mileage_c = isset($rawData['current-mileage']) ? intval($this->flatten($rawData['current-mileage'])) : 0;
+        
+        $vehicleCheck->oil_level_status_c        = $this->flatten($rawData['oil-level'] ?? '');
+        $vehicleCheck->coolant_level_status_c    = $this->flatten($rawData['coolant-level'] ?? '');
+        $vehicleCheck->wiper_fluid_status_c      = $this->flatten($rawData['wiper-fluid-level'] ?? '');
+        $vehicleCheck->wiper_condition_status_c  = $this->flatten($rawData['wiper-condition'] ?? '');
+        $vehicleCheck->lights_status_c           = $this->flatten($rawData['lights'] ?? '');
+        $vehicleCheck->horn_status_c             = $this->flatten($rawData['horn'] ?? '');
+        $vehicleCheck->tyre_condition_status_c   = $this->flatten($rawData['tyre-condition'] ?? '');
+        $vehicleCheck->tyre_pressure_status_c    = $this->flatten($rawData['tyre-pressure'] ?? '');
+        $vehicleCheck->first_aid_kit_c           = $this->flatten($rawData['first-aid-kit'] ?? '');
+        
+        // Warnings & Damage descriptions
+        $vehicleCheck->warning_description_c     = $this->flatten($rawData['warning-description'] ?? '');
+        $vehicleCheck->damage_description_c      = $this->flatten($rawData['damage-description'] ?? '');
+        $vehicleCheck->additional_info_c         = $this->flatten($rawData['additional-info'] ?? '');
 
         $vehicleCheck->save();
 
-        // 5. Evaluate and spin off an issue tracking ticket if defaults/failures are present
+        // 5. Evaluate and spin off an issue tracking ticket if defects/failures are present
         if ($this->hasDefects($rawData)) {
             $issueId = $this->createVehicleIssue($vehicleBean->id, $vehicleCheck->id, $rawData);
             return "Created Vehicle Check Sheet [{$vehicleCheck->id}] and opened active Issue ticket [{$issueId}].";
         }
 
         return "Successfully created Vehicle Check Sheet [{$vehicleCheck->id}] for vehicle {$registration}.";
+    }
+
+    /**
+     * Safely flattens typical Contact Form 7 array strings down to flat text values
+     */
+    private function flatten($value): string {
+        if (is_array($value)) {
+            return !empty($value) ? trim((string) $value[0]) : '';
+        }
+        return trim((string) $value);
     }
 
     /**
@@ -82,13 +101,11 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
             return null;
         }
 
-        // Strategy A: Check the core system 'name' attribute (Very common for vehicle custom modules)
         $vehicle = $seed->retrieve_by_string_fields(array('name' => $registration, 'deleted' => 0));
         if ($vehicle && !empty($vehicle->id)) {
             return $vehicle;
         }
 
-        // Strategy B: SQL query fallback supporting both core 'name' and custom '_cstm' text fields
         $escapedReg = $seed->db->quote($registration);
         $sql = "SELECT m.id FROM visp_vehicle m 
                 LEFT JOIN visp_vehicle_cstm c ON m.id = c.id_c 
@@ -118,12 +135,17 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
     }
 
     /**
-     * Conditional parser flagging non-compliant answers
+     * Conditional parser flagging non-compliant answers based on your actual fields
      */
     private function hasDefects(array $rawData): bool {
+        $warningToggle = $this->flatten($rawData['warning-toggle'] ?? '');
+        $damageToggle  = $this->flatten($rawData['damage-toggle'] ?? '');
+        
         return (
-            ($rawData['bodywork-condition'] ?? '') === 'Fail' || 
-            !empty($rawData['defect-notes'])
+            $warningToggle === 'Yes' || 
+            $damageToggle === 'Yes' || 
+            !empty($rawData['warning-description']) || 
+            !empty($rawData['damage-description'])
         );
     }
 
@@ -132,11 +154,17 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
      */
     private function createVehicleIssue(string $vehicleId, string $checkId, array $rawData): string {
         $issue = BeanFactory::newBean('visp_vehicle_issue');
-        $issue->name = "Defect Reported: " . ($rawData['defect-summary'] ?? 'Check Sheet Alert');
+        
+        $warnDesc = $this->flatten($rawData['warning-description'] ?? '');
+        $dmgDesc  = $this->flatten($rawData['damage-description'] ?? '');
+        
+        $issue->name = "Defect Reported via Check Sheet";
         $issue->status = 'Open';
         $issue->visp_vehicle_id_c = $vehicleId;
         $issue->visp_vehicle_check_id_c = $checkId;
-        $issue->description = $rawData['defect-notes'] ?? 'A defect was noted during a digital vehicle check submission.';
+        
+        $issue->description = "Warnings: " . (!empty($warnDesc) ? $warnDesc : 'None reported.') . "\n" .
+                             "Damage Notes: " . (!empty($dmgDesc) ? $dmgDesc : 'None reported.');
         $issue->save();
 
         return $issue->id;

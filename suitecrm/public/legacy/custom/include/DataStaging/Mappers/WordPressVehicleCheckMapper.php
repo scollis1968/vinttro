@@ -21,7 +21,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         }
 
         // Extract and sanitize registration number
-        $registration = strtoupper(trim($rawData['vehicle-reg__1'] ?? $rawData['vehicle_reg'] ?? ''));
+        $registration = strtoupper(trim($rawData['vehicle-reg__1'] ?? $rawData['vehicle_reg'] ?? $rawData['registration'] ?? ''));
         if (empty($registration)) {
             throw new \Exception("Missing core vehicle registration field in form data submission.");
         }

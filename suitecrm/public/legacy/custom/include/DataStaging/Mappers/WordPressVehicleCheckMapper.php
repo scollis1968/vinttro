@@ -3,7 +3,6 @@ namespace Custom\DataStaging\Mappers;
 
 use Custom\DataStaging\AbstractStagingMapper;
 use BeanFactory;
-use SugarQuery;
 
 class WordPressVehicleCheckMapper extends AbstractStagingMapper {
 
@@ -78,9 +77,13 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
      * Query utility targeting registration text elements
      */
     private function findVehicleByRegistration(string $registration) {
+        // Explicitly pull in the core query builder class definition file
+        require_once 'include/SugarQuery/SugarQuery.php';
+        
         $seed = BeanFactory::newBean('visp_vehicle');
         
-        $query = new SugarQuery();
+        // Use global namespace escape backslash \
+        $query = new \SugarQuery();
         $query->from($seed);
         $query->select(['id']);
         $query->where()->equals('registration_number_c', $registration);

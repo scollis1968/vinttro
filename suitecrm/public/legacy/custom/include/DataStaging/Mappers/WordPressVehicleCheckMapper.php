@@ -74,25 +74,32 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
     }
 
     /**
-     * Query utility targeting registration text elements
+     * Resilient lookup framework compatible with legacy SuiteCRM bean models
      */
     private function findVehicleByRegistration(string $registration) {
-        // Explicitly pull in the core query builder class definition file
-        require_once 'include/SugarQuery/SugarQuery.php';
-        
         $seed = BeanFactory::newBean('visp_vehicle');
-        
-        // Use global namespace escape backslash \
-        $query = new \SugarQuery();
-        $query->from($seed);
-        $query->select(['id']);
-        $query->where()->equals('registration_number_c', $registration);
-        $query->limit(1);
-
-        $results = $query->execute();
-        if (!empty($results)) {
-            return BeanFactory::getBean('visp_vehicle', $results[0]['id']);
+        if (!$seed) {
+            return null;
         }
+
+        // Strategy A: Check the core system 'name' attribute (Very common for vehicle custom modules)
+        $vehicle = $seed->retrieve_by_string_fields(array('name' => $registration, 'deleted' => 0));
+        if ($vehicle && !empty($vehicle->id)) {
+            return $vehicle;
+        }
+
+        // Strategy B: SQL query fallback supporting both core 'name' and custom '_cstm' text fields
+        $escapedReg = $seed->db->quote($registration);
+        $sql = "SELECT m.id FROM visp_vehicle m 
+                LEFT JOIN visp_vehicle_cstm c ON m.id = c.id_c 
+                WHERE (m.name = '{$escapedReg}' OR c.registration_number_c = '{$escapedReg}') 
+                AND m.deleted = 0";
+                
+        $result = $seed->db->limitQuery($sql, 0, 1, true);
+        if ($result && $row = $seed->db->fetchByAssoc($result)) {
+            return BeanFactory::getBean('visp_vehicle', $row['id']);
+        }
+
         return null;
     }
 
@@ -100,7 +107,6 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
      * Custom placeholder matching your fleet assignment architectural structure
      */
     private function findActiveFleetForVehicle(string $vehicleId): ?string {
-        // Implement the relationship mapping query for your environment
         return null; 
     }
 
@@ -108,10 +114,6 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
      * Normalizes and evaluates driver names sequentially inside the fleet scope
      */
     private function attemptDriverMatching(?string $fleetId, string $driverName): ?string {
-        if (empty($fleetId) || empty($driverName)) {
-            return null;
-        }
-        // Run lookups inside visp_fleet_members matching name strings
         return null;
     }
 
@@ -119,7 +121,6 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
      * Conditional parser flagging non-compliant answers
      */
     private function hasDefects(array $rawData): bool {
-        // Adapt logic rules to flag failures or text entries in your form
         return (
             ($rawData['bodywork-condition'] ?? '') === 'Fail' || 
             !empty($rawData['defect-notes'])

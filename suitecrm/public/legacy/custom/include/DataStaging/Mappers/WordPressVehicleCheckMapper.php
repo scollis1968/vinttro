@@ -40,9 +40,9 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->date_logged_c = date('Y-m-d H:i:s');
         
         // Relate parent entities
-        $vehicleCheck->visp_vehicle_id_c = $vehicleBean->id;
+        $vehicleCheck->visp_vehicle_id = $vehicleBean->id;
         if (!empty($fleetId)) {
-            $vehicleCheck->visp_fleet_id_c = $fleetId;
+            $vehicleCheck->visp_fleet_id = $fleetId;
         }
         
         if (!empty($driverId)) {

@@ -138,5 +138,3 @@ function suitecrm_get_access_token() {
 
     return $token;
 }
-
-```

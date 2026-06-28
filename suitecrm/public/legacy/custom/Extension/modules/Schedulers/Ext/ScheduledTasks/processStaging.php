@@ -7,7 +7,12 @@ function processStagingRecords() {
     require_once('custom/include/DataStaging/MapperFactory.php');
     
     $logBean = BeanFactory::newBean('visp_data_staging');
-    $pendingList = $logBean->get_full_list('', "visp_data_staging.status = 'pending'", false, 100);
+    // Old line:
+    // $pendingList = $logBean->get_full_list('', "visp_data_staging.status = 'pending'", false, 100);
+
+    // New line pointing to the custom studio status field:
+    $pendingList = $logBean->get_full_list('', "visp_data_staging_cstm.status_c = 'pending'", false, 100);
+
 
     if (empty($pendingList)) {
         return true; 

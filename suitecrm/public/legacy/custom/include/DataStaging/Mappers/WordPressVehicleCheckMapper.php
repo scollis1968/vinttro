@@ -39,6 +39,15 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->name = "Check - " . $registration . " (" . date('Y-m-d') . ")";
         $vehicleCheck->date_logged_c = date('Y-m-d H:i:s');
         
+        // --- DEFENSIVE DATE OF CHECK POPULATION ---
+        // Look for typical CF7 form tags, falling back to the current server date if empty
+        $formDate = $this->flatten($rawData['date-of-check'] ?? $rawData['check-date'] ?? '');
+        $finalCheckDate = !empty($formDate) ? $formDate : date('Y-m-d');
+        
+        // Explicitly populate both variants so downstream hooks never throw undefined property notices
+        $vehicleCheck->date_of_check = $finalCheckDate;
+        $vehicleCheck->date_of_check_c = $finalCheckDate;
+
         // Relate parent entities (Only if they are standard flat "Relate" fields)
         if (!empty($fleetId)) {
             $vehicleCheck->visp_fleet_id = $fleetId;

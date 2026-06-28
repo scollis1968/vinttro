@@ -9,6 +9,9 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
     /**
      * Aligned process method matching your scheduler's exact footprint
      */
+/**
+     * Aligned process method matching your scheduler's exact footprint
+     */
     public function process(array $rawData, \SugarBean $stagingRecord): string {
         
         if (empty($rawData)) {
@@ -39,8 +42,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->name = "Check - " . $registration . " (" . date('Y-m-d') . ")";
         $vehicleCheck->date_logged_c = date('Y-m-d H:i:s');
         
-        // Relate parent entities
-        $vehicleCheck->visp_vehicle_id = $vehicleBean->id;
+        // Relate parent entities (Only if they are standard flat "Relate" fields)
         if (!empty($fleetId)) {
             $vehicleCheck->visp_fleet_id = $fleetId;
         }
@@ -51,9 +53,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
             $vehicleCheck->unmatched_driver_name_c = !empty($driverName) ? $driverName : 'Unspecified Driver';
         }
 
-        // --- EXACT MAPS MATCHING YOUR CF7 JSON PAYLOAD ---
-        // Double-check the left side fields (_c) match your exact database column names in Studio!
-        
+        // --- MAPS MATCHING YOUR CF7 JSON PAYLOAD ---
         $vehicleCheck->mileage = isset($rawData['current-mileage']) ? intval($this->flatten($rawData['current-mileage'])) : 11;
         
         $vehicleCheck->oil_level_status        = $this->flatten($rawData['oil-level'] ?? '');
@@ -71,15 +71,33 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->damage_description      = $this->flatten($rawData['damage-description'] ?? '');
         $vehicleCheck->additional_info         = $this->flatten($rawData['additional-info'] ?? '');
 
+        // CRITICAL STEP 1: Save the record first to generate its record ID
         $vehicleCheck->save();
+
+        // CRITICAL STEP 2: Handle the Join-Table Relationship after saving
+        // Based on your table name 'visp_vehicle_visp_vehicle_check_c', the link name on your bean 
+        // will typically match the relationship name (usually without the trailing _c).
+        $linkName = 'visp_vehicle_visp_vehicle_check'; 
+
+        if ($vehicleCheck->load_relationship($linkName)) {
+            $vehicleCheck->$linkName->add($vehicleBean->id);
+        } else {
+            // Fallback: If Module Builder appended a suffix like '_1' to the link name, try to catch it
+            $fallbackLinkName = 'visp_vehicle_visp_vehicle_check_1';
+            if ($vehicleCheck->load_relationship($fallbackLinkName)) {
+                $vehicleCheck->$fallbackLinkName->add($vehicleBean->id);
+            } else {
+                throw new \Exception("Relationship Link Name could not be loaded. Verified paths '{$linkName}' and '{$fallbackLinkName}' failed.");
+            }
+        }
 
         // 5. Evaluate and spin off an issue tracking ticket if defects/failures are present
         if ($this->hasDefects($rawData)) {
             $issueId = $this->createVehicleIssue($vehicleBean->id, $vehicleCheck->id, $rawData);
-            return "Created Vehicle Check Sheet [{$vehicleCheck->id}] and opened active Issue ticket [{$issueId}].";
+            return "Created Vehicle Check Sheet [{$vehicleCheck->id}], linked to Vehicle, and opened active Issue ticket [{$issueId}].";
         }
 
-        return "Successfully created Vehicle Check Sheet [{$vehicleCheck->id}] for vehicle {$registration}.";
+        return "Successfully created Vehicle Check Sheet [{$vehicleCheck->id}] linked to vehicle {$registration}.";
     }
 
     /**

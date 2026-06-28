@@ -1,11 +1,7 @@
 <?php
 
 if (!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
-// Require the logger utility
 require_once 'custom/include/Vinttro/VinttroLogger.php';
-
-// TEMPORARY DIAGNOSTIC SPY LINE
-error_log("!!! VINTTRO SPY: PHP has explicitly opened and loaded WPSyncHook.php !!!");
 
 class WPSyncHook {
     
@@ -14,7 +10,6 @@ class WPSyncHook {
     }
 
     public function syncVehicleHook($vehicleBean, $event, $arguments) {
-        // FIX: Fixed undefined variable reference
         VinttroLogger::fatal("[syncVehicleHook] triggered for Vehicle ID:: " . $vehicleBean->id);
         $rel_name = 'visp_vehicle_contacts'; 
 
@@ -51,7 +46,6 @@ class WPSyncHook {
     }
 
     public function syncToWordpress($bean, $event, $arguments) {
-        // FIX: Fixed undefined variable reference
         VinttroLogger::fatal("[syncToWordpress] triggered for Contact ID:: " . $bean->id);
 
         if (empty($bean->portal_active_c)) {
@@ -98,8 +92,6 @@ class WPSyncHook {
         }
 
         $hasRun = true;
-        VinttroLogger::fatal("[syncVehicleFleetUpdate] [SETTING FLAG] Running primary logic...");
-        VinttroLogger::fatal("[syncVehicleFleetUpdate] [STEP 1] Loading fleet relationship...");
         
         $rel_vehicle_fleet = 'visp_fleet_visp_vehicle';
 
@@ -180,7 +172,6 @@ class WPSyncHook {
             $memberships = $fleetBean->$rel_fleet_memberships->getBeans();
             VinttroLogger::fatal("[distributeToFleetAdmins] 🟢 SUCCESS: Found " . count($memberships) . " total personnel records.");
 
-            // OPTIMIZATION: Keep track of processed emails to prevent multi-admin duplicated API bursts
             $processedEmails = [];
 
             foreach ($memberships as $membership) {
@@ -212,7 +203,6 @@ class WPSyncHook {
                         if ($contact && !empty($contact->email1)) {
                             $email = trim($contact->email1);
 
-                            // OPTIMIZATION: If we already messaged this email in this execution slice, skip it!
                             if (in_array($email, $processedEmails)) {
                                 VinttroLogger::fatal("[distributeToFleetAdmins] Skipping duplicate admin communications path for: " . $email);
                                 continue;
@@ -237,7 +227,7 @@ class WPSyncHook {
                                 VinttroLogger::fatal("[distributeToFleetAdmins] ❌ DISPATCH CRITICAL FAILURE for: " . $email . " | HTTP Code: " . $result['http_code'] . " | Response Msg: " . $result['response'] . " | Error: " . $result['error'] . "\n");
                             }
                         } else {
-                            VinttroLogger::fatal("[distributeToFleetAdmins] ⚠️ WARNING: Contact found but Email field (email1) is blank.\n");
+                            VinttroLogger::fatal("[distributeToFleetAdmins] ⚠️ WARNING: No Contact found or Email field (email1) is blank.\n");
                         }
                     } else {
                         VinttroLogger::fatal("[distributeToFleetAdmins] ❌ FAILED: Could not load link field '$rel_membership_contact' on Membership bean.\n");
@@ -249,7 +239,7 @@ class WPSyncHook {
         } else {
             VinttroLogger::fatal("[distributeToFleetAdmins]     ❌ FAILED: Could not load link '$rel_fleet_memberships' on Fleet bean.\n");
         }
-        VinttroLogger::fatal("[distributeToFleetAdmins]           ✅  ALL members processed.\n");
+        VinttroLogger::fatal("[distributeToFleetAdmins]            ✅  ALL members processed.\n");
     }
 
     private function getVehicleIssues($vehicleBean) {
@@ -284,19 +274,25 @@ class WPSyncHook {
     private function getRelatedFleets($contactBean) { return []; }
 
     /**
-     * Standardizes any SuiteCRM date (user preference format or DB format) to YYYY-MM-DD for WordPress.
+     * Type-safe utility converting both DateTime objects and Strings to YYYY-MM-DD
      */
     private function formatToIsoDate($dateString) {
         if (empty($dateString)) {
             return '';
         }
 
-        // 1. Check if it's already in structural YYYY-MM-DD database format
+        // FIX: If SuiteCRM hydrates this as a native DateTime object, extract it directly
+        if ($dateString instanceof \DateTime) {
+            return $dateString->format('Y-m-d');
+        }
+
+        // Force string casting to protect against other complex field types
+        $dateString = (string)$dateString;
+
         if (preg_match('/^([0-9]{4}-[0-9]{2}-[0-9]{2})/', trim($dateString), $matches)) {
             return $matches[1];
         }
 
-        // 2. Use SuiteCRM TimeDate wrapper to normalize current user settings gracefully back to DB standard
         global $timedate;
         if (!empty($timedate)) {
             $dbDate = $timedate->to_db_date($dateString, false);
@@ -305,12 +301,11 @@ class WPSyncHook {
             }
         }
 
-        // 3. Failover native PHP DateTime fallback 
         try {
-            $date = new DateTime($dateString);
+            $date = new \DateTime($dateString);
             return $date->format('Y-m-d');
-        } catch (Exception $e) {
-            return $dateString; // Return raw format if absolutely unparseable
+        } catch (\Exception $e) {
+            return $dateString; 
         }
     }
 
@@ -319,8 +314,8 @@ class WPSyncHook {
      */
     private function callWPAPI($payload) {
         $url = $_ENV['WP_API_URL'] ?? getenv('WP_API_URL') ?? null;
-        $username = $_ENV['WP_API_USERNAME'] ?? getenv('WP_API_USERNAME') ?? null;
-        $app_password = $_ENV['WP_API_APP_PASSWORD'] ?? getenv('WP_API_APP_PASSWORD') ?? null;
+        $username = $_ENV['WP_API_USERNAME'] ?? getenv('WP_API_USERNAME'] ?? null;
+        $app_password = $_ENV['WP_API_APP_PASSWORD'] ?? getenv('WP_API_APP_PASSWORD'] ?? null;
 
         global $sugar_config;
         if (!$username || !$app_password) {
@@ -348,8 +343,6 @@ class WPSyncHook {
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        
-        // OPTIMIZATION: Drastically cut down timeouts so slow network routes can't freeze the CRM front-end
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2); 
         curl_setopt($ch, CURLOPT_TIMEOUT, 4);        
 

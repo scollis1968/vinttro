@@ -9,9 +9,6 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
     /**
      * Aligned process method matching your scheduler's exact footprint
      */
-/**
-     * Aligned process method matching your scheduler's exact footprint
-     */
     public function process(array $rawData, \SugarBean $stagingRecord): string {
         
         if (empty($rawData)) {
@@ -24,14 +21,14 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
             throw new \Exception("Missing core vehicle registration field in form data submission.");
         }
 
-        // 1. Execute Lookup Chain: Find the Vehicle
-        $vehicleBean = $this->findVehicleByRegistration($registration);
-        if (!$vehicleBean) {
+        // 1. Execute Lookup Chain: Find the Vehicle ID string directly
+        $vehicleId = $this->findVehicleByRegistration($registration);
+        if (!$vehicleId) {
             throw new \Exception("Lookup Failed: Vehicle with registration '{$registration}' does not exist in SuiteCRM.");
         }
 
-        // 2. Locate Active Fleet Context (Placeholder for your logic)
-        $fleetId = $this->findActiveFleetForVehicle($vehicleBean->id);
+        // 2. Locate Active Fleet Context (Passes the flat string ID)
+        $fleetId = $this->findActiveFleetForVehicle($vehicleId);
         
         // 3. Match Driver Name string to Fleet Member
         $driverName = $this->flatten($rawData['driver-name'] ?? $rawData['your-name'] ?? '');
@@ -75,25 +72,29 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->save();
 
         // CRITICAL STEP 2: Handle the Join-Table Relationship after saving
-        // Based on your table name 'visp_vehicle_visp_vehicle_check_c', the link name on your bean 
-        // will typically match the relationship name (usually without the trailing _c).
         $linkName = 'visp_vehicle_visp_vehicle_check'; 
 
         if ($vehicleCheck->load_relationship($linkName)) {
-            $vehicleCheck->$linkName->add($vehicleBean->id);
+            // Pass the flat string ID variable directly
+            $vehicleCheck->$linkName->add($vehicleId);
         } else {
-            // Fallback: If Module Builder appended a suffix like '_1' to the link name, try to catch it
             $fallbackLinkName = 'visp_vehicle_visp_vehicle_check_1';
             if ($vehicleCheck->load_relationship($fallbackLinkName)) {
-                $vehicleCheck->$fallbackLinkName->add($vehicleBean->id);
+                // Pass the flat string ID variable directly
+                $vehicleCheck->$fallbackLinkName->add($vehicleId);
             } else {
-                throw new \Exception("Relationship Link Name could not be loaded. Verified paths '{$linkName}' and '{$fallbackLinkName}' failed.");
+                $linkedFields = $vehicleCheck->get_linked_fields();
+                $availableLinks = array_keys($linkedFields);
+                $linksListString = implode(', ', $availableLinks);
+
+                throw new \Exception("Relationship Link Name could not be loaded. Tested names '{$linkName}' and '{$fallbackLinkName}' failed. Available link names on this module are: [{$linksListString}]");
             }
         }
 
         // 5. Evaluate and spin off an issue tracking ticket if defects/failures are present
         if ($this->hasDefects($rawData)) {
-            $issueId = $this->createVehicleIssue($vehicleBean->id, $vehicleCheck->id, $rawData);
+            // Pass the flat string ID variable directly
+            $issueId = $this->createVehicleIssue($vehicleId, $vehicleCheck->id, $rawData);
             return "Created Vehicle Check Sheet [{$vehicleCheck->id}], linked to Vehicle, and opened active Issue ticket [{$issueId}].";
         }
 
@@ -111,9 +112,9 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
     }
 
     /**
-     * Resilient lookup framework compatible with legacy SuiteCRM bean models
+     * Resilient lookup framework returning ONLY the record ID string
      */
-    private function findVehicleByRegistration(string $registration) {
+    private function findVehicleByRegistration(string $registration): ?string {
         $seed = BeanFactory::newBean('visp_vehicle');
         if (!$seed) {
             return null;
@@ -121,7 +122,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
 
         $vehicle = $seed->retrieve_by_string_fields(array('name' => $registration, 'deleted' => 0));
         if ($vehicle && !empty($vehicle->id)) {
-            return $vehicle;
+            return $vehicle->id; 
         }
 
         $escapedReg = $seed->db->quote($registration);
@@ -132,7 +133,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
                 
         $result = $seed->db->limitQuery($sql, 0, 1, true);
         if ($result && $row = $seed->db->fetchByAssoc($result)) {
-            return BeanFactory::getBean('visp_vehicle', $row['id']);
+            return $row['id']; 
         }
 
         return null;

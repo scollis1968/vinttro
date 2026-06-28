@@ -62,15 +62,15 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         // --- MAPS MATCHING YOUR CF7 JSON PAYLOAD ---
         $vehicleCheck->mileage = isset($rawData['current-mileage']) ? intval($this->flatten($rawData['current-mileage'])) : 11;
         
-        $vehicleCheck->oil_level_status        = $this->flatten($rawData['oil-level'] ?? '');
-        $vehicleCheck->coolant_level_status    = $this->flatten($rawData['coolant-level'] ?? '');
-        $vehicleCheck->wiper_fluid_status      = $this->flatten($rawData['wiper-fluid-level'] ?? '');
-        $vehicleCheck->wiper_condition_status  = $this->flatten($rawData['wiper-condition'] ?? '');
-        $vehicleCheck->lights_status           = $this->flatten($rawData['lights'] ?? '');
-        $vehicleCheck->horn_status             = $this->flatten($rawData['horn'] ?? '');
-        $vehicleCheck->tyre_condition_status   = $this->flatten($rawData['tyre-condition'] ?? '');
-        $vehicleCheck->tyre_pressure_status    = $this->flatten($rawData['tyre-pressure'] ?? '');
-        $vehicleCheck->first_aid_kit           = $this->flatten($rawData['first-aid-kit'] ?? '');
+        $vehicleCheck->oil_level_ok            = $this->flatten($rawData['oil-level'] ?? '');
+        $vehicleCheck->coolant_level_ok        = $this->flatten($rawData['coolant-level'] ?? '');
+        $vehicleCheck->wiper_fluid_ok          = $this->flatten($rawData['wiper-fluid-level'] ?? '');
+        $vehicleCheck->wiper_condition_ok      = $this->flatten($rawData['wiper-condition'] ?? '');
+        $vehicleCheck->lights_ok               = $this->flatten($rawData['lights'] ?? '');
+        $vehicleCheck->horn_ok                 = $this->flatten($rawData['horn'] ?? '');
+        $vehicleCheck->tyre_condition_ok       = $this->flatten($rawData['tyre-condition'] ?? '');
+        $vehicleCheck->tyre_pressure_ok        = $this->flatten($rawData['tyre-pressure'] ?? '');
+        $vehicleCheck->first_aid_kit_ok        = $this->flatten($rawData['first-aid-kit'] ?? '');
         
         // Warnings & Damage descriptions
         $vehicleCheck->warning_description     = $this->flatten($rawData['warning-description'] ?? '');

@@ -243,6 +243,9 @@ function vinttro_calculate_vehicle_priority_score($car) {
 /**
  * 4. THE MAIN PANEL RENDERER (UPDATED WITH COSMETIC TWEAKS)
  */
+/**
+ * 4. THE MAIN PANEL RENDERER (FIXED VERTICAL ALIGNMENT)
+ */
 function vinttro_get_fleet_panels($user_id) {
     // Read from wp-config constant instead of $_ENV
     $crm_base_url = defined('SUITECRM_BASE_URL') ? SUITECRM_BASE_URL : 'https://uatcrm.vinttro.co.uk';
@@ -361,7 +364,7 @@ function vinttro_get_fleet_panels($user_id) {
                                 <span class="vehicle-status-dot <?php echo $status_class; ?>" title="<?php echo $has_issues ? 'Issues Reported' : 'All Clear'; ?>"></span>
 
                                 <?php if ($has_issues) : ?>
-                                    <div class="vehicle-issue-summary-line" onclick="vinttroToggleIssues(this)" data-toggle-target="<?php echo esc_attr($unique_row_id); ?>" style="margin-top: 6px; margin-left: 12px; display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
+                                    <div class="vehicle-issue-summary-line" onclick="vinttroToggleIssues(this)" data-toggle-target="<?php echo esc_attr($unique_row_id); ?>" style="margin-top: 6px; margin-left: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
                                         <span style="font-size: 0.85em; color: #666; font-weight: 600;">Outstanding Issues:</span>
                                         <?php if ($crit_high_count > 0) : ?>
                                             <span style="color: #dc3545; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="Critical / High Issues">

@@ -246,6 +246,9 @@ function vinttro_calculate_vehicle_priority_score($car) {
 /**
  * 4. THE MAIN PANEL RENDERER (FIXED VERTICAL ALIGNMENT)
  */
+/**
+ * 4. THE MAIN PANEL RENDERER (FIXED COLUMN VERTICAL ALIGNMENT)
+ */
 function vinttro_get_fleet_panels($user_id) {
     // Read from wp-config constant instead of $_ENV
     $crm_base_url = defined('SUITECRM_BASE_URL') ? SUITECRM_BASE_URL : 'https://uatcrm.vinttro.co.uk';
@@ -261,6 +264,11 @@ function vinttro_get_fleet_panels($user_id) {
         }
         .vehicle-issue-summary-line:hover {
             opacity: 0.8;
+        }
+        /* Forces all columns to align with the top row text (the Registration) */
+        .vehicle-main-row td {
+            vertical-align: top !important;
+            padding-top: 10px; /* Optional: adjusts top spacing to look uniform */
         }
     </style>
     <script>

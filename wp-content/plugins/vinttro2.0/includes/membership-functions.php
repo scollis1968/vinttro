@@ -213,10 +213,12 @@ function vinttro_calculate_vehicle_priority_score($car) {
     $issues = $car['outstanding_issues'] ?? [];
     if (!empty($issues)) {
         $severities = array_column($issues, 'severity');
-        if (in_array('high', $severities) || in_array('critical', $severities)) {
+        if (in_array('critical', $severities) || in_array('high', $severities)) {
             $score += 1000; // Crashing mechanical issues win instantly
-        } elseif (in_array('medium', $severities) || in_array('moderate', $severities)) {
+        } elseif (in_array('major', $severities)) {
             $score += 500;
+        } elseif (in_array('moderate', $severities) || in_array('medium', $severities)) {
+            $score += 400;
         } else {
             $score += 300;
         }
@@ -249,6 +251,9 @@ function vinttro_calculate_vehicle_priority_score($car) {
 /**
  * 4. THE MAIN PANEL RENDERER (FIXED COLUMN VERTICAL ALIGNMENT)
  */
+/**
+ * 4. THE MAIN PANEL RENDERER (SUITECRM 4-TIER SEVERITY ALIGNMENT)
+ */
 function vinttro_get_fleet_panels($user_id) {
     // Read from wp-config constant instead of $_ENV
     $crm_base_url = defined('SUITECRM_BASE_URL') ? SUITECRM_BASE_URL : 'https://uatcrm.vinttro.co.uk';
@@ -268,7 +273,7 @@ function vinttro_get_fleet_panels($user_id) {
         /* Forces all columns to align with the top row text (the Registration) */
         .vehicle-main-row td {
             vertical-align: top !important;
-            padding-top: 10px; /* Optional: adjusts top spacing to look uniform */
+            padding-top: 10px;
         }
     </style>
     <script>
@@ -321,33 +326,58 @@ function vinttro_get_fleet_panels($user_id) {
                         $has_issues = !empty($issues);
                         
                         $status_class = 'status-safe';
-                        $crit_high_count = 0;
-                        $med_mod_count = 0;
-                        $low_info_count = 0;
+                        
+                        // Define the strict 4-tier SuiteCRM severity configuration schema
+                        $sev_config = [
+                            'critical' => [
+                                'color' => '#dc3545',
+                                'desc'  => 'Critical (Vehicle is unsafe to operate; do not drive.)',
+                                'count' => 0
+                            ],
+                            'major' => [
+                                'color' => '#fd7e14',
+                                'desc'  => 'Major (Immediate safety or mechanical risk; requires urgent repair.)',
+                                'count' => 0
+                            ],
+                            'moderate' => [
+                                'color' => '#ffc107',
+                                'desc'  => 'Moderate (Potential risk or performance degradation if not addressed soon.)',
+                                'count' => 0
+                            ],
+                            'minor' => [
+                                'color' => '#6c757d',
+                                'desc'  => 'Minor (Cosmetic or non-essential; no impact on safety or performance.)',
+                                'count' => 0
+                            ]
+                        ];
 
                         if ($has_issues) {
-                            $severities = array_column($issues, 'severity');
-                            if (in_array('high', $severities) || in_array('critical', $severities)) $status_class = 'status-critical';
-                            elseif (in_array('medium', $severities) || in_array('moderate', $severities)) $status_class = 'status-warning';
-                            else $status_class = 'status-info';
+                            $severities = array_map('strtolower', array_column($issues, 'severity'));
+                            
+                            // Map parent status dot colors
+                            if (in_array('critical', $severities) || in_array('major', $severities) || in_array('high', $severities)) {
+                                $status_class = 'status-critical';
+                            } elseif (in_array('moderate', $severities) || in_array('medium', $severities)) {
+                                $status_class = 'status-warning';
+                            } else {
+                                $status_class = 'status-info';
+                            }
 
-                            // Count structural breakdowns by severity type
+                            // Hydrate counts (with backwards-compatible fallback mapping)
                             foreach ($issues as $issue) {
-                                $sev = strtolower($issue['severity'] ?? 'info');
-                                if ($sev === 'critical' || $sev === 'high') {
-                                    $crit_high_count++;
-                                } elseif ($sev === 'medium' || $sev === 'moderate') {
-                                    $med_mod_count++;
-                                } else {
-                                    $low_info_count++;
+                                $sev = strtolower($issue['severity'] ?? 'minor');
+                                if ($sev === 'high') $sev = 'major';
+                                if ($sev === 'medium') $sev = 'moderate';
+                                if ($sev === 'low' || $sev === 'info') $sev = 'minor';
+
+                                if (isset($sev_config[$sev])) {
+                                    $sev_config[$sev]['count']++;
                                 }
                             }
                         }
 
-                        // SVG Configurations for the summary line
-                        $icon_svg_crit = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 2px;"><path d="m12 14 4-4M12 10l4 4M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
-                        $icon_svg_med = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 2px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-                        $icon_svg_low = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+                        // Normalized warning triangle SVG used uniformly for a cleaner aesthetic
+                        $warning_triangle_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 2px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
                     ?>
                         <tr class="vehicle-main-row <?php echo $has_issues ? 'has-issues' : 'no-issues'; ?>">
                             <td class="vehicle-cell">
@@ -374,21 +404,13 @@ function vinttro_get_fleet_panels($user_id) {
                                 <?php if ($has_issues) : ?>
                                     <div class="vehicle-issue-summary-line" onclick="vinttroToggleIssues(this)" data-toggle-target="<?php echo esc_attr($unique_row_id); ?>" style="margin-top: 6px; margin-left: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
                                         <span style="font-size: 0.85em; color: #666; font-weight: 600;">Outstanding Issues:</span>
-                                        <?php if ($crit_high_count > 0) : ?>
-                                            <span style="color: #dc3545; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="Critical / High Issues">
-                                                <?php echo $icon_svg_crit; ?><?php echo $crit_high_count; ?>
+                                        
+                                        <?php foreach ($sev_config as $key => $config) : ?>
+                                            <span style="color: <?php echo $config['color']; ?>; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="<?php echo esc_attr($config['desc']); ?>">
+                                                <?php echo $warning_triangle_svg; ?><?php echo $config['count']; ?>
                                             </span>
-                                        <?php endif; ?>
-                                        <?php if ($med_mod_count > 0) : ?>
-                                            <span style="color: #ffc107; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="Medium / Moderate Issues">
-                                                <?php echo $icon_svg_med; ?><?php echo $med_mod_count; ?>
-                                            </span>
-                                        <?php endif; ?>
-                                        <?php if ($low_info_count > 0) : ?>
-                                            <span style="color: #0dcaf0; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="Low / Info Issues">
-                                                <?php echo $icon_svg_low; ?><?php echo $low_info_count; ?>
-                                            </span>
-                                        <?php endif; ?>
+                                        <?php endforeach; ?>
+
                                         <span class="toggle-indicator" style="font-size: 0.85em; color: #777; font-weight: bold; margin-left: 2px;">[+]</span>
                                     </div>
                                 <?php endif; ?>
@@ -440,17 +462,18 @@ function vinttro_get_fleet_panels($user_id) {
                         </tr>
 
                         <?php if ($has_issues) : 
-                            // 📊 Severity Priority Mapping
+                            // 📊 Severity Priority Mapping for details row sub-sorting
                             $severity_priority = [
                                 'critical' => 1,
+                                'major'    => 2,
                                 'high'     => 2,
-                                'medium'   => 3,
                                 'moderate' => 3, 
+                                'medium'   => 3,
+                                'minor'    => 4,
                                 'low'      => 4,
                                 'info'     => 5
                             ];
 
-                            // Reorder sub-issues so critical elements rank highest
                             usort($issues, function($a, $b) use ($severity_priority) {
                                 $prio_a = $severity_priority[strtolower($a['severity'] ?? '')] ?? 99;
                                 $prio_b = $severity_priority[strtolower($b['severity'] ?? '')] ?? 99;
@@ -470,22 +493,17 @@ function vinttro_get_fleet_panels($user_id) {
 
                                                 $issue_id = $issue['id'] ?? '';
 
-                                                // 🎨 Icon configuration matching matrix
-                                                $sev = strtolower($issue['severity'] ?? 'info');
-                                                if ($sev === 'critical' || $sev === 'high') {
-                                                    $icon_color = '#dc3545'; // Crimson Red
-                                                    $icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 6px;"><path d="m12 14 4-4M12 10l4 4M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
-                                                } elseif ($sev === 'medium' || $sev === 'moderate') {
-                                                    $icon_color = '#ffc107'; // Amber Orange
-                                                    $icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 6px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-                                                } else {
-                                                    $icon_color = '#0dcaf0'; // Info Blue
-                                                    $icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 6px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
-                                                }
+                                                // Normalize item severity for inner row style output
+                                                $sev_key = strtolower($issue['severity'] ?? 'minor');
+                                                if ($sev_key === 'high') $sev_key = 'major';
+                                                if ($sev_key === 'medium') $sev_key = 'moderate';
+                                                if ($sev_key === 'low' || $sev_key === 'info') $sev_key = 'minor';
+
+                                                $item_color = $sev_config[$sev_key]['color'] ?? '#6c757d';
                                             ?>
-                                                <li style="display: flex; align-items: flex-start; margin-bottom: 8px; color: <?php echo $icon_color; ?>;">
+                                                <li style="display: flex; align-items: flex-start; margin-bottom: 8px; color: <?php echo $item_color; ?>;">
                                                     <span class="issue-icon" style="flex-shrink: 0; display: inline-flex; align-items: center; height: 20px;">
-                                                        <?php echo $icon_svg; ?>
+                                                        <?php echo $warning_triangle_svg; ?>
                                                     </span>
                                                     <span style="color: #333;">
                                                         <?php if (!empty($issue_id)) : ?>

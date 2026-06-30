@@ -243,6 +243,9 @@ function vinttro_calculate_vehicle_priority_score($car) {
 /**
  * 4. THE MAIN PANEL RENDERER
  */
+/**
+ * 4. THE MAIN PANEL RENDERER (UPDATED WITH CONDENSED EXPANDABLE ISSUES VIEW)
+ */
 function vinttro_get_fleet_panels($user_id) {
     // Read from wp-config constant instead of $_ENV
     $crm_base_url = defined('SUITECRM_BASE_URL') ? SUITECRM_BASE_URL : 'https://uatcrm.vinttro.co.uk';
@@ -251,6 +254,33 @@ function vinttro_get_fleet_panels($user_id) {
     if (empty($fleets) || !is_array($fleets)) return '';
 
     ob_start();
+    ?>
+    <style>
+        .vehicle-issue-summary-line {
+            transition: opacity 0.2s ease-in-out;
+        }
+        .vehicle-issue-summary-line:hover {
+            opacity: 0.8;
+        }
+    </style>
+    <script>
+        function vinttroToggleIssues(triggerElement) {
+            var targetId = triggerElement.getAttribute('data-toggle-target');
+            var targetRow = document.getElementById(targetId);
+            var indicator = triggerElement.querySelector('.toggle-indicator');
+            
+            if (targetRow) {
+                if (targetRow.style.display === 'table-row') {
+                    targetRow.style.display = 'none';
+                    if (indicator) indicator.textContent = '[+] View';
+                } else {
+                    targetRow.style.display = 'table-row';
+                    if (indicator) indicator.textContent = '[-] Hide';
+                }
+            }
+        }
+    </script>
+    <?php
     foreach ($fleets as $fleet) : 
         $vehicles = $fleet['vehicles'] ?? [];
 
@@ -283,18 +313,40 @@ function vinttro_get_fleet_panels($user_id) {
                         $has_issues = !empty($issues);
                         
                         $status_class = 'status-safe';
+                        $crit_high_count = 0;
+                        $med_mod_count = 0;
+                        $low_info_count = 0;
+
                         if ($has_issues) {
                             $severities = array_column($issues, 'severity');
                             if (in_array('high', $severities) || in_array('critical', $severities)) $status_class = 'status-critical';
                             elseif (in_array('medium', $severities) || in_array('moderate', $severities)) $status_class = 'status-warning';
                             else $status_class = 'status-info';
+
+                            // Count structural breakdowns by severity type
+                            foreach ($issues as $issue) {
+                                $sev = strtolower($issue['severity'] ?? 'info');
+                                if ($sev === 'critical' || $sev === 'high') {
+                                    $crit_high_count++;
+                                } elseif ($sev === 'medium' || $sev === 'moderate') {
+                                    $med_mod_count++;
+                                } else {
+                                    $low_info_count++;
+                                }
+                            }
                         }
+
+                        // SVG Configurations for the summary line
+                        $icon_svg_crit = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 2px;"><path d="m12 14 4-4M12 10l4 4M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+                        $icon_svg_med = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 2px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+                        $icon_svg_low = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
                     ?>
                         <tr class="vehicle-main-row <?php echo $has_issues ? 'has-issues' : 'no-issues'; ?>">
                             <td class="vehicle-cell">
                                 <?php 
                                 $crm_id = $car['id'] ?? ''; 
                                 $reg_text = esc_html($car['reg'] ?? 'N/A');
+                                $unique_row_id = 'issues-' . (!empty($crm_id) ? $crm_id : md5($reg_text));
                                 
                                 if (!empty($crm_id)) : ?>
                                     <a href="<?php echo esc_url(rtrim($crm_base_url, '/')) . '/#/visp_vehicle/record/' . esc_attr($crm_id); ?>" 
@@ -310,6 +362,27 @@ function vinttro_get_fleet_panels($user_id) {
                                 <?php endif; ?>
 
                                 <span class="vehicle-status-dot <?php echo $status_class; ?>" title="<?php echo $has_issues ? 'Issues Reported' : 'All Clear'; ?>"></span>
+
+                                <?php if ($has_issues) : ?>
+                                    <div class="vehicle-issue-summary-line" onclick="vinttroToggleIssues(this)" data-toggle-target="<?php echo esc_attr($unique_row_id); ?>" style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
+                                        <?php if ($crit_high_count > 0) : ?>
+                                            <span style="color: #dc3545; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="Critical / High Issues">
+                                                <?php echo $icon_svg_crit; ?><?php echo $crit_high_count; ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($med_mod_count > 0) : ?>
+                                            <span style="color: #ffc107; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="Medium / Moderate Issues">
+                                                <?php echo $icon_svg_med; ?><?php echo $med_mod_count; ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if ($low_info_count > 0) : ?>
+                                            <span style="color: #0dcaf0; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="Low / Info Issues">
+                                                <?php echo $icon_svg_low; ?><?php echo $low_info_count; ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <span class="toggle-indicator" style="font-size: 0.75em; color: #0073aa; font-weight: 600; border-bottom: 1px dashed #0073aa; margin-left: 2px;">[+] View</span>
+                                    </div>
+                                <?php endif; ?>
                             </td>
 
                             <td class="driver-cell">
@@ -375,7 +448,7 @@ function vinttro_get_fleet_panels($user_id) {
                                 return $prio_a <=> $prio_b;
                             });
                         ?>
-                            <tr class="vehicle-issues-row">
+                            <tr id="<?php echo esc_attr($unique_row_id); ?>" class="vehicle-issues-row" style="display: none;">
                                 <td colspan="5"> 
                                     <div class="issues-expanded-box">
                                         <strong>Outstanding Issues:</strong>

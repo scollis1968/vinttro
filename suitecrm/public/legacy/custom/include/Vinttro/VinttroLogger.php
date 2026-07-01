@@ -5,6 +5,7 @@ class VinttroLogger
 {
     /**
      * Log a fatal message with automated class/method tracing
+     * This change is to force a deployment, as the logicHooks have stoped working, I think it may be due to udpdates using module builder.
      */
     public static function fatal($message) 
     {

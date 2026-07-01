@@ -40,15 +40,13 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->date_logged_c = date('Y-m-d H:i:s');
         
         // --- DEFENSIVE DATE OF CHECK POPULATION ---
-        // Look for typical CF7 form tags, falling back to the current server date if empty
         $formDate = $this->flatten($rawData['date-of-check'] ?? $rawData['check-date'] ?? '');
         $finalCheckDate = !empty($formDate) ? $formDate : date('Y-m-d');
         
-        // Explicitly populate both variants so downstream hooks never throw undefined property notices
         $vehicleCheck->date_of_check = $finalCheckDate;
         $vehicleCheck->date_of_check_c = $finalCheckDate;
 
-        // Relate parent entities (Only if they are standard flat "Relate" fields)
+        // Relate parent entities
         if (!empty($fleetId)) {
             $vehicleCheck->visp_fleet_id = $fleetId;
         }
@@ -66,18 +64,54 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->coolant_level_ok        = $this->flatten($rawData['coolant-level'] ?? '');
         $vehicleCheck->wiper_fluid_ok          = $this->flatten($rawData['wiper-fluid-level'] ?? '');
         $vehicleCheck->wiper_condition_good    = $this->flatten($rawData['wiper-condition'] ?? '');
+        $vehicleCheck->indicators_ok           = $this->flatten($rawData['indicators'] ?? '');
         $vehicleCheck->lights_ok               = $this->flatten($rawData['lights'] ?? '');
         $vehicleCheck->horn_ok                 = $this->flatten($rawData['horn'] ?? '');
         $vehicleCheck->tyre_condition          = $this->flatten($rawData['tyre-condition'] ?? '');
         $vehicleCheck->tyre_pressure_ok        = $this->flatten($rawData['tyre-pressure'] ?? '');
         $vehicleCheck->first_aid_kit_ok        = $this->flatten($rawData['first-aid-kit'] ?? '');
         $vehicleCheck->any_warning_lights      = $this->flatten($rawData['warning-lights'] ?? '');
-        $vehicleCheck->issue_description       = $this->flatten($rawData['issue-description'] ?? '');
         
-        // Warnings & Damage descriptions
-        $vehicleCheck->any_damage_or_issues    = $this->flatten($rawData['damage-toggle'] ?? '');
+        $vehicleCheck->issue_description       = $this->flatten($rawData['issue-description'] ?? '');
         $vehicleCheck->damage_description      = $this->flatten($rawData['damage-description'] ?? '');
         $vehicleCheck->additional_info         = $this->flatten($rawData['additional-info'] ?? '');
+
+        // --- DYNAMICALLY DERIVE "ANY_ISSUES" FROM ALL CHECK DROPDOWNS ---
+        $checkFields = [
+            'oil-level', 'coolant-level', 'wiper-fluid-level', 'wiper-condition',
+            'indicators', 'lights', 'horn', 'tyre-condition', 'tyre-pressure',
+            'first-aid-kit', 'warning-lights'
+        ];
+
+        $hasIssue = false;
+        $hasOk = false;
+
+        foreach ($checkFields as $field) {
+            $val = strtolower($this->flatten($rawData[$field] ?? ''));
+            if ($val === 'issue') {
+                $hasIssue = true;
+            } elseif ($val === 'ok') {
+                $hasOk = true;
+            }
+        }
+
+        if ($hasIssue) {
+            $vehicleCheck->any_issues = 'yes';
+        } elseif ($hasOk) {
+            $vehicleCheck->any_issues = 'no';
+        } else {
+            $vehicleCheck->any_issues = ''; // Keeps it Null/Unanswered if nothing was affirmatively filled out
+        }
+
+        // --- NORMALIZE "ANY_DAMAGE" FROM CF7 RADIO TO SUITECRM DROPDOWN KEY ---
+        $damageToggle = strtolower($this->flatten($rawData['damage-toggle'] ?? ''));
+        if ($damageToggle === 'yes') {
+            $vehicleCheck->any_damage = 'yes';
+        } elseif ($damageToggle === 'no') {
+            $vehicleCheck->any_damage = 'no';
+        } else {
+            $vehicleCheck->any_damage = ''; // Keeps it Null/Unanswered
+        }
 
         // CRITICAL STEP 1: Save the record first to generate its record ID
         $vehicleCheck->save();
@@ -86,12 +120,10 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $linkName = 'visp_vehicle_visp_vehicle_check'; 
 
         if ($vehicleCheck->load_relationship($linkName)) {
-            // Pass the flat string ID variable directly
             $vehicleCheck->$linkName->add($vehicleId);
         } else {
             $fallbackLinkName = 'visp_vehicle_visp_vehicle_check_1';
             if ($vehicleCheck->load_relationship($fallbackLinkName)) {
-                // Pass the flat string ID variable directly
                 $vehicleCheck->$fallbackLinkName->add($vehicleId);
             } else {
                 $linkedFields = $vehicleCheck->get_linked_fields();
@@ -103,8 +135,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         }
 
         // 5. Evaluate and spin off an issue tracking ticket if defects/failures are present
-        if ($this->hasDefects($rawData)) {
-            // Pass the flat string ID variable directly
+        if ($this->hasDefects($vehicleCheck->any_issues, $vehicleCheck->any_damage, $rawData)) {
             $issueId = $this->createVehicleIssue($vehicleId, $vehicleCheck->id, $rawData);
             return "Created Vehicle Check Sheet [{$vehicleCheck->id}], linked to Vehicle, and opened active Issue ticket [{$issueId}].";
         }
@@ -150,32 +181,23 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         return null;
     }
 
-    /**
-     * Custom placeholder matching your fleet assignment architectural structure
-     */
     private function findActiveFleetForVehicle(string $vehicleId): ?string {
         return null; 
     }
 
-    /**
-     * Normalizes and evaluates driver names sequentially inside the fleet scope
-     */
     private function attemptDriverMatching(?string $fleetId, string $driverName): ?string {
         return null;
     }
 
     /**
-     * Conditional parser flagging non-compliant answers based on your actual fields
+     * Conditional parser flagging non-compliant answers based on your calculated derived fields
      */
-    private function hasDefects(array $rawData): bool {
-        $warningToggle = $this->flatten($rawData['warning-toggle'] ?? '');
-        $damageToggle  = $this->flatten($rawData['damage-toggle'] ?? '');
-        
+    private function hasDefects(string $anyIssues, string $anyDamage, array $rawData): bool {
         return (
-            $warningToggle === 'Yes' || 
-            $damageToggle === 'Yes' || 
-            !empty($rawData['warning-description']) || 
-            !empty($rawData['damage-description'])
+            $anyIssues === 'yes' || 
+            $anyDamage === 'yes' || 
+            !empty($this->flatten($rawData['issue-description'] ?? '')) || 
+            !empty($this->flatten($rawData['damage-description'] ?? ''))
         );
     }
 
@@ -185,15 +207,15 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
     private function createVehicleIssue(string $vehicleId, string $checkId, array $rawData): string {
         $issue = BeanFactory::newBean('visp_vehicle_issue');
         
-        $warnDesc = $this->flatten($rawData['warning-description'] ?? '');
-        $dmgDesc  = $this->flatten($rawData['damage-description'] ?? '');
+        $issueDesc = $this->flatten($rawData['issue-description'] ?? '');
+        $dmgDesc   = $this->flatten($rawData['damage-description'] ?? '');
         
         $issue->name = "Defect Reported via Check Sheet";
         $issue->status = 'Open';
         $issue->visp_vehicle_id_c = $vehicleId;
         $issue->visp_vehicle_check_id_c = $checkId;
         
-        $issue->description = "Warnings: " . (!empty($warnDesc) ? $warnDesc : 'None reported.') . "\n" .
+        $issue->description = "Issues: " . (!empty($issueDesc) ? $issueDesc : 'None reported.') . "\n" .
                              "Damage Notes: " . (!empty($dmgDesc) ? $dmgDesc : 'None reported.');
         $issue->save();
 

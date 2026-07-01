@@ -52,7 +52,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         }
         
         if (!empty($driverId)) {
-            $vehicleCheck->check_by_contact = $driverId;
+            $vehicleCheck->contact_id_c = $driverId;
         } 
 
         $vehicleCheck->check_by = !empty($driverName) ? $driverName . ' (' . $driverId . ')'    : 'Unspecified Driver';

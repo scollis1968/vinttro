@@ -185,7 +185,57 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         return null; 
     }
 
+    /**
+     * Matches a driver name string to a Contact ID within the scope of a specific Fleet.
+     * Includes a global fallback to the Contacts module if no fleet context is found.
+     */
     private function attemptDriverMatching(?string $fleetId, string $driverName): ?string {
+        if (empty($driverName)) {
+            return null;
+        }
+
+        $driverNameClean = strtolower(trim($driverName));
+
+        // STRATEGY 1: Contextual Matching within the Fleet
+        if (!empty($fleetId)) {
+            $fleet = BeanFactory::getBean('visp_fleet', $fleetId);
+            
+            // Load the 1-to-Many relationship to fleet memberships
+            if ($fleet && $fleet->load_relationship('visp_fleet_visp_fleet_membership')) {
+                $memberships = $fleet->visp_fleet_visp_fleet_membership->getBeans();
+                
+                foreach ($memberships as $membership) {
+                    // Load the Many-to-1 relationship from membership to contact
+                    if ($membership->load_relationship('visp_fleet_memberships_contacts')) {
+                        $contacts = $membership->visp_fleet_memberships_contacts->getBeans();
+                        
+                        foreach ($contacts as $contact) {
+                            $fullName = strtolower(trim(($contact->first_name ?? '') . ' ' . ($contact->last_name ?? '')));
+                            
+                            if ($fullName === $driverNameClean) {
+                                return $contact->id;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // STRATEGY 2: Global Fallback
+        // If the fleet check fails or $fleetId wasn't found, check the core contacts table directly
+        $contactSeed = BeanFactory::newBean('Contacts');
+        if ($contactSeed) {
+            $escapedName = $contactSeed->db->quote($driverNameClean);
+            $sql = "SELECT id FROM contacts 
+                    WHERE deleted = 0 
+                    AND LOWER(CONCAT(TRIM(first_name), ' ', TRIM(last_name))) = '{$escapedName}'";
+                    
+            $result = $contactSeed->db->limitQuery($sql, 0, 1, true);
+            if ($result && $row = $contactSeed->db->fetchByAssoc($result)) {
+                return $row['id'];
+            }
+        }
+
         return null;
     }
 

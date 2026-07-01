@@ -65,15 +65,17 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->oil_level_ok            = $this->flatten($rawData['oil-level'] ?? '');
         $vehicleCheck->coolant_level_ok        = $this->flatten($rawData['coolant-level'] ?? '');
         $vehicleCheck->wiper_fluid_ok          = $this->flatten($rawData['wiper-fluid-level'] ?? '');
-        $vehicleCheck->wiper_condition_ok      = $this->flatten($rawData['wiper-condition'] ?? '');
+        $vehicleCheck->wiper_condition_good    = $this->flatten($rawData['wiper-condition'] ?? '');
         $vehicleCheck->lights_ok               = $this->flatten($rawData['lights'] ?? '');
         $vehicleCheck->horn_ok                 = $this->flatten($rawData['horn'] ?? '');
-        $vehicleCheck->tyre_condition_ok       = $this->flatten($rawData['tyre-condition'] ?? '');
+        $vehicleCheck->tyre_condition          = $this->flatten($rawData['tyre-condition'] ?? '');
         $vehicleCheck->tyre_pressure_ok        = $this->flatten($rawData['tyre-pressure'] ?? '');
         $vehicleCheck->first_aid_kit_ok        = $this->flatten($rawData['first-aid-kit'] ?? '');
+        $vehicleCheck->any_warning_lights      = $this->flatten($rawData['warning-lights'] ?? '');
+        $vehicleCheck->issue_description       = $this->flatten($rawData['issue-description'] ?? '');
         
         // Warnings & Damage descriptions
-        $vehicleCheck->warning_description     = $this->flatten($rawData['warning-description'] ?? '');
+        $vehicleCheck->any_damage_or_issues    = $this->flatten($rawData['damage-toggle'] ?? '');
         $vehicleCheck->damage_description      = $this->flatten($rawData['damage-description'] ?? '');
         $vehicleCheck->additional_info         = $this->flatten($rawData['additional-info'] ?? '');
 

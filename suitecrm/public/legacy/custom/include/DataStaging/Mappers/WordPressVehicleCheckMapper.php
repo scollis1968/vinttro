@@ -47,7 +47,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->date_of_check_c = $finalCheckDate;
 
         // Relate parent entities
-        if (!empty($fleetId)) {
+        if (!empty($fleetId)) { 
             $vehicleCheck->visp_fleet_id = $fleetId;
         }
         
@@ -55,9 +55,9 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
             $vehicleCheck->check_by_contact = $driverId;
         } 
 
-        $vehicleCheck->check_by = !empty($driverName) ? $driverName : 'Unspecified Driver';
+        $vehicleCheck->check_by = !empty($driverName) ? $driverName . ' (' . $driverId . ')'    : 'Unspecified Driver';
 
-        
+
         // --- MAPS MATCHING YOUR CF7 JSON PAYLOAD ---
         $vehicleCheck->mileage = isset($rawData['current-mileage']) ? intval($this->flatten($rawData['current-mileage'])) : 11;
         

@@ -53,10 +53,11 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         
         if (!empty($driverId)) {
             $vehicleCheck->check_by_contact = $driverId;
-        } else {
-            $vehicleCheck->check_by = !empty($driverName) ? $driverName : 'Unspecified Driver';
-        }
+        } 
 
+        $vehicleCheck->check_by = !empty($driverName) ? $driverName : 'Unspecified Driver';
+
+        
         // --- MAPS MATCHING YOUR CF7 JSON PAYLOAD ---
         $vehicleCheck->mileage = isset($rawData['current-mileage']) ? intval($this->flatten($rawData['current-mileage'])) : 11;
         

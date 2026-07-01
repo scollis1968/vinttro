@@ -55,7 +55,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
             $vehicleCheck->contact_id_c = $driverId;
         } 
 
-        $vehicleCheck->check_by = !empty($driverName) ? $driverName . ' (' . $driverId . ')'    : 'Unspecified Driver';
+        $vehicleCheck->check_by = !empty($driverName) ? $driverName  : 'Unspecified Driver';
 
 
         // --- MAPS MATCHING YOUR CF7 JSON PAYLOAD ---
@@ -70,6 +70,7 @@ class WordPressVehicleCheckMapper extends AbstractStagingMapper {
         $vehicleCheck->horn_ok                 = $this->flatten($rawData['horn'] ?? '');
         $vehicleCheck->tyre_condition          = $this->flatten($rawData['tyre-condition'] ?? '');
         $vehicleCheck->tyre_pressure_ok        = $this->flatten($rawData['tyre-pressure'] ?? '');
+        $vehicleCheck->brakes_ok               = $this->flatten($rawData['brakes'] ?? '');
         $vehicleCheck->first_aid_kit_ok        = $this->flatten($rawData['first-aid-kit'] ?? '');
         $vehicleCheck->any_warning_lights      = $this->flatten($rawData['warning-lights'] ?? '');
         

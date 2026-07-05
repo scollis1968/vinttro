@@ -302,7 +302,7 @@ function vinttro_get_fleet_panels($user_id) {
                 <thead>
                     <tr>
                         <th>Vehicle (Reg)</th>
-                        <th>Driver</th>
+                        <th>Personnel</th>
                         <th>Next MOT</th>
                         <th>Next Service</th>
                         <th>Last Check</th>
@@ -402,42 +402,59 @@ function vinttro_get_fleet_panels($user_id) {
                                 <?php endif; ?>
                             </td>
 
-                            <td class="driver-cell">
+                            <td class="personnel-cell" style="line-height: 1.5;">
                                 <?php 
-                                if (!empty($car['main_driver'])) : 
-                                    $driver_phone = $car['main_driver_phone'] ?? '';
-                                    $driver_email = $car['main_driver_email'] ?? '';
-                                ?>
-                                    <span class="driver-name" style="vertical-align: middle;">
-                                        <?php echo esc_html($car['main_driver']); ?>
-                                    </span>
-                                    
-                                    <span class="driver-actions" style="display: inline-flex; gap: 8px; margin-left: 10px; vertical-align: middle; align-items: center;">
-                                        <?php if (!empty($driver_phone)) : ?>
-                                            <a href="tel:<?php echo esc_attr(str_replace(' ', '', $driver_phone)); ?>" 
-                                               title="Call: <?php echo esc_attr($driver_phone); ?>" 
-                                               style="color: #0073aa; display: inline-block;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            </a>
-                                        <?php else : ?>
-                                            <span title="No phone number available" style="color: #ccc; cursor: not-allowed; display: inline-block;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            </span>
-                                        <?php endif; ?>
+                                $driver_name = $car['main_driver'] ?? '';
+                                $driver_phone = $car['main_driver_phone'] ?? '';
+                                $driver_email = $car['main_driver_email'] ?? '';
 
-                                        <?php if (!empty($driver_email)) : ?>
-                                            <a href="mailto:<?php echo esc_attr($driver_email); ?>" 
-                                               title="Email: <?php echo esc_attr($driver_email); ?>" 
-                                               style="color: #0073aa; display: inline-block;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                                            </a>
-                                        <?php else : ?>
-                                            <span title="No email address available" style="color: #ccc; cursor: not-allowed; display: inline-block;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                                            </span>
-                                        <?php endif; ?>
-                                    </span>
-                                <?php else : ?>
+                                $coord_name = $car['coordinator'] ?? '';
+                                $coord_phone = $car['coordinator_phone'] ?? '';
+                                $coord_email = $car['coordinator_email'] ?? '';
+                                ?>
+
+                                <?php if (!empty($driver_name)) : ?>
+                                    <div class="driver-row" style="display: flex; align-items: center; flex-wrap: wrap; margin-bottom: 2px;">
+                                        <strong class="driver-name" style="color: #333;"><?php echo esc_html($driver_name); ?></strong>
+                                        
+                                        <span class="driver-actions" style="display: inline-flex; gap: 6px; margin-left: 8px; align-items: center;">
+                                            <?php if (!empty($driver_phone)) : ?>
+                                                <a href="tel:<?php echo esc_attr(str_replace(' ', '', $driver_phone)); ?>" title="Call Driver: <?php echo esc_attr($driver_phone); ?>" style="color: #0073aa; display: inline-block;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                                </a>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($driver_email)) : ?>
+                                                <a href="mailto:<?php echo esc_attr($driver_email); ?>" title="Email Driver: <?php echo esc_attr($driver_email); ?>" style="color: #0073aa; display: inline-block;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                                </a>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if (!empty($coord_name)) : ?>
+                                    <div class="coordinator-row" style="display: flex; align-items: center; flex-wrap: wrap; font-size: 0.88em; color: #666; margin-top: 2px;">
+                                        <span style="background: #f1f3f5; color: #495057; padding: 1px 4px; border-radius: 3px; font-weight: 600; font-size: 0.85em; margin-right: 6px; border: 1px solid #dee2e6;">Coord</span>
+                                        <span class="coord-name"><?php echo esc_html($coord_name); ?></span>
+                                        
+                                        <span class="coord-actions" style="display: inline-flex; gap: 6px; margin-left: 8px; align-items: center; opacity: 0.8;">
+                                            <?php if (!empty($coord_phone)) : ?>
+                                                <a href="tel:<?php echo esc_attr(str_replace(' ', '', $coord_phone)); ?>" title="Call Coordinator: <?php echo esc_attr($coord_phone); ?>" style="color: #0073aa; display: inline-block;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                                </a>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($coord_email)) : ?>
+                                                <a href="mailto:<?php echo esc_attr($coord_email); ?>" title="Email Coordinator: <?php echo esc_attr($coord_email); ?>" style="color: #0073aa; display: inline-block;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                                </a>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if (empty($driver_name) && empty($coord_name)) : ?>
                                     <span style="color: #999;">-</span>
                                 <?php endif; ?>
                             </td>

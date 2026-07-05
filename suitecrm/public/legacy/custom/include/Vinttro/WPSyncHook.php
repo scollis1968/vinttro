@@ -154,6 +154,21 @@ class VinttroWPSyncMaster {
                         $data['main_driver_email'] = $contact->email1 ?? '';
                     }
                 }
+
+                $data['coordinator'] = 'Unassigned';
+                $data['coordinator_phone'] = '';
+                $data['coordinator_email'] = '';
+                
+                $contact_id = $vehicle->contact_id1_c ?? null; 
+
+                if (!empty($contact_id)) {
+                    $contact = BeanFactory::getBean('Contacts', $contact_id);
+                    if ($contact && !empty($contact->id)) {
+                        $data['coordinator'] = trim($contact->first_name . ' ' . $contact->last_name);
+                        $data['coordinator_phone'] = $contact->phone_mobile ?: ($contact->phone_work ?: '');
+                        $data['coordinator_email'] = $contact->email1 ?? '';
+                    }
+                }
                 $fleetStructure['vehicles'][] = $data;  
             }
         } else {

@@ -7,7 +7,7 @@ function processStagingRecords() {
     require_once('custom/include/DataStaging/MapperFactory.php');
     
     $logBean = BeanFactory::newBean('visp_data_staging');
-    $pendingList = $logBean->get_full_list('', "visp_data_staging.status = 'pending'", false, 100);
+    $pendingList = $logBean->get_full_list('', "visp_data_staging.status = 'pending'", false, 0);
 
 
 

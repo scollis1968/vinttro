@@ -362,3 +362,7 @@ class VinttroWPSyncMaster {
         ];
     }
 }
+// Fix for SuiteCRM hook name mismatch between environments
+if (!class_exists('WPSyncHook')) {
+    class WPSyncHook extends VinttroWPSyncMaster {}
+}

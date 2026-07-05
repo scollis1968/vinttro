@@ -404,13 +404,16 @@ function vinttro_get_fleet_panels($user_id) {
 
                             <td class="personnel-cell" style="line-height: 1.5;">
                                 <?php 
-                                $driver_name = $car['main_driver'] ?? '';
+                                $driver_name = trim($car['main_driver'] ?? '');
                                 $driver_phone = $car['main_driver_phone'] ?? '';
                                 $driver_email = $car['main_driver_email'] ?? '';
 
-                                $coord_name = $car['coordinator'] ?? '';
+                                $coord_name = trim($car['coordinator'] ?? '');
                                 $coord_phone = $car['coordinator_phone'] ?? '';
                                 $coord_email = $car['coordinator_email'] ?? '';
+
+                                // Check if coordinator is explicitly active and not assigned as 'Unassigned'
+                                $has_valid_coordinator = (!empty($coord_name) && strtolower($coord_name) !== 'unassigned');
 
                                 // Crisp structural inline icon SVGs
                                 $steering_wheel_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v7.5"/><path d="m19 19-4.5-4.5"/><path d="M5 19l4.5-4.5"/></svg>';
@@ -438,7 +441,7 @@ function vinttro_get_fleet_panels($user_id) {
                                     </div>
                                 <?php endif; ?>
 
-                                <?php if (!empty($coord_name)) : ?>
+                                <?php if ($has_valid_coordinator) : ?>
                                     <div class="coordinator-row" style="display: flex; align-items: center; flex-wrap: wrap; font-size: 0.82em; color: #666; margin-top: 4px; padding-left: 2px;">
                                         <?php echo $cog_svg; ?>
                                         <span class="coord-name" style="letter-spacing: 0.2px;"><?php echo esc_html($coord_name); ?></span>
@@ -459,7 +462,7 @@ function vinttro_get_fleet_panels($user_id) {
                                     </div>
                                 <?php endif; ?>
 
-                                <?php if (empty($driver_name) && empty($coord_name)) : ?>
+                                <?php if (empty($driver_name) && !$has_valid_coordinator) : ?>
                                     <span style="color: #999;">-</span>
                                 <?php endif; ?>
                             </td>

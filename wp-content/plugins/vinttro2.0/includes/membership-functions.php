@@ -411,10 +411,15 @@ function vinttro_get_fleet_panels($user_id) {
                                 $coord_name = $car['coordinator'] ?? '';
                                 $coord_phone = $car['coordinator_phone'] ?? '';
                                 $coord_email = $car['coordinator_email'] ?? '';
+
+                                // Crisp structural inline icon SVGs
+                                $steering_wheel_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v7.5"/><path d="m19 19-4.5-4.5"/><path d="M5 19l4.5-4.5"/></svg>';
+                                $cog_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 7px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1H21a2 2 0 0 1 0-4h-.09a1.65 1.65 0 0 0-1.51 1z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
                                 ?>
 
                                 <?php if (!empty($driver_name)) : ?>
                                     <div class="driver-row" style="display: flex; align-items: center; flex-wrap: wrap; margin-bottom: 2px;">
+                                        <?php echo $steering_wheel_svg; ?>
                                         <strong class="driver-name" style="color: #333;"><?php echo esc_html($driver_name); ?></strong>
                                         
                                         <span class="driver-actions" style="display: inline-flex; gap: 6px; margin-left: 8px; align-items: center;">
@@ -434,9 +439,9 @@ function vinttro_get_fleet_panels($user_id) {
                                 <?php endif; ?>
 
                                 <?php if (!empty($coord_name)) : ?>
-                                    <div class="coordinator-row" style="display: flex; align-items: center; flex-wrap: wrap; font-size: 0.88em; color: #666; margin-top: 2px;">
-                                        <span style="background: #f1f3f5; color: #495057; padding: 1px 4px; border-radius: 3px; font-weight: 600; font-size: 0.85em; margin-right: 6px; border: 1px solid #dee2e6;">Coord</span>
-                                        <span class="coord-name"><?php echo esc_html($coord_name); ?></span>
+                                    <div class="coordinator-row" style="display: flex; align-items: center; flex-wrap: wrap; font-size: 0.82em; color: #666; margin-top: 4px; padding-left: 2px;">
+                                        <?php echo $cog_svg; ?>
+                                        <span class="coord-name" style="letter-spacing: 0.2px;"><?php echo esc_html($coord_name); ?></span>
                                         
                                         <span class="coord-actions" style="display: inline-flex; gap: 6px; margin-left: 8px; align-items: center; opacity: 0.8;">
                                             <?php if (!empty($coord_phone)) : ?>

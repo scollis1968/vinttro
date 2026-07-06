@@ -1,7 +1,7 @@
 <?php
 
 
-add_shortcode('fleet_admin', function() {
+add_shortcode('cover_admin', function() {
     if ( ! is_user_logged_in() ) {
         return '<p>Please <a href="/login">log in</a> to view your dashboard.</p>';
     }

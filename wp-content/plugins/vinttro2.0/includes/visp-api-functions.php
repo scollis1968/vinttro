@@ -92,5 +92,10 @@ function vinttro_handle_crm_member($request) {
         update_user_meta($user_id, 'vinttro_fleets', $clean_fleets);
     }
 
+    if (isset($params['cover_rfqs']) && is_array($params['cover_rfqs'])) {
+        $clean_rfqs = vinttro_sanitize_incoming_data($params['cover_rfqs']);
+        update_user_meta($user_id, 'vinttro_cover_rfqs', $clean_rfqs);
+    }
+
     return new WP_REST_Response(['status' => 'success', 'user_id' => $user_id], 200);
 }

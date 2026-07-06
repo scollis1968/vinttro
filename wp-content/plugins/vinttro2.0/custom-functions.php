@@ -18,6 +18,7 @@ require_once 'includes/deployment-functions.php';
 require_once 'includes/auto-listings-functions.php';
 require_once 'includes/visp-api-functions.php';
 require_once 'includes/membership-functions.php';
+require_once 'includes/visp-cover-functions.php';
 require_once 'includes/twilio-rtc.php';
 
 

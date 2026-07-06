@@ -127,12 +127,9 @@ function vinttro_get_cover_admin_panel($user_id) {
                             // Hydrate counts (with backwards-compatible fallback mapping)
                             foreach ($insurer_rfqs as $i_rfq) {
                                 $status = strtolower($i_rfq['status'] ?? 'new');
-                                if ($status === 'quoted') $sev = 'major';
-                                if ($status === 'rejected') $sev = 'moderate';
-                                if ($status === 'low' || $sev === 'info') $sev = 'minor';
 
-                                if (isset($sev_config[$sev])) {
-                                    $sev_config[$sev]['count']++;
+                                if (isset($sev_config[$status])) {
+                                    $sev_config[$status]['count']++;
                                 }
                             }
                         }
@@ -183,7 +180,7 @@ function vinttro_get_cover_admin_panel($user_id) {
                             <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? '', 'past', 21, 10); ?></td>
                         </tr>
 
-                        <?php if ($has_issues) : 
+                        <?php if ($has_insurer_rfqs) : 
                             // 📊 Severity Priority Mapping for details row sub-sorting
                             $severity_priority = [
                                 'critical' => 1,
@@ -196,7 +193,7 @@ function vinttro_get_cover_admin_panel($user_id) {
                                 'info'     => 5
                             ];
 
-                            usort($issues, function($a, $b) use ($severity_priority) {
+                            usort($insurer_rfqs, function($a, $b) use ($severity_priority) {
                                 $prio_a = $severity_priority[strtolower($a['severity'] ?? '')] ?? 99;
                                 $prio_b = $severity_priority[strtolower($b['severity'] ?? '')] ?? 99;
                                 return $prio_a <=> $prio_b;
@@ -206,17 +203,17 @@ function vinttro_get_cover_admin_panel($user_id) {
                                 <td colspan="5"> 
                                     <div class="issues-expanded-box">
                                         <ul class="issue-detailed-list" style="list-style: none; padding-left: 0; margin-top: 4px;">
-                                            <?php foreach ($issues as $issue) : 
+                                            <?php foreach ($insurer_rfqs as $insurer_rfq) : ?>
                                                 $issue_date = '';
-                                                if (!empty($issue['date_issue_reported'])) {
-                                                    $issue_ts = strtotime($issue['date_issue_reported']);
-                                                    $issue_date = $issue_ts ? date('d/m/Y', $issue_ts) : $issue['date_issue_reported'];
+                                                if (!empty($insurer_rfq['date_issue_reported'])) {
+                                                    $issue_ts = strtotime($insurer_rfq['date_issue_reported']);
+                                                    $issue_date = $issue_ts ? date('d/m/Y', $issue_ts) : $insurer_rfq['date_issue_reported'];
                                                 }
 
-                                                $issue_id = $issue['id'] ?? '';
+                                                $issue_id = $insurer_rfq['id'] ?? '';
 
                                                 // Normalize item severity for inner row style output
-                                                $sev_key = strtolower($issue['severity'] ?? 'minor');
+                                                $sev_key = strtolower($insurer_rfq['severity'] ?? 'minor');
                                                 if ($sev_key === 'high') $sev_key = 'major';
                                                 if ($sev_key === 'medium') $sev_key = 'moderate';
                                                 if ($sev_key === 'low' || $sev_key === 'info') $sev_key = 'minor';
@@ -233,13 +230,13 @@ function vinttro_get_cover_admin_panel($user_id) {
                                                                target="_blank" 
                                                                title="View Issue in CRM"
                                                                style="color: inherit; text-decoration: none;">
-                                                                <strong><?php echo esc_html($issue['name']); ?>:</strong>
+                                                                <strong><?php echo esc_html($insurer_rfq['name']); ?>:</strong>
                                                             </a>
                                                         <?php else : ?>
-                                                            <strong><?php echo esc_html($issue['name']); ?>:</strong>
+                                                            <strong><?php echo esc_html($insurer_rfq['name']); ?>:</strong>
                                                         <?php endif; ?>
                                                         
-                                                        <?php echo esc_html($issue['description']); ?>
+                                                        <?php echo esc_html($insurer_rfq['description']); ?>
                                                         <span class="issue-date" style="color: #777; font-size: 0.9em; margin-left: 6px;">- Reported: <?php echo esc_html($issue_date); ?></span>
                                                     </span>
                                                 </li>

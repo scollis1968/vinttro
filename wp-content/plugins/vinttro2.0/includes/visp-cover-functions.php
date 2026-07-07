@@ -202,7 +202,7 @@ function vinttro_get_cover_admin_panel($user_id) {
                                                             <strong><?php echo esc_html($insurer_rfq['name']); ?>:</strong>
                                                         <?php endif; ?>
                                                         
-                                                        <?php echo esc_html($insurer_rfq['description']); ?>
+                                                        <?php echo esc_html($insurer_rfq['insurer']); ?>
                                                         <span class="issue-date" style="color: #777; font-size: 0.9em; margin-left: 6px;">- Reported: <?php echo esc_html($requested_date); ?></span>
                                                     </span>
                                                 </li>

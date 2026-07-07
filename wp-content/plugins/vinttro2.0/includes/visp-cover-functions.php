@@ -77,7 +77,7 @@ function vinttro_get_cover_admin_panel($user_id) {
                         // Define the strict 4-tier SuiteCRM severity configuration schema
                         $irfq_config = [
                             'new' => [
-                                'color' => '#cfcad72c',
+                                'color' => '#210fe8e0',
                                 'desc'  => 'New no respone from insurer',
                                 'count' => 0
                             ],
@@ -89,7 +89,6 @@ function vinttro_get_cover_admin_panel($user_id) {
                             'quoted' => [
                                 'color' => '#055a3f',
                                 'desc'  => 'Quoted (Insurer has provided a quote)',
-
                                 'count' => 0
                             ]
                         ];
@@ -110,8 +109,8 @@ function vinttro_get_cover_admin_panel($user_id) {
                             foreach ($insurer_rfqs as $i_rfq) {
                                 $status = strtolower($i_rfq['status'] ?? 'new');
 
-                                if (isset($sev_config[$status])) {
-                                    $sev_config[$status]['count']++;
+                                if (isset($irfq_config[$status])) {
+                                    $irfq_config[$status]['count']++;
                                 }
                             }
                         }

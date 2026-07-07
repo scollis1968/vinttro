@@ -145,7 +145,7 @@ function vinttro_get_cover_admin_panel($user_id) {
                                     <div class="vehicle-issue-summary-line" onclick="vinttroToggleIssues(this)" data-toggle-target="<?php echo esc_attr($unique_row_id); ?>" title="Outstanding Issues" style="margin-top: 6px; margin-left: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
                                         <span style="font-size: 0.85em; color: #666; font-weight: 600;">Insurer Response:</span>
                                         
-                                        <?php foreach ($sev_config as $key => $config) : ?>
+                                        <?php foreach ($irfq_config as $key => $config) : ?>
                                             <span style="color: <?php echo $config['color']; ?>; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="<?php echo esc_attr($config['desc']); ?>">
                                                 <?php echo $warning_triangle_svg; ?><?php echo $config['count']; ?>
                                             </span>

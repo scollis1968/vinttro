@@ -154,6 +154,7 @@ function vinttro_get_cover_admin_panel($user_id) {
                             </td>
 
                             <td class="personnel-cell" style="line-height: 1.5;">
+                                <?php echo $rfq['status'] ?? 'N/A'; ?>
                             </td>
 
                             <td><?php echo vinttro_render_date_pill($rfq['date_recieved'] ?? '', 'past', 1, 3); ?></td>

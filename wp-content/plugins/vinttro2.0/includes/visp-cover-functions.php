@@ -176,25 +176,22 @@ function vinttro_get_cover_admin_panel($user_id) {
                                                     $requested_date = $requested_ts ? date('d/m/Y', $requested_ts) : $insurer_rfq['date_requested'];
                                                 }
 
-                                                $issue_id = $insurer_rfq['id'] ?? '';
+                                                $irfq_id = $insurer_rfq['id'] ?? '';
 
                                                 // Normalize item severity for inner row style output
-                                                $sev_key = strtolower($insurer_rfq['severity'] ?? 'minor');
-                                                if ($sev_key === 'high') $sev_key = 'major';
-                                                if ($sev_key === 'medium') $sev_key = 'moderate';
-                                                if ($sev_key === 'low' || $sev_key === 'info') $sev_key = 'minor';
-
-                                                $item_color = $sev_config[$sev_key]['color'] ?? '#6c757d';
+                                                $status_key = strtolower($insurer_rfq['status'] ?? 'new');
+                                                
+                                                $item_color = $sev_config[$status_key] ?? $sev_config['new']['color'] ?? '#6c757d';
                                             ?>
                                                 <li style="display: flex; align-items: flex-start; margin-bottom: 8px; color: <?php echo $item_color; ?>;">
                                                     <span class="issue-icon" style="flex-shrink: 0; display: inline-flex; align-items: center; height: 20px;">
                                                         <?php echo $warning_triangle_svg; ?>
                                                     </span>
                                                     <span style="color: #333;">
-                                                        <?php if (!empty($issue_id)) : ?>
-                                                            <a href="<?php echo esc_url(rtrim($crm_base_url, '/')) . '/#/visp_vehicle_issue/record/' . esc_attr($issue_id) . '?offset=1'; ?>" 
+                                                        <?php if (!empty($irfq_id)) : ?>
+                                                            <a href="<?php echo esc_url(rtrim($crm_base_url, '/')) . '/#/visp_cover_rfq_insurer/record/' . esc_attr($irfq_id) . '?offset=1'; ?>" 
                                                                target="_blank" 
-                                                               title="View Issue in CRM"
+                                                               title="View I_RFQ in CRM"
                                                                style="color: inherit; text-decoration: none;">
                                                                 <strong><?php echo esc_html($insurer_rfq['name']); ?>:</strong>
                                                             </a>
@@ -203,7 +200,7 @@ function vinttro_get_cover_admin_panel($user_id) {
                                                         <?php endif; ?>
                                                         
                                                         <?php echo esc_html($insurer_rfq['insurer']); ?>
-                                                        <span class="issue-date" style="color: #777; font-size: 0.9em; margin-left: 6px;">- Reported: <?php echo esc_html($requested_date); ?></span>
+                                                        <span class="issue-date" style="color: #777; font-size: 0.9em; margin-left: 6px;">- Requested: <?php echo esc_html($requested_date); ?></span>
                                                     </span>
                                                 </li>
                                             <?php endforeach; ?>

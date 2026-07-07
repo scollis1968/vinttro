@@ -54,21 +54,7 @@ function vinttro_get_cover_admin_panel($user_id) {
             }
         }
     </script>
-    <?php
-    foreach ($rfqs as $rfq) : 
-        $vehicles = $rfq['vehicles'] ?? [];
 
-        // 🔀 UNIFIED SORTING: Sort descending by total calculated weight score
-        if (!empty($vehicles) && is_array($vehicles)) {
-            usort($vehicles, function($a, $b) {
-                $score_a = vinttro_calculate_vehicle_priority_score($a);
-                $score_b = vinttro_calculate_vehicle_priority_score($b);
-                
-                if ($score_a === $score_b) return 0;
-                return ($score_a > $score_b) ? -1 : 1; 
-            });
-        }
-    ?>
         <div class="dashboard-panel fleet-container" style="margin-bottom: 30px;">
             <h3>✍️ Quotes: <?php echo esc_html($fleet['name'] ?? 'Unnamed'); ?></h3>
             <table class="fleet-table">
@@ -250,6 +236,6 @@ function vinttro_get_cover_admin_panel($user_id) {
                 </tbody>
             </table>
         </div>
-    <?php endforeach;
+    <?php 
     return ob_get_clean();
 }

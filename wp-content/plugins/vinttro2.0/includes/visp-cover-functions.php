@@ -75,25 +75,21 @@ function vinttro_get_cover_admin_panel($user_id) {
                         $status_class = 'status-safe';
                         
                         // Define the strict 4-tier SuiteCRM severity configuration schema
-                        $sev_config = [
-                            'critical' => [
-                                'color' => '#dc3545',
-                                'desc'  => 'Critical (Vehicle is unsafe to operate; do not drive.)',
+                        $irfq_config = [
+                            'new' => [
+                                'color' => '#cfcad72c',
+                                'desc'  => 'New no respone from insurer',
                                 'count' => 0
                             ],
-                            'major' => [
-                                'color' => '#fd7e14',
-                                'desc'  => 'Major (Immediate safety or mechanical risk; requires urgent repair.)',
+                            'rejected' => [
+                                'color' => '#89170a',
+                                'desc'  => 'Rejected (Insurer has rejected the quote)',
                                 'count' => 0
                             ],
-                            'moderate' => [
-                                'color' => '#ffc107',
-                                'desc'  => 'Moderate (Potential risk or performance degradation if not addressed soon.)',
-                                'count' => 0
-                            ],
-                            'minor' => [
-                                'color' => '#6c757d',
-                                'desc'  => 'Minor (Cosmetic or non-essential; no impact on safety or performance.)',
+                            'quoted' => [
+                                'color' => '#055a3f',
+                                'desc'  => 'Quoted (Insurer has provided a quote)',
+
                                 'count' => 0
                             ]
                         ];
@@ -147,7 +143,7 @@ function vinttro_get_cover_admin_panel($user_id) {
 
                                 <?php if ($has_insurer_rfqs) : ?>
                                     <div class="vehicle-issue-summary-line" onclick="vinttroToggleIssues(this)" data-toggle-target="<?php echo esc_attr($unique_row_id); ?>" title="Outstanding Issues" style="margin-top: 6px; margin-left: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
-                                        <span style="font-size: 0.85em; color: #666; font-weight: 600;">Issues:</span>
+                                        <span style="font-size: 0.85em; color: #666; font-weight: 600;">Insurer Response:</span>
                                         
                                         <?php foreach ($sev_config as $key => $config) : ?>
                                             <span style="color: <?php echo $config['color']; ?>; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="<?php echo esc_attr($config['desc']); ?>">
@@ -167,33 +163,17 @@ function vinttro_get_cover_admin_panel($user_id) {
                         </tr>
 
                         <?php if ($has_insurer_rfqs) : 
-                            // 📊 Severity Priority Mapping for details row sub-sorting
-                            $severity_priority = [
-                                'critical' => 1,
-                                'major'    => 2,
-                                'high'     => 2,
-                                'moderate' => 3, 
-                                'medium'   => 3,
-                                'minor'    => 4,
-                                'low'      => 4,
-                                'info'     => 5
-                            ];
-
-                            usort($insurer_rfqs, function($a, $b) use ($severity_priority) {
-                                $prio_a = $severity_priority[strtolower($a['severity'] ?? '')] ?? 99;
-                                $prio_b = $severity_priority[strtolower($b['severity'] ?? '')] ?? 99;
-                                return $prio_a <=> $prio_b;
-                            });
+       
                         ?>
                             <tr id="<?php echo esc_attr($unique_row_id); ?>" class="vehicle-issues-row" style="display: none;">
                                 <td colspan="5"> 
                                     <div class="issues-expanded-box">
                                         <ul class="issue-detailed-list" style="list-style: none; padding-left: 0; margin-top: 4px;">
-                                            <?php foreach ($insurer_rfqs as $insurer_rfq) : ?>
-                                                $issue_date = '';
-                                                if (!empty($insurer_rfq['date_issue_reported'])) {
-                                                    $issue_ts = strtotime($insurer_rfq['date_issue_reported']);
-                                                    $issue_date = $issue_ts ? date('d/m/Y', $issue_ts) : $insurer_rfq['date_issue_reported'];
+                                            <?php foreach ($insurer_rfqs as $insurer_rfq) : 
+                                                $requested_date = '';
+                                                if (!empty($insurer_rfq['date_requested'])) {
+                                                    $requested_ts = strtotime($insurer_rfq['date_requested']);
+                                                    $requested_date = $requested_ts ? date('d/m/Y', $requested_ts) : $insurer_rfq['date_requested'];
                                                 }
 
                                                 $issue_id = $insurer_rfq['id'] ?? '';
@@ -223,7 +203,7 @@ function vinttro_get_cover_admin_panel($user_id) {
                                                         <?php endif; ?>
                                                         
                                                         <?php echo esc_html($insurer_rfq['description']); ?>
-                                                        <span class="issue-date" style="color: #777; font-size: 0.9em; margin-left: 6px;">- Reported: <?php echo esc_html($issue_date); ?></span>
+                                                        <span class="issue-date" style="color: #777; font-size: 0.9em; margin-left: 6px;">- Reported: <?php echo esc_html($requested_date); ?></span>
                                                     </span>
                                                 </li>
                                             <?php endforeach; ?>

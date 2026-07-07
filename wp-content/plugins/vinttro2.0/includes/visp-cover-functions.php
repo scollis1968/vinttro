@@ -158,8 +158,8 @@ function vinttro_get_cover_admin_panel($user_id) {
                             </td>
 
                             <td><?php echo vinttro_render_date_pill($rfq['date_recieved'] ?? '', 'past', 1, 3); ?></td>
-                            <td><?php echo vinttro_render_date_pill($car['date_cover_start'] ?? '', 'future', 7, 21); ?></td>
-                            <td><?php echo vinttro_render_date_pill($car['date_last_check'] ?? '', 'past', 21, 10); ?></td>
+                            <td><?php echo vinttro_render_date_pill($rfq['date_cover_start'] ?? '', 'future', 7, 21); ?></td>
+                            <td><?php echo vinttro_render_date_pill($rfq['date_last_check'] ?? '', 'past', 21, 10); ?></td>
                         </tr>
 
                         <?php if ($has_insurer_rfqs) : 

@@ -60,6 +60,7 @@ jQuery(document).ready(function($) {
     // ==========================================================
     // 🛰️ 2. TWILIO SYNC WEBSOCKET INITIALIZATION
     // ==========================================================
+
     async function activateAgentSyncListeningTerminal() {
         try {
             const response = await fetch(`${vinttroSettings.root}vinttro/v1/rtc-token`, {
@@ -77,6 +78,37 @@ jQuery(document).ready(function($) {
                 console.log(`%c📡 WebSocket Node Sync State: ${state}`, "color: #3182ce; font-weight: bold;");
             });
 
+            // ------------------------------------------------------
+            // 📧 NEW: Direct Agent-to-Agent Private Signaling Channel
+            // ------------------------------------------------------
+            if (vinttroSettings.currentUserEmail) {
+                const userEmailClean = vinttroSettings.currentUserEmail.replace(/[^a-zA-Z0-9]/g, '_');
+                
+                syncClient.document(`vinttro_user_channel_${userEmailClean}`).then(doc => {
+                    console.log(`%c👤 SUCCESS: Subscribed to private user mailbox: [vinttro_user_channel_${userEmailClean}]`, "color: #805ad5; font-weight: bold;");
+                    
+                    doc.on('updated', event => {
+                        console.log("🔔 DIRECT PEER CALL SIGNAL DETECTED BY WEBSOCKET!", event);
+                        const callPayload = event.value;
+                        
+                        if (callPayload && callPayload.action === 'incoming_call') {
+                            triggerInboundCallAlert({
+                                callSid: callPayload.roomId, // Map room identity to callSid for the UI alert
+                                roomId: callPayload.roomId,
+                                callerId: callPayload.callerIdentity
+                            });
+                        }
+                    });
+                }).catch(docError => {
+                    console.error("❌ CRITICAL: Private user channel sync rejected:", docError);
+                });
+            } else {
+                console.warn("⚠️ User-to-user signaling disabled: vinttroSettings.currentUserEmail is missing.");
+            }
+
+            // ------------------------------------------------------
+            // 📦 ORIGINAL: Public Customer Inbound Queue Channel
+            // ------------------------------------------------------
             syncClient.list('vinttro_live_queue').then(list => {
                 console.log("%c✅ SUCCESS: Browser is actively subscribed to the Twilio Sync List channel!", "color: #2f855a; font-weight: bold;");
                 
@@ -91,11 +123,10 @@ jQuery(document).ready(function($) {
                     console.log("📋 Extracted Call Payload Data Map:", callPayload);
 
                     if (callPayload) {
-                        // 🚀 FIX: If Twilio wraps the data inside a 'data' key, unwrap it cleanly first
                         const cleanData = callPayload.data ? callPayload.data : callPayload;
                         triggerInboundCallAlert(cleanData);
                     } else {
-                        console.error("❌ Event captured, but payload configuration map was empty or unreadable.");
+                        error_log("❌ Event captured, but payload configuration map was empty or unreadable.");
                     }
                 });
             }).catch(listError => {
@@ -194,42 +225,78 @@ $connectBtn.on('click', async function() {
     // 🔍 Regular expression to check if input looks like an international phone number
     const isPhoneNumber = /^\+?[1-9]\d{1,14}$/.test(inputValue.replace(/\s+/g, ''));
 
-    if (isPhoneNumber) {
-    const cleanPhoneNumber = inputValue.replace(/\s+/g, '');
-    // Create a unique, web-safe room identifier for this specific lead call
-    const adhocRoomName = "call_lead_" + cleanPhoneNumber.replace('+', '');
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputValue);
 
-    updateStatus(`Initiating video room bridge for outbound call...`, "info");
-    $connectBtn.prop('disabled', true);
+    if (isEmail) {
+        // ==========================================
+        // 📧 PEER-TO-PEER EMAIL CALL FLOW
+        // ==========================================
+        const targetEmail = inputValue;
+        const adhocRoomName = "peer_call_" + btoa(targetEmail).replace(/=/g, ''); // Safe unique room name
 
-    try {
-        // 1. Tell your WordPress backend to trigger the outbound call leg
-        const response = await fetch(`${vinttroSettings.root}vinttro/v1/outbound-call`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
-            body: JSON.stringify({ 
-                toNumber: cleanPhoneNumber,
-                leadId: "test_lead_999", // Hardcoded tracking sample
-                agentId: "agent_dev_1",
-                roomId: adhocRoomName    // Pass the matching room name to the backend
-            })
-        });
+        updateStatus(`Ringing ${targetEmail}...`, "info");
+        $connectBtn.prop('disabled', true);
 
-        if (!response.ok) throw new Error("Server rejected outbound workspace creation.");
-        const data = await response.json();
-        
-        // 2. IMMEDIATELY dump your local agent into the video room!
-        // Your browser will load up and wait inside the canvas for the phone caller to drop in.
-        updateStatus(`Room active. Dialing lead phone line...`, "success");
-        initializeWebRTCSession(liveToken, adhocRoomName);
+        try {
+            // Tell the backend to notify the user logged in with this email
+            const response = await fetch(`${vinttroSettings.root}vinttro/v1/peer-call`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+                body: JSON.stringify({ 
+                    targetEmail: targetEmail,
+                    callerIdentity: "agent_dev_1", // The person making the call
+                    roomId: adhocRoomName 
+                })
+            });
 
-        $connectBtn.hide();
-        $disconnectBtn.show();
+            if (!response.ok) throw new Error("User offline or call rejected.");
+            
+            // Instantly join the room yourself and wait for them to answer
+            initializeWebRTCSession(liveToken, adhocRoomName);
+            $connectBtn.hide();
+            $disconnectBtn.show();
 
         } catch (error) {
-            updateStatus(`Bridge Failure: ${error.message}`, "error");
+            updateStatus(`Call Failed: ${error.message}`, "error");
             $connectBtn.prop('disabled', false);
         }
+
+    } else if (isPhoneNumber) { 
+        const cleanPhoneNumber = inputValue.replace(/\s+/g, '');
+        // Create a unique, web-safe room identifier for this specific lead call
+        const adhocRoomName = "call_lead_" + cleanPhoneNumber.replace('+', '');
+
+        updateStatus(`Initiating video room bridge for outbound call...`, "info");
+        $connectBtn.prop('disabled', true);
+
+        try {
+            // 1. Tell your WordPress backend to trigger the outbound call leg
+            const response = await fetch(`${vinttroSettings.root}vinttro/v1/outbound-call`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+                body: JSON.stringify({ 
+                    toNumber: cleanPhoneNumber,
+                    leadId: "test_lead_999", // Hardcoded tracking sample
+                    agentId: "agent_dev_1",
+                    roomId: adhocRoomName    // Pass the matching room name to the backend
+                })
+            });
+
+            if (!response.ok) throw new Error("Server rejected outbound workspace creation.");
+            const data = await response.json();
+            
+            // 2. IMMEDIATELY dump your local agent into the video room!
+            // Your browser will load up and wait inside the canvas for the phone caller to drop in.
+            updateStatus(`Room active. Dialing lead phone line...`, "success");
+            initializeWebRTCSession(liveToken, adhocRoomName);
+
+            $connectBtn.hide();
+            $disconnectBtn.show();
+
+            } catch (error) {
+                updateStatus(`Bridge Failure: ${error.message}`, "error");
+                $connectBtn.prop('disabled', false);
+            }
 
     } else {
         // ==========================================

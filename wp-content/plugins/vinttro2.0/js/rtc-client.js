@@ -183,31 +183,76 @@ jQuery(document).ready(function($) {
         }
     });
 
-    $connectBtn.on('click', async function() {
-        const chosenRoom = $roomInput.val().trim() || 'vinttro-hq';
-        updateStatus(`Securing terminal connection credentials for space: [${chosenRoom}]...`, "info");
+$connectBtn.on('click', async function() {
+    const inputValue = $roomInput.val().trim();
+    
+    if (!inputValue) {
+        updateStatus("Please enter a Room ID or Phone Number.", "error");
+        return;
+    }
+
+    // 🔍 Regular expression to check if input looks like an international phone number
+    const isPhoneNumber = /^\+?[1-9]\d{1,14}$/.test(inputValue.replace(/\s+/g, ''));
+
+    if (isPhoneNumber) {
+        // ==========================================
+        // 📞 OUTBOUND PHONE CALL FLOW
+        // ==========================================
+        const cleanPhoneNumber = inputValue.replace(/\s+/g, '');
+        updateStatus(`Initiating outbound voice channel to: [${cleanPhoneNumber}]...`, "info");
+        $connectBtn.prop('disabled', true);
+
+        try {
+            // Send the phone call request to your WordPress backend
+            const response = await fetch(`${vinttroSettings.root}vinttro/v1/outbound-call`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+                body: JSON.stringify({ 
+                    toNumber: cleanPhoneNumber,
+                    leadId: "test_lead_999", // Hardcoded for your ad-hoc test
+                    agentId: "agent_dev_1"
+                })
+            });
+
+            if (!response.ok) throw new Error("Server rejected outbound call request.");
+            const data = await response.json();
+            
+            updateStatus(`Call ringing... (Call SID: ${data.callSid})`, "success");
+            $connectBtn.hide();
+            $disconnectBtn.show();
+
+        } catch (error) {
+            updateStatus(`Call Failed: ${error.message}`, "error");
+            $connectBtn.prop('disabled', false);
+        }
+
+    } else {
+        // ==========================================
+        // 🎥 ORIGINAL WEBRTC VIDEO ROOM FLOW
+        // ==========================================
+        updateStatus(`Securing terminal connection credentials for space: [${inputValue}]...`, "info");
         $connectBtn.prop('disabled', true);
 
         try {
             if (liveToken) {
-                initializeWebRTCSession(liveToken, chosenRoom);
+                initializeWebRTCSession(liveToken, inputValue);
             } else {
                 const response = await fetch(`${vinttroSettings.root}vinttro/v1/rtc-token`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
-                    body: JSON.stringify({ roomName: chosenRoom })
+                    body: JSON.stringify({ roomName: inputValue })
                 });
 
                 if (!response.ok) throw new Error("Failed validation check from server.");
                 const data = await response.json();
-                initializeWebRTCSession(data.token, chosenRoom);
+                initializeWebRTCSession(data.token, inputValue);
             }
-
         } catch (error) {
             updateStatus(`Authorization Denied: ${error.message}`, "error");
             $connectBtn.prop('disabled', false);
         }
-    });
+    }
+});
 
 
     // ==========================================================

@@ -85,14 +85,6 @@ function vinttro_register_all_rtc_routes() {
         'permission_callback' => '__return_true', 
     ) );
 
-    register_rest_route('vinttro/v1', '/stream-recording', [
-        'methods'             => 'GET',
-        'callback'            => 'vinttro_secure_stream_recording',
-        'permission_callback' => function () {
-            // 🔐 CRITICAL SECURITY: Only logged-in WordPress users can stream recordings
-            return is_user_logged_in(); 
-        }
-    ]);
 }
 
 // ==========================================================
@@ -245,49 +237,4 @@ function vinttro_handle_inbound_voice_call( WP_REST_Request $request ) {
     $twiml .= '</Response>';
 
     return new WP_REST_Response($twiml, 200, array('Content-Type' => 'application/xml'));
-}
-/**
- * Safely proxies the audio file from Twilio to the authorized browser session
- */
-function vinttro_secure_stream_recording($request) {
-    $lead_id = sanitize_text_field($request->get_param('lead_id') ?? '');
-
-    // 1. Fetch the Twilio URL you saved in your database earlier
-    // (Adjust this line depending on exactly where you saved it, e.g., user meta or a custom table)
-    $recording_url = get_post_meta($lead_id, 'vinttro_call_recording_url', true); 
-
-    if (empty($recording_url)) {
-        return new \WP_Error('no_recording', 'No recording found for this lead.', ['status' => 404]);
-    }
-
-    // Append the standard .mp3 extension to ensure Twilio returns compressed audio
-    if (substr($recording_url, -4) !== '.mp3') {
-        $recording_url .= '.mp3';
-    }
-
-    // 2. Use your existing credentials to authenticate against Twilio's secure lock
-    $api_key = defined('TWILIO_API_KEY_SID') ? TWILIO_API_KEY_SID : '';
-    $secret  = defined('TWILIO_API_KEY_SECRET') ? TWILIO_API_KEY_SECRET : '';
-
-    // 3. Request the file from Twilio via your server backend
-    $response = wp_remote_get($recording_url, [
-        'timeout'   => 15,
-        'headers'   => [
-            'Authorization' => 'Basic ' . base64_encode($api_key . ':' . $secret)
-        ]
-    ]);
-
-    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-        return new \WP_Error('fetch_failed', 'Could not securely retrieve audio file from cloud.', ['status' => 500]);
-    }
-
-    // 4. Stream the raw audio data back to the browser cleanly
-    $audio_data = wp_remote_retrieve_body($response);
-    
-    header("Content-Type: audio/mpeg");
-    header("Content-Length: " . strlen($audio_data));
-    header("Cache-Control: no-cache, must-revalidate");
-    
-    echo $audio_data;
-    exit;
 }

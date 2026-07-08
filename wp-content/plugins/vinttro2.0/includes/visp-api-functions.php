@@ -25,7 +25,7 @@ add_action('rest_api_init', function () {
  * Listen for public Twilio webhooks before standard routing kicks in
  */
 add_action('init', function () {
-    // Handle the TwiML response when the lead answers
+    // A. Handle the TwiML response when the lead answers
     if (isset($_GET['vinttro_action']) && $_GET['vinttro_action'] === 'outbound-twiml') {
         $room_id = sanitize_text_field($_GET['room_id'] ?? 'vinttro-hq');
 
@@ -39,7 +39,7 @@ add_action('init', function () {
         exit;
     }
 
-    // Capture Duration Metrics
+    // B. Capture Duration Metrics
     if (isset($_GET['vinttro_action']) && $_GET['vinttro_action'] === 'call-status') {
         $lead_id     = sanitize_text_field($_GET['lead_id'] ?? '');
         $duration    = isset($_POST['CallDuration']) ? intval($_POST['CallDuration']) : 0;
@@ -49,12 +49,67 @@ add_action('init', function () {
         exit;
     }
 
-    // Capture Audio Recording Link
+    // C. Capture Audio Recording Link
     if (isset($_GET['vinttro_action']) && $_GET['vinttro_action'] === 'call-recording') {
         $lead_id       = sanitize_text_field($_GET['lead_id'] ?? '');
         $recording_url = esc_url_raw($_POST['RecordingUrl'] ?? '');
         
+        // 🚀 SMART ADDITION: Cache the last recording globally for easy ad-hoc testing!
+        update_option('vinttro_last_test_recording_url', $recording_url);
+
         error_log("🎙️ RECORDING RETRIEVED: Lead [{$lead_id}] | Link: {$recording_url}");
+        exit;
+    }
+
+    // D. Securely Proxy and Stream the Last Call Recording
+    if (isset($_GET['vinttro_action']) && $_GET['vinttro_action'] === 'stream-recording') {
+        
+        // 🔐 SECURITY FIRST: Ensure only logged-in WordPress users can stream it
+        if (!is_user_logged_in()) {
+            status_header(401);
+            echo "Unauthorized access.";
+            exit;
+        }
+
+        // Pull the temporary global option we cached in step C
+        $recording_url = get_option('vinttro_last_test_recording_url');
+
+        if (empty($recording_url)) {
+            status_header(404);
+            echo "No test recording available yet. Make a call first!";
+            exit;
+        }
+
+        // Force MP3 extension for Twilio compression compatibility
+        if (substr($recording_url, -4) !== '.mp3') {
+            $recording_url .= '.mp3';
+        }
+
+        $api_key = defined('TWILIO_API_KEY_SID') ? TWILIO_API_KEY_SID : '';
+        $secret  = defined('TWILIO_API_KEY_SECRET') ? TWILIO_API_KEY_SECRET : '';
+
+        // Request the file from Twilio behind the scenes
+        $response = wp_remote_get($recording_url, [
+            'timeout'   => 15,
+            'headers'   => [
+                'Authorization' => 'Basic ' . base64_encode($api_key . ':' . $secret)
+            ]
+        ]);
+
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            status_header(500);
+            echo "Secure cloud retrieval failed.";
+            exit;
+        }
+
+        $audio_data = wp_remote_retrieve_body($response);
+        
+        // Stream output straight to browser audio player
+        header("Content-Type: audio/mpeg");
+        header("Content-Length: " . strlen($audio_data));
+        header("Cache-Control: no-cache, must-revalidate");
+        
+        echo $audio_data;
         exit;
     }
 });

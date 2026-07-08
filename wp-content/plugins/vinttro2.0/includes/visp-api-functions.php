@@ -18,6 +18,11 @@ add_action('rest_api_init', function () {
             return true; 
         }
     ));
+    register_rest_route('vinttro/v1', '/peer-call', array(
+    'methods' => 'POST',
+    'callback' => 'vinttro_handle_peer_call',
+    'permission_callback' => 'is_user_logged_in'
+    ));
 });
 
 
@@ -260,4 +265,38 @@ function vinttro_handle_outbound_twiml($request) {
     echo '</Response>';
     
     exit; // Stop WordPress from executing anything further and ruining the XML format
+}
+
+function vinttro_handle_peer_call($request) {
+    $params = $request->get_json_params();
+    $target_email = sanitize_email($params['targetEmail'] ?? '');
+    $caller       = sanitize_text_field($params['callerIdentity'] ?? 'Another Agent');
+    $room_id      = sanitize_text_field($params['roomId'] ?? '');
+
+    if (empty($target_email) || empty($room_id)) {
+        return new \WP_REST_Response(['success' => false, 'error' => 'Invalid data.'], 400);
+    }
+
+    try {
+        $twilio = vinttro_get_twilio_sdk_client();
+        
+        // Clean the target email to find their unique channel name
+        $clean_target = preg_replace('/[^a-zA-Z0-9]/', '_', $target_email);
+        $document_sid = "vinttro_user_channel_" . $clean_target;
+
+        // 🚀 Push the notification payload straight into Bob's browser channel!
+        $twilio->sync->v1->services("YOUR_TWILIO_SYNC_SERVICE_SID")
+                         ->documents($document_sid)
+                         ->update([
+                             "data" => [
+                                 "action" => "incoming_call",
+                                 "callerIdentity" => $caller,
+                                 "roomId" => $room_id
+                             ]
+                         ]);
+
+        return new \WP_REST_Response(['success' => true], 200);
+    } catch (\Exception $e) {
+        return new \WP_REST_Response(['success' => false, 'error' => $e->getMessage()], 500);
+    }
 }

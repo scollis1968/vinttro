@@ -155,8 +155,8 @@ function vinttro_handle_outbound_call($request) {
             $to_number, 
             "+447427814474", // Put your Twilio or verified out number here
             array(
-                "url" => "https://uat.vinttro.co.uk/wp-json/vinttro/v1/outbound-twiml?lead_id=" . urlencode($lead_id) . "&agent_id=" . urlencode($agent_id),
-                "record" => true 
+                "url" => "https://uat.vinttro.co.uk/?vinttro_action=outbound-twiml&lead_id=" . urlencode($lead_id) . "&agent_id=" . urlencode($agent_id),
+                "record" => true
             )
         );
 

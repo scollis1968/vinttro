@@ -18,6 +18,11 @@ add_action('rest_api_init', function () {
             return true; 
         }
     ));
+    register_rest_route('vinttro/v1', '/outbound-twiml', array(
+        'methods'             => array('GET', 'POST'), // Accept both to be safe
+        'callback'            => 'vinttro_handle_outbound_twiml',
+        'permission_callback' => '__return_true', // CRITICAL: This must be public so Twilio's servers can read it!
+));
 });
 
 /**
@@ -140,4 +145,26 @@ function vinttro_handle_outbound_call($request) {
     } catch (\Exception $e) {
         return new \WP_REST_Response(array('success' => false, 'error' => $e->getMessage()), 500);
     }
+}
+/**
+ * Generates the TwiML instructions when a phone answers an ad-hoc outbound call
+ */
+function vinttro_handle_outbound_twiml($request) {
+    // Grab our tracking IDs passed via the query string
+    $lead_id  = sanitize_text_field($request->get_param('lead_id') ?? 'unknown_lead');
+    $agent_id = sanitize_text_field($request->get_param('agent_id') ?? 'vinttro-hq');
+
+    // We force PHP to spit out raw XML instead of WordPress JSON
+    header("Content-Type: text/xml; charset=utf-8");
+    
+    echo '<?xml version="1.0" encoding="UTF-8"?>';
+    echo '<Response>';
+    // 1. Tell Twilio to record the conversation
+    echo '    <Dial record="record-from-answer-dual">';
+    // 2. Dial the browser SDK client name (Make sure this matches the identity your browser token uses!)
+    echo '        <Client>' . htmlspecialchars($agent_id) . '</Client>';
+    echo '    </Dial>';
+    echo '</Response>';
+    
+    exit; // Stop WordPress from executing anything further and ruining the XML format
 }

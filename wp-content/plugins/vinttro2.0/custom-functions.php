@@ -75,7 +75,8 @@ function my_plugin_load_scripts() {
 
         wp_localize_script( 'vinttro-rtc-client', 'vinttroSettings', array(
             'root'  => esc_url_raw( rest_url() ),
-            'nonce' => wp_create_nonce( 'wp_rest' )
+            'nonce' => wp_create_nonce( 'wp_rest' ),
+            'currentUserEmail' => wp_get_current_user()->user_email
         ));
     }
 }

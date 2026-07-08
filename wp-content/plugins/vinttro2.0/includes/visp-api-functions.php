@@ -25,23 +25,37 @@ add_action('rest_api_init', function () {
  * Listen for public Twilio webhooks before standard routing kicks in
  */
 add_action('init', function () {
+    // Handle the TwiML response when the lead answers
     if (isset($_GET['vinttro_action']) && $_GET['vinttro_action'] === 'outbound-twiml') {
-        
-        // Grab tracking IDs straight from the global $_GET array
-        $lead_id  = sanitize_text_field($_GET['lead_id'] ?? 'unknown_lead');
-        $agent_id = sanitize_text_field($_GET['agent_id'] ?? 'vinttro-hq');
+        $room_id = sanitize_text_field($_GET['room_id'] ?? 'vinttro-hq');
 
-        // Force raw XML output headers
         header("Content-Type: text/xml; charset=utf-8");
-        
         echo '<?xml version="1.0" encoding="UTF-8"?>';
         echo '<Response>';
-        echo '    <Dial record="record-from-answer-dual">';
-        echo '        <Client>' . htmlspecialchars($agent_id) . '</Client>';
-        echo '    </Dial>';
+        echo '    <Connect>';
+        echo '        <Room>' . htmlspecialchars($room_id) . '</Room>';
+        echo '    </Connect>';
         echo '</Response>';
+        exit;
+    }
+
+    // Capture Duration Metrics
+    if (isset($_GET['vinttro_action']) && $_GET['vinttro_action'] === 'call-status') {
+        $lead_id     = sanitize_text_field($_GET['lead_id'] ?? '');
+        $duration    = isset($_POST['CallDuration']) ? intval($_POST['CallDuration']) : 0;
+        $call_status = sanitize_text_field($_POST['CallStatus'] ?? '');
         
-        exit; // Kill execution immediately so WP layout engine doesn't bleed into the XML
+        error_log("📞 CALL TERMINATED: Lead [{$lead_id}] | Duration: {$duration}s | Status: {$call_status}");
+        exit;
+    }
+
+    // Capture Audio Recording Link
+    if (isset($_GET['vinttro_action']) && $_GET['vinttro_action'] === 'call-recording') {
+        $lead_id       = sanitize_text_field($_GET['lead_id'] ?? '');
+        $recording_url = esc_url_raw($_POST['RecordingUrl'] ?? '');
+        
+        error_log("🎙️ RECORDING RETRIEVED: Lead [{$lead_id}] | Link: {$recording_url}");
+        exit;
     }
 });
 /**
@@ -134,29 +148,34 @@ function vinttro_handle_crm_member($request) {
  * Handle triggering the Outbound Call from the client UI
  */
 function vinttro_handle_outbound_call($request) {
-    $params = $request->get_json_params();
-    
-    // Safety fallback defaults to prevent PHP notices if keys are missing
+    $params    = $request->get_json_params();
     $to_number = sanitize_text_field($params['toNumber'] ?? '');
     $lead_id   = sanitize_text_field($params['leadId'] ?? '');
     $agent_id  = sanitize_text_field($params['agentId'] ?? '');
+    $room_id   = sanitize_text_field($params['roomId'] ?? 'vinttro-hq');
 
     if (empty($to_number)) {
-        return new \WP_REST_Response(array('success' => false, 'error' => 'Destination phone number is required.'), 400);
+        return new \WP_REST_Response(array('success' => false, 'error' => 'Phone number missing.'), 400);
     }
 
     try {
-        // 🚀 SMART FIX: Call your existing SDK helper function!
-        // This handles loading the vendor/autoload.php file and log-in seamlessly via API Keys.
         $twilio = vinttro_get_twilio_sdk_client();
 
-        // Create the outbound call channel
+        // Trigger outbound call with ALL monitoring parameters embedded directly
         $call = $twilio->calls->create(
             $to_number, 
-            "+447427814474", // Put your Twilio or verified out number here
+            "YOUR_TWILIO_VERIFIED_NUMBER_OR_TWILIO_NUMBER", 
             array(
-                "url" => "https://uat.vinttro.co.uk/?vinttro_action=outbound-twiml&lead_id=" . urlencode($lead_id) . "&agent_id=" . urlencode($agent_id),
-                "record" => true
+                // Instruct Twilio where to look when the lead picks up their phone
+                "url" => "https://uat.vinttro.co.uk/?vinttro_action=outbound-twiml&room_id=" . urlencode($room_id),
+                "record" => true,
+                
+                // Track basic metrics (Duration, Success/Failure status) when the call ends
+                "statusCallback" => "https://uat.vinttro.co.uk/?vinttro_action=call-status&lead_id=" . urlencode($lead_id),
+                "statusCallbackEvent" => array("completed"),
+                
+                // Retrieve the call recording pointer asynchronously when finalized
+                "recordingStatusCallback" => "https://uat.vinttro.co.uk/?vinttro_action=call-recording&lead_id=" . urlencode($lead_id)
             )
         );
 

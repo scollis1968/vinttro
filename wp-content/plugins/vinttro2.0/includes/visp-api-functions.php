@@ -18,13 +18,32 @@ add_action('rest_api_init', function () {
             return true; 
         }
     ));
-    register_rest_route('vinttro/v1', '/outbound-twiml', array(
-        'methods'             => array('GET', 'POST'), // Accept both to be safe
-        'callback'            => 'vinttro_handle_outbound_twiml',
-        'permission_callback' => '__return_true', // CRITICAL: This must be public so Twilio's servers can read it!
-));
 });
 
+
+/**
+ * Listen for public Twilio webhooks before standard routing kicks in
+ */
+add_action('init', function () {
+    if (isset($_GET['vinttro_action']) && $_GET['vinttro_action'] === 'outbound-twiml') {
+        
+        // Grab tracking IDs straight from the global $_GET array
+        $lead_id  = sanitize_text_field($_GET['lead_id'] ?? 'unknown_lead');
+        $agent_id = sanitize_text_field($_GET['agent_id'] ?? 'vinttro-hq');
+
+        // Force raw XML output headers
+        header("Content-Type: text/xml; charset=utf-8");
+        
+        echo '<?xml version="1.0" encoding="UTF-8"?>';
+        echo '<Response>';
+        echo '    <Dial record="record-from-answer-dual">';
+        echo '        <Client>' . htmlspecialchars($agent_id) . '</Client>';
+        echo '    </Dial>';
+        echo '</Response>';
+        
+        exit; // Kill execution immediately so WP layout engine doesn't bleed into the XML
+    }
+});
 /**
  * Recursive helper to sanitize multidimensional arrays dynamically
  * keeping data clean without knowing the field names in advance.

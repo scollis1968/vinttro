@@ -195,34 +195,39 @@ $connectBtn.on('click', async function() {
     const isPhoneNumber = /^\+?[1-9]\d{1,14}$/.test(inputValue.replace(/\s+/g, ''));
 
     if (isPhoneNumber) {
-        // ==========================================
-        // 📞 OUTBOUND PHONE CALL FLOW
-        // ==========================================
-        const cleanPhoneNumber = inputValue.replace(/\s+/g, '');
-        updateStatus(`Initiating outbound voice channel to: [${cleanPhoneNumber}]...`, "info");
-        $connectBtn.prop('disabled', true);
+    const cleanPhoneNumber = inputValue.replace(/\s+/g, '');
+    // Create a unique, web-safe room identifier for this specific lead call
+    const adhocRoomName = "call_lead_" + cleanPhoneNumber.replace('+', '');
 
-        try {
-            // Send the phone call request to your WordPress backend
-            const response = await fetch(`${vinttroSettings.root}vinttro/v1/outbound-call`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
-                body: JSON.stringify({ 
-                    toNumber: cleanPhoneNumber,
-                    leadId: "test_lead_999", // Hardcoded for your ad-hoc test
-                    agentId: "agent_dev_1"
-                })
-            });
+    updateStatus(`Initiating video room bridge for outbound call...`, "info");
+    $connectBtn.prop('disabled', true);
 
-            if (!response.ok) throw new Error("Server rejected outbound call request.");
-            const data = await response.json();
-            
-            updateStatus(`Call ringing... (Call SID: ${data.callSid})`, "success");
-            $connectBtn.hide();
-            $disconnectBtn.show();
+    try {
+        // 1. Tell your WordPress backend to trigger the outbound call leg
+        const response = await fetch(`${vinttroSettings.root}vinttro/v1/outbound-call`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+            body: JSON.stringify({ 
+                toNumber: cleanPhoneNumber,
+                leadId: "test_lead_999", // Hardcoded tracking sample
+                agentId: "agent_dev_1",
+                roomId: adhocRoomName    // Pass the matching room name to the backend
+            })
+        });
+
+        if (!response.ok) throw new Error("Server rejected outbound workspace creation.");
+        const data = await response.json();
+        
+        // 2. IMMEDIATELY dump your local agent into the video room!
+        // Your browser will load up and wait inside the canvas for the phone caller to drop in.
+        updateStatus(`Room active. Dialing lead phone line...`, "success");
+        initializeWebRTCSession(liveToken, adhocRoomName);
+
+        $connectBtn.hide();
+        $disconnectBtn.show();
 
         } catch (error) {
-            updateStatus(`Call Failed: ${error.message}`, "error");
+            updateStatus(`Bridge Failure: ${error.message}`, "error");
             $connectBtn.prop('disabled', false);
         }
 

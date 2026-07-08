@@ -164,7 +164,7 @@ function vinttro_handle_outbound_call($request) {
         // Trigger outbound call with ALL monitoring parameters embedded directly
         $call = $twilio->calls->create(
             $to_number, 
-            "YOUR_TWILIO_VERIFIED_NUMBER_OR_TWILIO_NUMBER", 
+            "+447427814474", 
             array(
                 // Instruct Twilio where to look when the lead picks up their phone
                 "url" => "https://uat.vinttro.co.uk/?vinttro_action=outbound-twiml&room_id=" . urlencode($room_id),

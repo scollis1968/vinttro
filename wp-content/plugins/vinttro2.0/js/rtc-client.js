@@ -171,8 +171,7 @@ jQuery(document).ready(function($) {
         alertAudio.play().catch(() => console.log("Audio play deferred until user interacts with document."));
     }
 
-
-    // ==========================================================
+// ==========================================================
     // 🤝 4. THE CALL ACCEPTANCE HANDSHAKE
     // ==========================================================
     $(document).on('click', '.accept-toast-btn', async function() {
@@ -182,6 +181,16 @@ jQuery(document).ready(function($) {
         $(`#alert-node-${targetCallSid}`).remove();
         updateStatus(`Joining call canvas container: [${targetRoomId}]...`, "info");
 
+        // 🚀 SMART FIX: If this is a pure WebRTC peer-to-peer call, bypass the telephone network intercept!
+        if (targetRoomId && targetRoomId.toString().startsWith('peer_call_')) {
+            console.log("🤝 Peer-to-Peer browser video call verified. Connecting directly to room matrix.");
+            initializeWebRTCSession(liveToken, targetRoomId);
+            return; // Exit here so we don't hit the unneeded backend API
+        }
+
+        // ==========================================
+        // ORIGINAL CUSTOMER PSTN PHONE BRIDGE INTERCEPT
+        // ==========================================
         try {
             const bridgeResponse = await fetch(`${vinttroSettings.root}vinttro/v1/accept-call`, {
                 method: 'POST',
@@ -197,11 +206,6 @@ jQuery(document).ready(function($) {
             updateStatus(`Handshake Aborted: ${error.message}`, "error");
         }
     });
-
-    $(document).on('click', '.reject-toast-btn', function() {
-        $(this).closest('.vinttro-incoming-call-toast').remove();
-    });
-
 
     // ==========================================================
     // 🎛️ 5. UI CONTROLS HANDLERS

@@ -89,7 +89,7 @@ jQuery(document).ready(function($) {
                     
                     doc.on('updated', event => {
                         console.log("🔔 DIRECT PEER CALL SIGNAL DETECTED BY WEBSOCKET!", event);
-                        const callPayload = event.value;
+                        const callPayload = event.data;
                         
                         if (callPayload && callPayload.action === 'incoming_call') {
                             triggerInboundCallAlert({

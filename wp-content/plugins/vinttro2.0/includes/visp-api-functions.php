@@ -269,31 +269,51 @@ function vinttro_handle_outbound_twiml($request) {
 
 function vinttro_handle_peer_call($request) {
     $params = $request->get_json_params();
-    $target_email = sanitize_email($params['targetEmail'] ?? '');
+    
+    // 🚀 FIX: Force lowercase on the target email to prevent case-sensitive mismatches (e.g., Finley vs finley)
+    $target_email = strtolower(sanitize_email($params['targetEmail'] ?? ''));
     $caller       = sanitize_text_field($params['callerIdentity'] ?? 'Another Agent');
     $room_id      = sanitize_text_field($params['roomId'] ?? '');
 
     if (empty($target_email) || empty($room_id)) {
-        return new \WP_REST_Response(['success' => false, 'error' => 'Invalid data.'], 400);
+        return new \WP_REST_Response(['success' => false, 'error' => 'Invalid data parameters.'], 400);
     }
 
     try {
         $twilio = vinttro_get_twilio_sdk_client();
         
-        // Clean the target email to find their unique channel name
         $clean_target = preg_replace('/[^a-zA-Z0-9]/', '_', $target_email);
         $document_sid = "vinttro_user_channel_" . $clean_target;
+        
+        // 🛠️ DEV CHECK: Ensure you replaced this string with your real Sync Service ID (starts with IS...)
+        $service_sid  = "YOUR_TWILIO_SYNC_SERVICE_SID"; 
 
-        // 🚀 Push the notification payload straight into Bob's browser channel!
-        $twilio->sync->v1->services("YOUR_TWILIO_SYNC_SERVICE_SID")
-                         ->documents($document_sid)
-                         ->update([
-                             "data" => [
-                                 "action" => "incoming_call",
-                                 "callerIdentity" => $caller,
-                                 "roomId" => $room_id
-                             ]
-                         ]);
+        $payload_data = [
+            "action" => "incoming_call",
+            "callerIdentity" => $caller,
+            "roomId" => $room_id
+        ];
+
+        try {
+            // 1. Try to update the mailbox assuming it already exists
+            $twilio->sync->v1->services($service_sid)
+                             ->documents($document_sid)
+                             ->update(["data" => $payload_data]);
+                             
+        } catch (\Twilio\Exceptions\RestException $e) {
+            // 2. If Twilio returns a 404 (Doesn't exist yet), create it on the fly!
+            if ($e->getStatusCode() === 404) {
+                $twilio->sync->v1->services($service_sid)
+                                 ->documents
+                                 ->create([
+                                     "uniqueName" => $document_sid,
+                                     "data"       => $payload_data
+                                 ]);
+            } else {
+                // If it's a different error (like bad credentials), rethrow it
+                throw $e;
+            }
+        }
 
         return new \WP_REST_Response(['success' => true], 200);
     } catch (\Exception $e) {

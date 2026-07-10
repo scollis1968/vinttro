@@ -231,7 +231,7 @@ $connectBtn.on('click', async function() {
         // ==========================================
         // 📧 PEER-TO-PEER EMAIL CALL FLOW
         // ==========================================
-        const targetEmail = inputValue;
+        const targetEmail = inputValue.toLowerCase();
         const adhocRoomName = "peer_call_" + btoa(targetEmail).replace(/=/g, ''); // Safe unique room name
 
         updateStatus(`Ringing ${targetEmail}...`, "info");

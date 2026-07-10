@@ -285,9 +285,7 @@ function vinttro_handle_peer_call($request) {
         $clean_target = preg_replace('/[^a-zA-Z0-9]/', '_', $target_email);
         $document_sid = "vinttro_user_channel_" . $clean_target;
         
-        // 🛠️ DEV CHECK: Ensure you replaced this string with your real Sync Service ID (starts with IS...)
-        $service_sid  = "YOUR_TWILIO_SYNC_SERVICE_SID"; 
-
+        $service_sid = defined('TWILIO_SYNC_SERVICE_SID') ? TWILIO_SYNC_SERVICE_SID : '';
         $payload_data = [
             "action" => "incoming_call",
             "callerIdentity" => $caller,

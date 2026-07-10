@@ -381,6 +381,11 @@ $connectBtn.on('click', async function() {
     function participantConnected(participant) {
         console.log(`Member synced: ${participant.identity}`);
         
+        // 🚀 NEW: If an empty-room alert is counting down, kill it because a user just joined!
+        clearInterval(hangupCountdownTimer);
+        $('#vinttro-empty-room-modal').remove();
+        updateStatus(`Active Session Channel: Connected to [${activeRoom ? activeRoom.name : ''}]`, "success");
+        
         participant.on('trackSubscribed', track => {
             const trackElement = track.attach();
             trackElement.id = `track-${participant.sid}-${track.sid}`;
@@ -392,8 +397,23 @@ $connectBtn.on('click', async function() {
         });
     }
 
-    function participantDisconnected(participant) {
+function participantDisconnected(participant) {
+        // 1. Remove their video/audio feeds from the DOM as before
         $remoteGridDom.find(`[id^="track-${participant.sid}"]`).remove();
+        console.log(`Member disconnected: ${participant.identity}. Remaining remote participants: ${activeRoom ? activeRoom.participants.size : 0}`);
+
+        // 2. 🚀 NEW: Check if you are the last person standing
+        if (activeRoom && activeRoom.participants.size === 0) {
+            
+            // 👉 CHOOSE PATH A: Terminate immediately and silently
+            /*
+            console.log("Empty room detected. Auto-disconnecting channel leg.");
+            activeRoom.disconnect();
+            */
+
+            // 👉 CHOOSE PATH B: Show an interactive, modern overlay UI block
+            triggerEmptyRoomAlert();
+        }
     }
 
     $disconnectBtn.on('click', function() {
@@ -401,6 +421,9 @@ $connectBtn.on('click', async function() {
     });
 
     function cleanUpMediaStreams() {
+        clearInterval(hangupCountdownTimer); // 🚀 Add this line
+        $('#vinttro-empty-room-modal').remove(); // 🚀 Add this line
+        
         $localTrackDom.empty();
         $remoteGridDom.empty();
         $connectBtn.show().prop('disabled', false);
@@ -408,8 +431,62 @@ $connectBtn.on('click', async function() {
         updateStatus("Session closed. Offline.", "offline");
         activeRoom = null;
     }
-
     function updateStatus(message, type) {
         $statusAlert.text(message).attr('class', `status-banner ${type}`);
     }
 });
+
+// ==========================================================
+    // ⏳ 7. EMPTY ROOM WRAP-UP MONITOR
+    // ==========================================================
+    let hangupCountdownTimer = null;
+
+    function triggerEmptyRoomAlert() {
+        // Prevent duplicate overlays if one is already active
+        if ($('#vinttro-empty-room-modal').length) return;
+
+        const modalHtml = `
+            <div id="vinttro-empty-room-modal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(20, 23, 28, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; z-index: 100; text-align: center; font-family: -apple-system, sans-serif; animation: fadeIn 0.2s ease;">
+                <div style="background: #1a202c; border: 1px solid #4a5568; padding: 30px; border-radius: 10px; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.7);">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">👋</div>
+                    <h4 style="margin: 0 0 10px 0; color: #fff; font-size: 1.2rem;">No active participants left</h4>
+                    <p style="margin: 0 0 20px 0; color: #a0aec0; font-size: 0.95rem;">Disconnecting automatically in <strong id="hangup-countdown" style="color: #fc8181;">5</strong> seconds...</p>
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button id="empty-room-hangup-now" style="background: #e53e3e; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Hang Up Now</button>
+                        <button id="empty-room-stay" style="background: transparent; border: 1px solid #4a5568; color: #a0aec0; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Wait in Room</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Inject the modal directly over your main video grid workspace container
+        $('#vinttro-rtc-workspace').css('position', 'relative').append(modalHtml);
+
+        // Start a 5-second ticking countdown backstop
+        let timeLeft = 5;
+        hangupCountdownTimer = setInterval(() => {
+            timeLeft--;
+            $('#hangup-countdown').text(timeLeft);
+            
+            if (timeLeft <= 0) {
+                clearInterval(hangupCountdownTimer);
+                console.log("Countdown backstop expired. Hanging up call.");
+                if (activeRoom) activeRoom.disconnect();
+                $('#vinttro-empty-room-modal').remove();
+            }
+        }, 1000);
+    }
+
+    // Bind Button Click: Hang Up Right Away
+    $(document).on('click', '#empty-room-hangup-now', function() {
+        clearInterval(hangupCountdownTimer);
+        if (activeRoom) activeRoom.disconnect();
+        $('#vinttro-empty-room-modal').remove();
+    });
+
+    // Bind Button Click: Dismiss and stay in the empty canvas
+    $(document).on('click', '#empty-room-stay', function() {
+        clearInterval(hangupCountdownTimer);
+        $('#vinttro-empty-room-modal').remove();
+        updateStatus("Waiting alone inside active channel session...", "info");
+    });

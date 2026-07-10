@@ -434,9 +434,8 @@ function participantDisconnected(participant) {
     function updateStatus(message, type) {
         $statusAlert.text(message).attr('class', `status-banner ${type}`);
     }
-});
 
-// ==========================================================
+    // ==========================================================
     // ⏳ 7. EMPTY ROOM WRAP-UP MONITOR
     // ==========================================================
     let hangupCountdownTimer = null;
@@ -490,3 +489,5 @@ function participantDisconnected(participant) {
         $('#vinttro-empty-room-modal').remove();
         updateStatus("Waiting alone inside active channel session...", "info");
     });
+});
+

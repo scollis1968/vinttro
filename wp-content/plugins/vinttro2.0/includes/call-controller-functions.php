@@ -11,6 +11,17 @@ add_action('rest_api_init', function () {
     ]);
 });
 
+// 🔒 SECURITY GATE: Inject the secure REST Nonce token globally on the frontend
+add_action('wp_head', function() {
+    if (is_user_logged_in()) {
+        echo '<script type="text/javascript">
+            var vinttroRestConfig = {
+                nonce: "' . wp_create_nonce('wp_rest') . '"
+            };
+        </script>';
+    }
+});
+
 function vinttro_secure_rest_tasks($request) {
     // 1. Grab parameters directly from the clean REST request matrix
     $agent_email = $request->get_param('agent');

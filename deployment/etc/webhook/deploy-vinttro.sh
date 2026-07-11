@@ -9,7 +9,7 @@ TARGET_BRANCH="refs/heads/uat" # <-- SET YOUR REQUIRED BRANCH HERE
 BRANCH="uat"
 # ----------------------------------------------------------------
 # tip :- run the following command to execute this script and see the logs in real-time: 
-#     journalctl -u webhook -f
+#      journalctl -u webhook -f
 # ----------------------------------------------------------------
 
 # --- Logging Function ---
@@ -180,22 +180,25 @@ chown -R www-data:www-data "$TARGET_ROOT/$RELATIVE_SOURCE" >> "$LOG_FILE" 2>&1
 
 ##-------------------------------------------------------------------------
 # --- 3. Automated Post-Deployment Automation & Framework Rebuilds ---
-# Note: Root can safely run "sudo -u www-data" without ever requiring a password
 
 log "Fixing front-end assets ownership paths..."
 chown -R www-data:www-data /var/www/suitecrm/public/extensions >> "$LOG_FILE" 2>&1
 
+# 🚀 CHANGED: Force working directory to legacy directory context to safely align internal relative include expectations
 log "Executing dynamic automated SuiteCRM Extensions Rebuild..."
+cd /var/www/suitecrm/public/legacy/ || exit 1
+
 sudo -u www-data php -r '
     define("sugarEntry", true);
+    chdir("/var/www/suitecrm/public/legacy/"); // 🚀 Force runtime engine working working tree context
     $_GET = array(); $_POST = array(); $_REQUEST = array(); $_COOKIE = array();
     if (isset($_SERVER)) { $_SERVER["argv"] = array(); }
-    require_once("/var/www/suitecrm/public/legacy/include/entryPoint.php");
-    require_once("/var/www/suitecrm/public/legacy/include/utils.php");
-    require_once("/var/www/suitecrm/public/legacy/ModuleInstall/ModuleInstaller.php");
+    require_once("include/entryPoint.php");
+    require_once("include/utils.php");
+    require_once("ModuleInstall/ModuleInstaller.php");
 
     $modules = array("Contacts"); 
-    foreach (glob("/var/www/suitecrm/public/legacy/modules/visp_*", GLOB_ONLYDIR) as $dir) {
+    foreach (glob("modules/visp_*", GLOB_ONLYDIR) as $dir) {
         $modules[] = basename($dir);
     }
     $modules = array_unique($modules);
@@ -210,8 +213,9 @@ sudo -u www-data php -r '
 log "Compiling Master Logic Hooks Direct From Extensions Source..."
 sudo -u www-data php -r '
     define("sugarEntry", true);
+    chdir("/var/www/suitecrm/public/legacy/");
     $modules = array("Contacts");
-    foreach (glob("/var/www/suitecrm/public/legacy/modules/visp_*", GLOB_ONLYDIR) as $dir) {
+    foreach (glob("modules/visp_*", GLOB_ONLYDIR) as $dir) {
         $modules[] = basename($dir);
     }
     $modules = array_unique($modules);
@@ -219,9 +223,9 @@ sudo -u www-data php -r '
     echo "--- TARGET MODULES FOR HOOK COMPILATION: " . implode(", ", $modules) . "\n";
 
     foreach ($modules as $mod) {
-        $master = "/var/www/suitecrm/public/legacy/custom/modules/" . $mod . "/logic_hooks.php";
-        $ext_dir = "/var/www/suitecrm/public/legacy/custom/Extension/modules/" . $mod . "/Ext/LogicHooks";
-        $compiled_ext = "/var/www/suitecrm/public/legacy/custom/modules/" . $mod . "/Ext/LogicHooks/logichooks.ext.php";
+        $master = "custom/modules/" . $mod . "/logic_hooks.php";
+        $ext_dir = "custom/Extension/modules/" . $mod . "/Ext/LogicHooks";
+        $compiled_ext = "custom/modules/" . $mod . "/Ext/LogicHooks/logichooks.ext.php";
         
         $hook_array = array(); $hook_version = 1;
         
@@ -254,8 +258,14 @@ log "Syncing Core Backend Layout Assets to Frontend..."
 cd /var/www/suitecrm || exit 1
 sudo -u www-data php bin/console scrm:copy-legacy-assets >> "$LOG_FILE" 2>&1
 
+# 🚀 CHANGED: Enforce full chown/chmod permissions right before Symfony attempts directory teardowns to clear the cache path
+log "Securing file ownership and permissions schema across CRM core modules..."
+chown -R www-data:www-data /var/www/suitecrm/
+find /var/www/suitecrm/ -type d -exec chmod 775 {} \;
+find /var/www/suitecrm/ -type f -exec chmod 664 {} \;
+
 log "Flushing SuiteCRM 8 Production Container Cache..."
-sudo -u www-data php bin/console cache:clear >> "$LOG_FILE" 2>&1
+sudo -u www-data php bin/console cache:clear --env=prod >> "$LOG_FILE" 2>&1
 
 log "Deployment successful for custom files."
 exit 0

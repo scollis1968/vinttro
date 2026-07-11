@@ -499,9 +499,10 @@ function participantDisconnected(participant) {
         const $container = $('#vinttro-active-tasks');
         $container.html('<p style="padding:15px; color:#a0aec0;">🔄 Fetching secure task matrix via WordPress...</p>');
 
-        // 🚀 THE SECURE SWITCH: Query the local WP AJAX endpoint instead of Node directly
-        // ajaxurl is globally exposed by WordPress in the admin panel layout
-        const secureWpEndpoint = `${ajaxurl}?action=vinttro_get_tasks&agent=${encodeURIComponent(currentAgentEmail)}`;
+        // 🚀 THE FIX: Use 'typeof' to check if ajaxurl is missing on the front-end, 
+        // and safely fallback to the standard relative path if it is.
+        const wpAjaxUrl = (typeof ajaxurl !== 'undefined') ? ajaxurl : '/wp-admin/admin-ajax.php';
+        const secureWpEndpoint = `${wpAjaxUrl}?action=vinttro_get_tasks&agent=${encodeURIComponent(currentAgentEmail)}`;
 
         fetch(secureWpEndpoint)
             .then(res => res.json())

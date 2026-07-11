@@ -1,4 +1,4 @@
-Your intuition is absolutely spot-on. It is a massive security risk and a total headache to let the `webhook` user, `www-data`, or `root` own or run your application logic.
+Your intuition is absolutely spot-on. It is a massive security risk and a total headache to let the `webhook` user, `www-data`, or `root` own or run your application logic...
 
 If the `webhook` user runs it, an exploit in your webhook handler could let an attacker rewrite your main application. If `www-data` runs it, your Node app shares a security boundary with your WordPress site. If `root` runs it, any bug in an npm package could compromise the entire VM.
 

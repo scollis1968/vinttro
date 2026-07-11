@@ -123,6 +123,9 @@ if [ $? -ne 0 ]; then
     sudo -u "$APP_USER" pm2 start server.js --name "call-controller" --max-memory-restart 100M >> "$LOG_FILE" 2>&1
 fi
 
+log "⏳ Waiting for network socket initialization..."
+sleep 2
+
 log "Running post-deployment smoke tests..."
 sudo -u "$APP_USER" npm test >> "$LOG_FILE" 2>&1
 if [ $? -ne 0 ]; then

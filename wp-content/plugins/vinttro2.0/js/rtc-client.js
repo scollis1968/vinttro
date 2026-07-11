@@ -491,18 +491,19 @@ function participantDisconnected(participant) {
     });
 
     // ==========================================================
-    // 💼 8. UNIVERSAL WORKSPACE TASK PIPELINE CONTROLLER
+    // 💼 8. UNIVERSAL WORKSPACE TASK PIPELINE CONTROLLER (PROXIED)
     // ==========================================================
-    const callControllerUrl = "http://localhost:3000"; // Update with public domain/IP if needed
-    const currentAgentEmail = "finley.collis@vinttro.co.uk"; // Tied to user session context
-    let activeTaskId = null;
+    const currentAgentEmail = "finley.collis@vinttro.co.uk"; 
 
-    // A. Fetch workloads from Redis via the Node proxy layer
     function loadAgentTasks() {
         const $container = $('#vinttro-active-tasks');
-        $container.html('<p style="padding:15px; color:#a0aec0;">🔄 Polling Redis data matrix...</p>');
+        $container.html('<p style="padding:15px; color:#a0aec0;">🔄 Fetching secure task matrix via WordPress...</p>');
 
-        fetch(`${callControllerUrl}/api/tasks?agent=${encodeURIComponent(currentAgentEmail)}`)
+        // 🚀 THE SECURE SWITCH: Query the local WP AJAX endpoint instead of Node directly
+        // ajaxurl is globally exposed by WordPress in the admin panel layout
+        const secureWpEndpoint = `${ajaxurl}?action=vinttro_get_tasks&agent=${encodeURIComponent(currentAgentEmail)}`;
+
+        fetch(secureWpEndpoint)
             .then(res => res.json())
             .then(data => {
                 if (!data.success || !data.tasks.length) {
@@ -514,7 +515,6 @@ function participantDisconnected(participant) {
                 $container.empty();
                 $('#vinttro-task-count').text(`${data.tasks.length} Active Task${data.tasks.length !== 1 ? 's' : ''}`);
 
-                // Build HTML layout maps dynamically based on item types
                 data.tasks.forEach(task => {
                     let typeBadge = '';
                     if (task.type === 'OUTBOUND_CALL') typeBadge = '<span class="vinttro-badge" style="background:#3182ce;">📞 Outbound Call</span>';
@@ -522,13 +522,7 @@ function participantDisconnected(participant) {
                     if (task.type === 'CASE_REVIEW')  typeBadge = '<span class="vinttro-badge" style="background:#dd6b20;">📂 Case Review</span>';
 
                     const cardHtml = `
-                        <div class="vinttro-task-card" 
-                             data-task-id="${task.id}" 
-                             data-task-type="${task.type}" 
-                             data-title="${task.title}" 
-                             data-target="${task.target}" 
-                             data-meta="${task.meta}" 
-                             data-notes="${task.notes}">
+                        <div class="vinttro-task-card" data-task-id="${task.id}" data-task-type="${task.type}" data-title="${task.title}" data-target="${task.target}" data-meta="${task.meta}" data-notes="${task.notes}">
                             <div class="task-info">
                                 <div style="margin-bottom:6px;">${typeBadge} <span class="task-id">#${task.id}</span></div>
                                 <h4 class="task-customer-name" style="margin:0;">${task.title}</h4>
@@ -543,65 +537,12 @@ function participantDisconnected(participant) {
                 });
             })
             .catch(err => {
-                console.error("❌ Task pipeline network breakdown:", err);
-                $container.html('<p style="padding:15px; color:#e53e3e;">❌ Failed to query live Redis state machine.</p>');
+                console.error("❌ Task proxy pipeline breakdown:", err);
+                $container.html('<p style="padding:15px; color:#e53e3e;">❌ Failed to query secure proxy state machine.</p>');
             });
     }
 
-    // Initialize list load on template mount
+    // Run the proxy initialization pass
     loadAgentTasks();
-
-    // B. Triggered when an Agent clicks "Open Worksheet" on any card
-    $(document).on('click', '.claim-task-btn', function() {
-        const $card = $(this).closest('.vinttro-task-card');
-        
-        activeTaskId      = $card.data('task-id');
-        const taskType    = $card.data('task-type');
-        const title       = $card.data('title');
-        const target      = $card.data('target');
-        const meta        = $card.data('meta');
-        const notes       = $card.data('notes');
-
-        // Hydrate shared core details inside the companion drawer panel layout
-        $('#drawer-customer-name').text(title);
-        $('#drawer-customer-phone').text(target);
-        $('#drawer-lead-id').text(meta);
-        $('#drawer-task-notes').text(notes);
-
-        // 🚀 DYNAMIC INTERFACE ADAPTATION SWITCHBOARD
-        console.log(`💼 Morphing Workspace to handle context payload profile: [${taskType}]`);
-        
-        // Reset baseline views
-        $('#drawer-call-status-strip').attr('class', 'call-status-strip offline').show();
-        $('#btn-trigger-probe').show();
-        $('#drawer-mid-call-controls').hide();
-        $('#drawer-disposition-card').hide();
-
-        if (taskType === 'OUTBOUND_CALL') {
-            // Show telecommunication control parameters
-            $('#drawer-call-status-text').text('Device State: Line Ready');
-            $('.call-controller-box').show();
-        } 
-        else if (taskType === 'RESEARCH') {
-            // Re-render parameters directly for data auditing tasks
-            $('#drawer-call-status-text').text('Mode: Staging Validation Audit');
-            $('#btn-trigger-probe').hide(); // Hide the phone button!
-            $('#drawer-disposition-card').show(); // Jump straight to data input values fields
-        } 
-        else if (taskType === 'CASE_REVIEW') {
-            // Re-render parameters directly for sign-off review items
-            $('#drawer-call-status-text').text('Mode: Document Review Authorization');
-            $('#btn-trigger-probe').hide();
-            $('#drawer-disposition-card').show();
-        }
-
-        // Slide the unified workspace panel open
-        $('#vinttro-companion-drawer').addClass('open');
-    });
-
-    // Close Handler
-    $('#close-companion-drawer').on('click', function() {
-        $('#vinttro-companion-drawer').removeClass('open');
-    });
 });
 

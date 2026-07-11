@@ -84,6 +84,57 @@ chown -R www-data:www-data /var/www/suitecrm/vinttro2.0
 
 
 ##-------------------------------------------------------------------------
+# VINTTRO call-controller 
+SOURCE_DIR="/tmp/vinttro-repo/call-controller/"
+DESTINATION_DIR="/var/www/call-controller/"
+
+# Hardcode the best-practice dedicated application runner user
+APP_USER="vinttro" 
+
+if [ -d "$SOURCE_DIR" ]; then
+    log "Executing call-controller asset synchronization..."
+    
+    # Run rsync as the APP_USER so files are instantly born with the right ownership
+    sudo -u "$APP_USER" rsync -a --delete "$SOURCE_DIR" "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
+    if [ $? -ne 0 ]; then
+        log "ERROR: Deploying $DESTINATION_DIR failed during rsync."
+        exit 1
+    fi
+else
+    log "ERROR: Source directory $SOURCE_DIR not found in repository!"
+    exit 1
+fi
+
+# Move into the app directory
+cd "$DESTINATION_DIR"
+
+log "Installing/updating Node.js production dependencies as $APP_USER..."
+sudo -u "$APP_USER" npm install --omit=dev >> "$LOG_FILE" 2>&1
+if [ $? -ne 0 ]; then
+    log "ERROR: npm install failed in $DESTINATION_DIR"
+    exit 1
+fi
+
+log "Restarting call-controller process via PM2 as $APP_USER..."
+# This ensures PM2 environments don't get mixed up between users
+sudo -u "$APP_USER" pm2 restart "call-controller" >> "$LOG_FILE" 2>&1
+if [ $? -ne 0 ]; then
+    log "WARNING: PM2 restart failed. Attempting initial start..."
+    sudo -u "$APP_USER" pm2 start server.js --name "call-controller" --max-memory-restart 100M >> "$LOG_FILE" 2>&1
+fi
+
+log "Running post-deployment smoke tests..."
+sudo -u "$APP_USER" npm test >> "$LOG_FILE" 2>&1
+if [ $? -ne 0 ]; then
+    log "🚨 ERROR: Post-deployment smoke tests FAILED!"
+    exit 1
+fi
+
+log "🎉 Call-controller deployment and automated testing successful."
+
+
+#
+##-------------------------------------------------------------------------
 # VINTTRO  SuiteCRM custom UI
 SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/dist/extensions/vinttro-custom-ui/"
 DESTINATION_DIR="/var/www/suitecrm/public/dist/extensions/vinttro-custom-ui/"

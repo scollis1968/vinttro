@@ -5,6 +5,17 @@ const app = express();
 app.use(express.json()); // Parses incoming JSON payloads
 app.use(express.urlencoded({ extended: true })); // Parses Twilio's default form-urlencoded payloads
 
+// 🚀 ADD THIS: Safe cross-origin access rules for browser interaction
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
 const PORT = 3000;
 
 // 1. Connect strictly to Redis Database 1

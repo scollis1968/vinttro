@@ -190,9 +190,20 @@ cd /var/www/suitecrm/public/legacy/ || exit 1
 
 sudo -u www-data php -r '
     define("sugarEntry", true);
-    chdir("/var/www/suitecrm/public/legacy/"); // 🚀 Force runtime engine working working tree context
+    chdir("/var/www/suitecrm/public/legacy/"); 
+    
+    // 🚀 THE FIX: Completely isolate and sterilize the server environment matrix
+    // This purges dirty ambient HTTP/JSON header fragments inherited from the webhook daemon
+    $_SERVER = array(
+        "SERVER_NAME" => "localhost",
+        "REQUEST_METHOD" => "GET",
+        "SCRIPT_FILENAME" => "index.php",
+        "PHP_SELF" => "index.php",
+        "REMOTE_ADDR" => "127.0.0.1",
+        "argv" => array()
+    );
     $_GET = array(); $_POST = array(); $_REQUEST = array(); $_COOKIE = array();
-    if (isset($_SERVER)) { $_SERVER["argv"] = array(); }
+
     require_once("include/entryPoint.php");
     require_once("include/utils.php");
     require_once("ModuleInstall/ModuleInstaller.php");
@@ -209,6 +220,7 @@ sudo -u www-data php -r '
     $mi->modules = $modules;
     $mi->rebuild_extensions();
 ' >> "$LOG_FILE" 2>&1
+
 
 log "Compiling Master Logic Hooks Direct From Extensions Source..."
 sudo -u www-data php -r '

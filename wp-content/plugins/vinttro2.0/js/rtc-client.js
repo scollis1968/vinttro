@@ -490,8 +490,8 @@ function participantDisconnected(participant) {
         updateStatus("Waiting alone inside active channel session...", "info");
     });
 
-// ==========================================================
-    // 💼 8. UNIVERSAL WORKSPACE TASK PIPELINE CONTROLLER (REST)
+    // ==========================================================
+    // 💼 8. UNIVERSAL WORKSPACE TASK PIPELINE CONTROLLER (REST WITH AUTH)
     // ==========================================================
     const currentAgentEmail = "finley.collis@vinttro.co.uk"; 
 
@@ -499,13 +499,24 @@ function participantDisconnected(participant) {
         const $container = $('#vinttro-active-tasks');
         $container.html('<p style="padding:15px; color:#a0aec0;">🔄 Fetching secure task matrix...</p>');
 
-        // 🚀 THE SNAPPY FIX: Point directly to the modern REST route instead of legacy admin-ajax
         const secureWpEndpoint = `/wp-json/vinttro/v1/tasks?agent=${encodeURIComponent(currentAgentEmail)}`;
 
-        fetch(secureWpEndpoint)
+        // 🚀 THE FIX: Attach the 'X-WP-Nonce' header to satisfy WordPress REST authentication rules
+        const requestHeaders = {
+            'Content-Type': 'application/json'
+        };
+        
+        // If our new token config exists globally, append it to the request
+        if (typeof vinttroRestConfig !== 'undefined' && vinttroRestConfig.nonce) {
+            requestHeaders['X-WP-Nonce'] = vinttroRestConfig.nonce;
+        }
+
+        fetch(secureWpEndpoint, {
+            method: 'GET',
+            headers: requestHeaders // 🔒 Secure authentication payload verified here
+        })
             .then(res => res.json())
             .then(data => {
-                // If WordPress wraps our response or it returns a direct map
                 const payload = data.tasks ? data : data.data; 
                 
                 if (!payload || !payload.tasks || !payload.tasks.length) {

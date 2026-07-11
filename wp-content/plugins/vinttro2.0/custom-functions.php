@@ -20,6 +20,7 @@ require_once 'includes/visp-api-functions.php';
 require_once 'includes/membership-functions.php';
 require_once 'includes/visp-cover-functions.php';
 require_once 'includes/twilio-rtc.php';
+require_once 'includes/call-controller-functions.php';
 
 
 function my_plugin_load_styles() {

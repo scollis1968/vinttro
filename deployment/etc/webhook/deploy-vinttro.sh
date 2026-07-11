@@ -94,8 +94,8 @@ APP_USER="vinttro"
 if [ -d "$SOURCE_DIR" ]; then
     log "Executing call-controller asset synchronization..."
     
-    # Run rsync as the APP_USER so files are instantly born with the right ownership
-    sudo -u "$APP_USER" rsync -a --delete "$SOURCE_DIR" "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
+    # ADDED: --exclude 'node_modules' tells rsync to bypass the dependency folder entirely
+    sudo -u "$APP_USER" rsync -a --delete --exclude 'node_modules' "$SOURCE_DIR" "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
         log "ERROR: Deploying $DESTINATION_DIR failed during rsync."
         exit 1

@@ -42,8 +42,16 @@ function vinttro_secure_rest_tasks($request) {
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
+ // Look for this block near the bottom of vinttro_secure_rest_tasks:
     if ($output === false || $http_code !== 200) {
-        return new WP_Error('node_offline', 'Internal network communication error.', ['status' => 500]);
+        // 🚀 SWAP IT OUT FOR THIS TEMPORARY DIAGNOSTIC VERSION:
+        $curl_err_msg = curl_error($ch); 
+        return new WP_Error('node_offline', 'Diagnostic Capture Active.', [
+            'status'        => 500,
+            'curl_error'    => $curl_err_msg ? $curl_err_msg : 'None (cURL executed)',
+            'http_status'   => $http_code,
+            'raw_response'  => substr($output, 0, 300) // Show first 300 chars if Node threw a 500
+        ]);
     }
 
     // 3. Decode payload and stream it back instantly via native fast JSON classes

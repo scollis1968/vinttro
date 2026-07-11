@@ -490,33 +490,34 @@ function participantDisconnected(participant) {
         updateStatus("Waiting alone inside active channel session...", "info");
     });
 
-    // ==========================================================
-    // 💼 8. UNIVERSAL WORKSPACE TASK PIPELINE CONTROLLER (PROXIED)
+// ==========================================================
+    // 💼 8. UNIVERSAL WORKSPACE TASK PIPELINE CONTROLLER (REST)
     // ==========================================================
     const currentAgentEmail = "finley.collis@vinttro.co.uk"; 
 
     function loadAgentTasks() {
         const $container = $('#vinttro-active-tasks');
-        $container.html('<p style="padding:15px; color:#a0aec0;">🔄 Fetching secure task matrix via WordPress...</p>');
+        $container.html('<p style="padding:15px; color:#a0aec0;">🔄 Fetching secure task matrix...</p>');
 
-        // 🚀 THE FIX: Use 'typeof' to check if ajaxurl is missing on the front-end, 
-        // and safely fallback to the standard relative path if it is.
-        const wpAjaxUrl = (typeof ajaxurl !== 'undefined') ? ajaxurl : '/wp-admin/admin-ajax.php';
-        const secureWpEndpoint = `${wpAjaxUrl}?action=vinttro_get_tasks&agent=${encodeURIComponent(currentAgentEmail)}`;
+        // 🚀 THE SNAPPY FIX: Point directly to the modern REST route instead of legacy admin-ajax
+        const secureWpEndpoint = `/wp-json/vinttro/v1/tasks?agent=${encodeURIComponent(currentAgentEmail)}`;
 
         fetch(secureWpEndpoint)
             .then(res => res.json())
             .then(data => {
-                if (!data.success || !data.tasks.length) {
+                // If WordPress wraps our response or it returns a direct map
+                const payload = data.tasks ? data : data.data; 
+                
+                if (!payload || !payload.tasks || !payload.tasks.length) {
                     $container.html('<p style="padding:15px; color:#a0aec0;">🎉 Clean desk! No outstanding tasks found.</p>');
                     $('#vinttro-task-count').text('0 Tasks');
                     return;
                 }
 
                 $container.empty();
-                $('#vinttro-task-count').text(`${data.tasks.length} Active Task${data.tasks.length !== 1 ? 's' : ''}`);
+                $('#vinttro-task-count').text(`${payload.tasks.length} Active Task${payload.tasks.length !== 1 ? 's' : ''}`);
 
-                data.tasks.forEach(task => {
+                payload.tasks.forEach(task => {
                     let typeBadge = '';
                     if (task.type === 'OUTBOUND_CALL') typeBadge = '<span class="vinttro-badge" style="background:#3182ce;">📞 Outbound Call</span>';
                     if (task.type === 'RESEARCH')     typeBadge = '<span class="vinttro-badge" style="background:#319795;">🔍 Data Research</span>';
@@ -538,12 +539,12 @@ function participantDisconnected(participant) {
                 });
             })
             .catch(err => {
-                console.error("❌ Task proxy pipeline breakdown:", err);
-                $container.html('<p style="padding:15px; color:#e53e3e;">❌ Failed to query secure proxy state machine.</p>');
+                console.error("❌ Task REST pipeline breakdown:", err);
+                $container.html('<p style="padding:15px; color:#e53e3e;">❌ Failed to query secure REST state machine.</p>');
             });
     }
 
-    // Run the proxy initialization pass
+    // Initialize list load
     loadAgentTasks();
 });
 

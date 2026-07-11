@@ -491,145 +491,117 @@ function participantDisconnected(participant) {
     });
 
     // ==========================================================
-    // 📞 8. OUTBOUND CALLBACK WORKFLOW CONTROLLER
+    // 💼 8. UNIVERSAL WORKSPACE TASK PIPELINE CONTROLLER
     // ==========================================================
-    let callTimerInterval = null;
-    let callDurationSecs = 0;
-    let activeCallTaskId = null;
+    const callControllerUrl = "http://localhost:3000"; // Update with public domain/IP if needed
+    const currentAgentEmail = "finley.collis@vinttro.co.uk"; // Tied to user session context
+    let activeTaskId = null;
 
-    // A. Track loaded count dynamically
-    function updateQueueCount() {
-        const count = $('.vinttro-task-card').length;
-        $('#vinttro-task-count').text(`${count} Callback${count !== 1 ? 's' : ''}`);
+    // A. Fetch workloads from Redis via the Node proxy layer
+    function loadAgentTasks() {
+        const $container = $('#vinttro-active-tasks');
+        $container.html('<p style="padding:15px; color:#a0aec0;">🔄 Polling Redis data matrix...</p>');
+
+        fetch(`${callControllerUrl}/api/tasks?agent=${encodeURIComponent(currentAgentEmail)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success || !data.tasks.length) {
+                    $container.html('<p style="padding:15px; color:#a0aec0;">🎉 Clean desk! No outstanding tasks found.</p>');
+                    $('#vinttro-task-count').text('0 Tasks');
+                    return;
+                }
+
+                $container.empty();
+                $('#vinttro-task-count').text(`${data.tasks.length} Active Task${data.tasks.length !== 1 ? 's' : ''}`);
+
+                // Build HTML layout maps dynamically based on item types
+                data.tasks.forEach(task => {
+                    let typeBadge = '';
+                    if (task.type === 'OUTBOUND_CALL') typeBadge = '<span class="vinttro-badge" style="background:#3182ce;">📞 Outbound Call</span>';
+                    if (task.type === 'RESEARCH')     typeBadge = '<span class="vinttro-badge" style="background:#319795;">🔍 Data Research</span>';
+                    if (task.type === 'CASE_REVIEW')  typeBadge = '<span class="vinttro-badge" style="background:#dd6b20;">📂 Case Review</span>';
+
+                    const cardHtml = `
+                        <div class="vinttro-task-card" 
+                             data-task-id="${task.id}" 
+                             data-task-type="${task.type}" 
+                             data-title="${task.title}" 
+                             data-target="${task.target}" 
+                             data-meta="${task.meta}" 
+                             data-notes="${task.notes}">
+                            <div class="task-info">
+                                <div style="margin-bottom:6px;">${typeBadge} <span class="task-id">#${task.id}</span></div>
+                                <h4 class="task-customer-name" style="margin:0;">${task.title}</h4>
+                                <p class="task-meta">${task.meta} | ${task.target}</p>
+                            </div>
+                            <div class="task-action">
+                                <button class="vinttro-btn vinttro-btn-primary claim-task-btn">Open Worksheet</button>
+                            </div>
+                        </div>
+                    `;
+                    $container.append(cardHtml);
+                });
+            })
+            .catch(err => {
+                console.error("❌ Task pipeline network breakdown:", err);
+                $container.html('<p style="padding:15px; color:#e53e3e;">❌ Failed to query live Redis state machine.</p>');
+            });
     }
-    updateQueueCount();
 
-    // B. Clicking "Prep Call" on a Task Card slides open the drawer
-    $(document).on('click', '.prep-call-btn', function() {
+    // Initialize list load on template mount
+    loadAgentTasks();
+
+    // B. Triggered when an Agent clicks "Open Worksheet" on any card
+    $(document).on('click', '.claim-task-btn', function() {
         const $card = $(this).closest('.vinttro-task-card');
         
-        activeCallTaskId = $card.data('task-id');
-        const customerName = $card.data('name');
-        const phoneNumber  = $card.data('phone');
-        const leadId       = $card.data('lead-id');
-        const notes        = $card.data('notes');
+        activeTaskId      = $card.data('task-id');
+        const taskType    = $card.data('task-type');
+        const title       = $card.data('title');
+        const target      = $card.data('target');
+        const meta        = $card.data('meta');
+        const notes       = $card.data('notes');
 
-        console.log(`%c💼 Outbound task picked: [Task #${activeCallTaskId}] prepping ${customerName}`, "color: #3182ce; font-weight: bold;");
+        // Hydrate shared core details inside the companion drawer panel layout
+        $('#drawer-customer-name').text(title);
+        $('#drawer-customer-phone').text(target);
+        $('#drawer-lead-id').text(meta);
+        $('#drawer-task-notes').text(notes);
 
-        // Populate drawer panels dynamically
-        $('#drawer-customer-name').text(customerName);
-        $('#drawer-customer-phone').text(phoneNumber);
-        $('#drawer-lead-id').text(leadId);
-        $('#drawer-task-notes').text(notes || "No notes found for this task.");
-
-        // Reset the Drawer controls back to the initial state
-        resetDrawerCallControls();
-
-        // Slide the drawer in
-        $('#vinttro-companion-drawer').addClass('open');
-    });
-
-    // C. Close Drawer Button
-    $('#close-companion-drawer').on('click', function() {
-        // If there's an active call running, prevent closing by accident
-        if ($('#drawer-call-status-strip').hasClass('active')) {
-            alert("Please hang up the active call before closing the companion panel.");
-            return;
-        }
-        $('#vinttro-companion-drawer').removeClass('open');
-    });
-
-    // D. Reset the state controller
-    function resetDrawerCallControls() {
-        clearInterval(callTimerInterval);
-        callDurationSecs = 0;
+        // 🚀 DYNAMIC INTERFACE ADAPTATION SWITCHBOARD
+        console.log(`💼 Morphing Workspace to handle context payload profile: [${taskType}]`);
         
-        $('#drawer-call-status-strip').attr('class', 'call-status-strip offline');
-        $('#drawer-call-status-text').text('Device State: Ready');
-        $('#drawer-call-timer').hide().text('00:00');
-        
+        // Reset baseline views
+        $('#drawer-call-status-strip').attr('class', 'call-status-strip offline').show();
         $('#btn-trigger-probe').show();
         $('#drawer-mid-call-controls').hide();
         $('#drawer-disposition-card').hide();
-        
-        // Reset form inputs
-        $('#disposition-outcome').val('');
-        $('#disposition-notes').val('');
-    }
 
-    // E. Mock Event: Click "Initiate Probe Call"
-    $('#btn-trigger-probe').on('click', function() {
-        $(this).hide();
-        
-        // 🚨 STATE Transition 1: Ringing Agent (Probe Phase)
-        $('#drawer-call-status-strip').attr('class', 'call-status-strip ringing');
-        $('#drawer-call-status-text').text('Ringing your browser phone...');
-        
-        console.log("%c📡 Probe call triggered. Sending signaling packet to browser...", "color: #dd6b20; font-weight: bold;");
-
-        // Simulate Agent Accepting & Twilio bridging them together after 2 seconds
-        setTimeout(() => {
-            // 🚨 STATE Transition 2: Connected / Active Call
-            $('#drawer-call-status-strip').attr('class', 'call-status-strip active');
-            $('#drawer-call-status-text').text('📞 Live Bridged Session');
-            $('#drawer-mid-call-controls').show();
-            
-            // Start Call Timer
-            $('#drawer-call-timer').show();
-            callDurationSecs = 0;
-            callTimerInterval = setInterval(() => {
-                callDurationSecs++;
-                const mins = String(Math.floor(callDurationSecs / 60)).padStart(2, '0');
-                const secs = String(callDurationSecs % 60).padStart(2, '0');
-                $('#drawer-call-timer').text(`${mins}:${secs}`);
-            }, 1000);
-            
-            console.log("%c✅ Peer call established. Media stream open.", "color: #38a169; font-weight: bold;");
-        }, 2000);
-    });
-
-    // F. Hang up the Call (Ends media stream & opens Disposition)
-    $('#btn-hangup-call').on('click', function() {
-        clearInterval(callTimerInterval);
-        
-        // 🚨 STATE Transition 3: Wrap-Up / Disposition State
-        $('#drawer-call-status-strip').attr('class', 'call-status-strip offline');
-        $('#drawer-call-status-text').text('Call Completed (Wrap-up Mode)');
-        
-        $('#drawer-mid-call-controls').hide();
-        
-        // Reveal the Disposition Card
-        $('#drawer-disposition-card').slideDown(200);
-        console.log("%c⌛ Call ended. Entering local task disposition state.", "color: #e53e3e; font-weight: bold;");
-    });
-
-    // G. Save outcome (Saves data, cleans list)
-    $('#btn-save-disposition').on('click', function() {
-        const outcome = $('#disposition-outcome').val();
-        const notes = $('#disposition-notes').val();
-
-        if (!outcome || !notes) {
-            alert("Please select a call outcome and enter log notes before saving.");
-            return;
+        if (taskType === 'OUTBOUND_CALL') {
+            // Show telecommunication control parameters
+            $('#drawer-call-status-text').text('Device State: Line Ready');
+            $('.call-controller-box').show();
+        } 
+        else if (taskType === 'RESEARCH') {
+            // Re-render parameters directly for data auditing tasks
+            $('#drawer-call-status-text').text('Mode: Staging Validation Audit');
+            $('#btn-trigger-probe').hide(); // Hide the phone button!
+            $('#drawer-disposition-card').show(); // Jump straight to data input values fields
+        } 
+        else if (taskType === 'CASE_REVIEW') {
+            // Re-render parameters directly for sign-off review items
+            $('#drawer-call-status-text').text('Mode: Document Review Authorization');
+            $('#btn-trigger-probe').hide();
+            $('#drawer-disposition-card').show();
         }
 
-        // Simulate sending a post back to WordPress/SuiteCRM
-        console.log(`%c💾 SAVING DISPOSITION FOR TASK #${activeCallTaskId}:`, "color: #805ad5; font-weight: bold;", {
-            taskId: activeCallTaskId,
-            outcome: outcome,
-            notes: notes,
-            duration: callDurationSecs
-        });
+        // Slide the unified workspace panel open
+        $('#vinttro-companion-drawer').addClass('open');
+    });
 
-        // 1. Delete the task card from the left panel UI (Task complete!)
-        $(`.vinttro-task-card[data-task-id="${activeCallTaskId}"]`).slideUp(200, function() {
-            $(this).remove();
-            updateQueueCount();
-        });
-
-        // 2. Slide the drawer away
+    // Close Handler
+    $('#close-companion-drawer').on('click', function() {
         $('#vinttro-companion-drawer').removeClass('open');
-        alert("Call logged and task successfully archived!");
     });
 });
 

@@ -1,0 +1,231 @@
+/* Dashboard Wrapper */
+.vinttro-dialer-dashboard {
+    position: relative;
+    display: flex;
+    gap: 20px;
+    background: #14171c;
+    color: #e2e8f0;
+    padding: 20px;
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 500px;
+    overflow: hidden;
+}
+
+/* Callback Queue Layout */
+.vinttro-queue-container {
+    flex: 1;
+}
+.vinttro-queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #2d3748;
+    padding-bottom: 12px;
+    margin-bottom: 15px;
+}
+.vinttro-queue-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.3rem;
+}
+.vinttro-badge {
+    background: #805ad5;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* Task Cards */
+.vinttro-task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.vinttro-task-card {
+    background: #1a202c;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+.vinttro-task-card:hover {
+    border-color: #4a5568;
+    background: #232a37;
+}
+.task-info {
+    flex: 1;
+}
+.task-id {
+    font-size: 0.75rem;
+    color: #718096;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+.task-customer-name {
+    margin: 2px 0;
+    color: #fff;
+    font-size: 1.1rem;
+}
+.task-meta {
+    margin: 0 0 8px 0;
+    font-size: 0.85rem;
+    color: #a0aec0;
+}
+.task-desc {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #cbd5e0;
+    font-style: italic;
+}
+
+/* Dynamic Call-Companion Drawer */
+.vinttro-call-drawer {
+    position: absolute;
+    top: 0;
+    right: -420px; /* Off-screen by default */
+    width: 380px;
+    height: 100%;
+    background: #1a202c;
+    border-left: 1px solid #4a5568;
+    box-shadow: -10px 0 25px -5px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    z-index: 99;
+    transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.vinttro-call-drawer.open {
+    right: 0; /* Slides in cleanly */
+}
+.drawer-header {
+    background: #2d3748;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #4a5568;
+}
+.drawer-title {
+    font-weight: bold;
+    color: #fff;
+}
+.close-drawer-btn {
+    background: none;
+    border: none;
+    color: #a0aec0;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+.close-drawer-btn:hover {
+    color: #fff;
+}
+.drawer-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Card panels inside Drawer */
+.drawer-card {
+    background: #232a37;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
+    padding: 16px;
+}
+.dossier-header {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.dossier-header .avatar {
+    font-size: 2rem;
+}
+.dossier-header h3 {
+    margin: 0 0 4px 0;
+    color: #fff;
+}
+.phone-highlight {
+    color: #63b3ed;
+    font-family: monospace;
+    font-weight: bold;
+}
+.vinttro-divider {
+    border: 0;
+    height: 1px;
+    background: #2d3748;
+    margin: 12px 0;
+}
+#drawer-task-notes {
+    background: #1a202c;
+    border-left: 3px solid #805ad5;
+    margin: 8px 0 0 0;
+    padding: 8px 12px;
+    color: #cbd5e0;
+    font-size: 0.9rem;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Device State indicators */
+.call-status-strip {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+.call-status-strip.offline { background: #4a5568; color: #cbd5e0; }
+.call-status-strip.ringing { background: #dd6b20; color: #fff; animation: pulse 1.5s infinite; }
+.call-status-strip.active { background: #38a169; color: #fff; }
+
+/* Buttons & Forms */
+.vinttro-btn {
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+}
+.vinttro-btn-primary { background: #805ad5; color: white; }
+.vinttro-btn-primary:hover { background: #9f7aea; }
+.vinttro-btn-success { background: #38a169; color: white; width: 100%; }
+.vinttro-btn-success:hover { background: #48bb78; }
+.vinttro-btn-danger { background: #e53e3e; color: white; }
+.vinttro-btn-danger:hover { background: #f56565; }
+.vinttro-btn-warning { background: #dd6b20; color: white; }
+.mid-call-controls { display: flex; gap: 10px; justify-content: stretch; }
+.mid-call-controls button { flex: 1; }
+
+/* Forms details */
+.form-group {
+    margin-bottom: 12px;
+}
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: #a0aec0;
+    margin-bottom: 6px;
+}
+.vinttro-select, .vinttro-textarea {
+    width: 100%;
+    background: #1a202c;
+    border: 1px solid #4a5568;
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}

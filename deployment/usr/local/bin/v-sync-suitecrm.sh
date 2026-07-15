@@ -180,6 +180,14 @@ EOF
 echo "-> Syncing Core Backend Layout Assets to Frontend..."
 /usr/bin/env -i /usr/bin/php "$PROD_PATH/bin/console" scrm:copy-legacy-assets
 
+# =========================================================================
+# 🚀 PATCH INJECTED: Fix official SuiteCRM 8.10.1 Webpack tuple mismatch on Prod
+# This safely fixes the factory files on Production right after compilation
+# =========================================================================
+echo "-> Aligning compiled frontend core asset version requirements (18,2,8 -> 18,2,14)..."
+find "$PROD_PATH/public/dist/" -type f -name "*.js" -exec sed -i 's/18,2,8/18,2,14/g' {} +
+# =========================================================================
+
 echo "-> Flushing SuiteCRM 8 Production Container Cache..."
 /usr/bin/env -i /usr/bin/php "$PROD_PATH/bin/console" cache:clear
 

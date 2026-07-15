@@ -9,7 +9,7 @@ TARGET_BRANCH="refs/heads/uat" # <-- SET YOUR REQUIRED BRANCH HERE
 BRANCH="uat"
 # ----------------------------------------------------------------
 # tip :- run the following command to execute this script and see the logs in real-time: 
-#      journalctl -u webhook -f
+#       journalctl -u webhook -f
 # ----------------------------------------------------------------
 
 # --- Logging Function ---
@@ -269,6 +269,14 @@ sudo -u www-data php -r '
 log "Syncing Core Backend Layout Assets to Frontend..."
 cd /var/www/suitecrm || exit 1
 sudo -u www-data php bin/console scrm:copy-legacy-assets >> "$LOG_FILE" 2>&1
+
+# =========================================================================
+# 🚀 PATCH INJECTED: Fix official SuiteCRM 8.10.1 Webpack tuple mismatch
+# This aligns compiled modules dynamically inside the newly synced asset folder
+# =========================================================================
+log "Aligning compiled framework asset version requirements (18,2,8 -> 18,2,14)..."
+find /var/www/suitecrm/public/dist/ -type f -name "*.js" -exec sed -i 's/18,2,8/18,2,14/g' {} +
+# =========================================================================
 
 # 🚀 CHANGED: Enforce full chown/chmod permissions right before Symfony attempts directory teardowns to clear the cache path
 log "Securing file ownership and permissions schema across CRM core modules..."

@@ -271,11 +271,13 @@ cd /var/www/suitecrm || exit 1
 sudo -u www-data php bin/console scrm:copy-legacy-assets >> "$LOG_FILE" 2>&1
 
 # =========================================================================
-# 🚀 PATCH INJECTED: Fix official SuiteCRM 8.10.1 Webpack tuple mismatch
-# This aligns compiled modules dynamically inside the newly synced asset folder
+# 🚀 AUTOMATED BUGFIX: Fix official SuiteCRM 8.10.1 Webpack version mismatches
+# Aligns Angular versions, Luxon versions, and the placeholder Core strings
 # =========================================================================
-log "Aligning compiled framework asset version requirements (18,2,8 -> 18,2,14)..."
+log "Executing dynamic compilation alignment on frontend distribution assets..."
 find /var/www/suitecrm/public/dist/ -type f -name "*.js" -exec sed -i 's/18,2,8/18,2,14/g' {} +
+find /var/www/suitecrm/public/dist/ -type f -name "*.js" -exec sed -i 's/3,5,0/3,7,2/g' {} +
+find /var/www/suitecrm/public/dist/ -type f -name "*.js" -exec sed -i 's/\^auto/\^8.10.1/g' {} +
 # =========================================================================
 
 # 🚀 CHANGED: Enforce full chown/chmod permissions right before Symfony attempts directory teardowns to clear the cache path

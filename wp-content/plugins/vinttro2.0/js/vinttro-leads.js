@@ -189,6 +189,10 @@ const VinttroIntroducerPipeline = {
 // 🎬 4. INITIALIZE PIPELINES ON DOM READY
 // ==========================================================
 jQuery(document).ready(function($) {
+    console.log("🚀 Vinttro Leads script initialized.");
+    console.log("Settings detected:", window.vinttroSettings);
+    console.log("Agent container found:", $('#vinttro-active-tasks').length);
+    console.log("Introducer container found:", $('#vinttro-introduced-leads').length);
     VinttroAgentPipeline.init();
     VinttroIntroducerPipeline.init();
 });

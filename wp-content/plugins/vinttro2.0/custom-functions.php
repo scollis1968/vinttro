@@ -42,7 +42,12 @@ add_action( 'wp_enqueue_scripts', 'my_plugin_load_styles', 99 );
 function my_plugin_load_scripts() {
     // 1. Enqueue your existing global form preview script
     wp_enqueue_script( 'my-form-preview-script', plugins_url( 'custom-scripts.js', __FILE__ ), array('jquery'), '1.6', true );
-
+    
+    $localized_settings = array(
+        'root'             => esc_url_raw( rest_url() ),
+        'nonce'            => wp_create_nonce( 'wp_rest' ),
+        'currentUserEmail' => wp_get_current_user()->user_email
+    );
     // ==========================================================
     // 📞 2. TWILIO WEBRTC ENGINE: TARGET ANY PAGE UNDER /visp
     // ==========================================================
@@ -74,6 +79,16 @@ function my_plugin_load_scripts() {
             true
         );
 
+        // NEW: Enqueue dedicated pipeline/lead rendering engine
+        wp_enqueue_script(
+            'vinttro-leads-manager', 
+            plugins_url( 'js/vinttro-leads.js', __FILE__ ), 
+            array('jquery'), 
+            '1.0.0', 
+            true
+        );
+        wp_localize_script( 'vinttro-leads-manager', 'vinttroSettings', $localized_settings );
+        
         wp_localize_script( 'vinttro-rtc-client', 'vinttroSettings', array(
             'root'  => esc_url_raw( rest_url() ),
             'nonce' => wp_create_nonce( 'wp_rest' ),

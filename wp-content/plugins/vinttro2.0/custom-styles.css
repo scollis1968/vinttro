@@ -534,3 +534,85 @@ body:has(#sgpb-popup-dialog-main-div-wrapper) {
         display: none !important;
     }
 }
+/* Custom styling additions for Vinttro Leads Components */
+.vinttro-loader, .vinttro-empty, .vinttro-error {
+    padding: 20px;
+    color: #a0aec0;
+    text-align: center;
+}
+.vinttro-error {
+    color: #e53e3e;
+}
+
+/* Base Badge System */
+.vinttro-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    margin-right: 5px;
+}
+.badge-danger { background-color: #e53e3e; }    /* Red for Inbound Calls */
+.badge-primary { background-color: #3182ce; }   /* Blue for Outbound Calls */
+.badge-teal { background-color: #319795; }      /* Teal for Research */
+.badge-orange { background-color: #dd6b20; }    /* Orange for Reviews */
+.badge-secondary { background-color: #718096; } /* Grey for fallbacks */
+
+/* Introducer List Cards */
+.vinttro-lead-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.lead-client-name {
+    margin: 0 0 4px 0;
+    font-size: 1.1rem;
+    color: #2d3748;
+}
+.lead-meta {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #718096;
+}
+
+/* Income Metrics Container */
+.opportunity-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.opportunity-stage-badge {
+    font-size: 0.8rem;
+    color: #4a5568;
+    background: #edf2f7;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+.income-matrix {
+    display: flex;
+    gap: 15px;
+}
+.income-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.income-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.income-value {
+    font-size: 0.95rem;
+}
+.text-success { color: #38a169; }
+.text-muted { color: #718096; }

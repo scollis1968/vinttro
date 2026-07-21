@@ -25,3 +25,14 @@ add_filter('cmplz_banner_html', function($html) {
     $replace = '$1$2$5$3$4'; 
     return preg_replace($search, $replace, $html);
 }, 10, 1);
+
+
+// 4. REST API AUTHENTICATION FIX   
+add_filter('rest_authentication_errors', function($result) {
+    // Whitelist your custom API namespace
+    $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+    if (strpos($request_uri, '/wp-json/vinttro/v1/') !== false) {
+        return true; // Allow access to your custom endpoints
+    }
+    return $result;
+}, 99);

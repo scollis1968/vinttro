@@ -30,16 +30,67 @@ function vinttro_get_cover_admin_panel($user_id) {
     ?>
     <style>
         .vehicle-issue-summary-line { transition: opacity 0.2s ease-in-out; }
-        .vehicle-issue-summary-line:hover { opacity: 0.8; }
+        .vehicle-issue-summary-line:hover { opacity: 0.85; }
         .vehicle-main-row td { vertical-align: top !important; padding-top: 10px; }
         
+        /* Summary Pills */
+        .summary-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            color: #475569;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Expanded Drawer & Card Layout */
+        .issues-expanded-box {
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .expanded-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .drawer-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 14px 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .drawer-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .drawer-card-title {
+            margin: 0;
+            font-size: 0.88em;
+            font-weight: 700;
+            color: #334155;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
         /* Activity Timeline Styles */
-        .activity-timeline { margin-top: 12px; padding-left: 0; list-style: none; border-left: 2px solid #e2e8f0; margin-left: 10px; }
+        .activity-timeline { margin-top: 8px; padding-left: 0; list-style: none; border-left: 2px solid #e2e8f0; margin-left: 10px; }
         .activity-item { position: relative; margin-bottom: 12px; padding-left: 18px; font-size: 0.88em; }
         .activity-item::before { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #4a5568; }
         .activity-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.85em; background: #edf2f7; color: #2d3748; margin-right: 6px; }
         .activity-date { color: #718096; font-size: 0.85em; margin-left: 8px; }
     </style>
+
     <script>
         function vinttroToggleIssues(triggerElement) {
             var targetId = triggerElement.getAttribute('data-toggle-target');
@@ -117,19 +168,24 @@ function vinttro_get_cover_admin_panel($user_id) {
 
                             <?php if ($has_details) : ?>
                                 <div class="vehicle-issue-summary-line" onclick="vinttroToggleIssues(this)" data-toggle-target="<?php echo esc_attr($unique_row_id); ?>" style="margin-top: 6px; margin-left: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; user-select: none;">
-                                    <span style="font-size: 0.85em; color: #666; font-weight: 600;">Activity & Quotes:</span>
                                     
-                                    <?php foreach ($irfq_config as $key => $config) : ?>
-                                        <span style="color: <?php echo $config['color']; ?>; display: inline-flex; align-items: center; font-size: 0.85em; font-weight: bold;" title="<?php echo esc_attr($config['desc']); ?>">
-                                            <?php echo $warning_triangle_svg; ?><?php echo $config['count']; ?>
-                                        </span>
-                                    <?php endforeach; ?>
+                                    <?php if ($has_insurer_rfqs) : ?>
+                                        <div class="summary-pill">
+                                            <span style="font-weight: 600;">Quotes:</span>
+                                            <?php foreach ($irfq_config as $key => $config) : ?>
+                                                <span style="color: <?php echo $config['color']; ?>; display: inline-flex; align-items: center; font-weight: bold;" title="<?php echo esc_attr($config['desc']); ?>">
+                                                    <?php echo $warning_triangle_svg; ?><?php echo $config['count']; ?>
+                                                </span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
 
                                     <?php if ($has_activities) : ?>
-                                        <span style="font-size: 0.8em; background: #e2e8f0; padding: 1px 6px; border-radius: 10px; color: #4a5568;">
-                                            📋 <?php echo count($activities); ?> Activity Logs
-                                        </span>
+                                        <div class="summary-pill">
+                                            <span>📋 <strong><?php echo count($activities); ?></strong> Activity Logs</span>
+                                        </div>
                                     <?php endif; ?>
+
                                 </div>
                             <?php endif; ?>
                         </td>
@@ -146,68 +202,78 @@ function vinttro_get_cover_admin_panel($user_id) {
                     <?php if ($has_details) : ?>
                         <tr id="<?php echo esc_attr($unique_row_id); ?>" class="vehicle-issues-row" style="display: none;">
                             <td colspan="5"> 
-                                <div class="issues-expanded-box" style="padding: 12px; background: #f8fafc; border-radius: 6px;">
-                                    
-                                    <!-- INSURER RFQS SECTION -->
-                                    <?php if ($has_insurer_rfqs) : ?>
-                                        <h4 style="margin: 0 0 8px 0; font-size: 0.9em; color: #4a5568;">Insurer Quotes:</h4>
-                                        <ul class="issue-detailed-list" style="list-style: none; padding-left: 0; margin-top: 4px;">
-                                            <?php foreach ($insurer_rfqs as $insurer_rfq) : 
-                                                $requested_date = '';
-                                                if (!empty($insurer_rfq['date_requested'])) {
-                                                    $requested_ts = strtotime($insurer_rfq['date_requested']);
-                                                    $requested_date = $requested_ts ? date('d/m/Y', $requested_ts) : $insurer_rfq['date_requested'];
-                                                }
-                                                $irfq_id = $insurer_rfq['id'] ?? '';
-                                                $status_key = strtolower($insurer_rfq['status'] ?? 'new');
-                                                $item_color = $irfq_config[$status_key]['color'] ?? '#6c757d';
-                                            ?>
-                                                <li style="display: flex; align-items: flex-start; margin-bottom: 6px; color: <?php echo $item_color; ?>;">
-                                                    <span class="issue-icon" style="flex-shrink: 0; display: inline-flex; align-items: center; height: 20px;">
-                                                        <?php echo $warning_triangle_svg; ?>
-                                                    </span>
-                                                    <span style="color: #333;">
-                                                        <strong><?php echo esc_html($insurer_rfq['name'] ?? ''); ?>:</strong>
-                                                        <?php echo esc_html($insurer_rfq['insurer'] ?? ''); ?>
-                                                        <span style="color: #777; font-size: 0.9em; margin-left: 6px;">- Requested: <?php echo esc_html($requested_date); ?></span>
-                                                    </span>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php endif; ?>
+                                <div class="issues-expanded-box">
+                                    <div class="expanded-grid">
 
-                                    <!-- ACTIVITY TIMELINE SECTION -->
-                                    <?php if ($has_activities) : ?>
-                                        <h4 style="margin: 16px 0 8px 0; font-size: 0.9em; color: #4a5568;">Activity History:</h4>
-                                        <ul class="activity-timeline">
-                                            <?php foreach ($activities as $act) : 
-                                                $type = $act['type'] ?? 'Event';
-                                                
-                                                // Icon mapper for quick visual identification
-                                                $icon_map = [
-                                                    'Inbound Call'    => '📞',
-                                                    'Outbound Call'   => '📲',
-                                                    'Message In'      => '💬',
-                                                    'Message Out'     => '✉️',
-                                                    'Insurer Quote'   => '💰',
-                                                    'Client Accepted' => '✅'
-                                                ];
-                                                $icon = $icon_map[$type] ?? '📌';
-                                                
-                                                $date_formatted = !empty($act['dateEvent']) ? date('d/m/Y H:i', strtotime($act['dateEvent'])) : '';
-                                            ?>
-                                                <li class="activity-item">
-                                                    <span class="activity-badge"><?php echo $icon . ' ' . esc_html($type); ?></span>
-                                                    <strong style="color: #2d3748;"><?php echo esc_html($act['note'] ?? ''); ?></strong>
-                                                    <?php if (!empty($act['agent'])) : ?>
-                                                        <span style="color: #4a5568; font-style: italic;">(<?php echo esc_html($act['agent']); ?>)</span>
-                                                    <?php endif; ?>
-                                                    <span class="activity-date"><?php echo esc_html($date_formatted); ?></span>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php endif; ?>
+                                        <!-- INSURER RFQS CARD -->
+                                        <?php if ($has_insurer_rfqs) : ?>
+                                            <div class="drawer-card">
+                                                <div class="drawer-card-header">
+                                                    <h4 class="drawer-card-title">📄 Insurer Quotes</h4>
+                                                    <span style="font-size: 0.8em; color: #64748b;"><?php echo count($insurer_rfqs); ?> Total</span>
+                                                </div>
+                                                <ul class="issue-detailed-list" style="list-style: none; padding-left: 0; margin: 0;">
+                                                    <?php foreach ($insurer_rfqs as $insurer_rfq) : 
+                                                        $requested_date = '';
+                                                        if (!empty($insurer_rfq['date_requested'])) {
+                                                            $requested_ts = strtotime($insurer_rfq['date_requested']);
+                                                            $requested_date = $requested_ts ? date('d/m/Y', $requested_ts) : $insurer_rfq['date_requested'];
+                                                        }
+                                                        $status_key = strtolower($insurer_rfq['status'] ?? 'new');
+                                                        $item_color = $irfq_config[$status_key]['color'] ?? '#6c757d';
+                                                    ?>
+                                                        <li style="display: flex; align-items: flex-start; margin-bottom: 8px; color: <?php echo $item_color; ?>;">
+                                                            <span class="issue-icon" style="flex-shrink: 0; display: inline-flex; align-items: center; height: 20px;">
+                                                                <?php echo $warning_triangle_svg; ?>
+                                                            </span>
+                                                            <span style="color: #333; font-size: 0.88em;">
+                                                                <strong><?php echo esc_html($insurer_rfq['name'] ?? ''); ?>:</strong>
+                                                                <?php echo esc_html($insurer_rfq['insurer'] ?? ''); ?>
+                                                                <span style="color: #64748b; font-size: 0.85em; margin-left: 6px;">- Requested: <?php echo esc_html($requested_date); ?></span>
+                                                            </span>
+                                                        </li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+                                            </div>
+                                        <?php endif; ?>
 
+                                        <!-- ACTIVITY TIMELINE CARD -->
+                                        <?php if ($has_activities) : ?>
+                                            <div class="drawer-card">
+                                                <div class="drawer-card-header">
+                                                    <h4 class="drawer-card-title">🕒 Activity History</h4>
+                                                    <span style="font-size: 0.8em; color: #64748b;"><?php echo count($activities); ?> Logs</span>
+                                                </div>
+                                                <ul class="activity-timeline">
+                                                    <?php foreach ($activities as $act) : 
+                                                        $type = $act['type'] ?? 'Event';
+                                                        
+                                                        $icon_map = [
+                                                            'Inbound Call'    => '📞',
+                                                            'Outbound Call'   => '📲',
+                                                            'Message In'      => '💬',
+                                                            'Message Out'     => '✉️',
+                                                            'Insurer Quote'   => '💰',
+                                                            'Client Accepted' => '✅'
+                                                        ];
+                                                        $icon = $icon_map[$type] ?? '📌';
+                                                        
+                                                        $date_formatted = !empty($act['dateEvent']) ? date('d/m/Y H:i', strtotime($act['dateEvent'])) : '';
+                                                    ?>
+                                                        <li class="activity-item">
+                                                            <span class="activity-badge"><?php echo $icon . ' ' . esc_html($type); ?></span>
+                                                            <strong style="color: #2d3748;"><?php echo esc_html($act['note'] ?? ''); ?></strong>
+                                                            <?php if (!empty($act['agent'])) : ?>
+                                                                <span style="color: #4a5568; font-style: italic;">(<?php echo esc_html($act['agent']); ?>)</span>
+                                                            <?php endif; ?>
+                                                            <span class="activity-date"><?php echo esc_html($date_formatted); ?></span>
+                                                        </li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+                                            </div>
+                                        <?php endif; ?>
+
+                                    </div>
                                 </div>
                             </td>
                         </tr>

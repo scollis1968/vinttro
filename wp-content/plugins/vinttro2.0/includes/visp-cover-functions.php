@@ -29,32 +29,42 @@ function vinttro_get_cover_admin_panel($user_id) {
     ob_start();
     ?>
     <style>
-        /* 1. Unconstrain WordPress theme main container & block wrappers */
+        /* 1. Unconstrain main containers and clear negative margin offsets */
         main#wp--skip-link--target,
         main#wp--skip-link--target .wp-block-group,
-        main#wp--skip-link--target .entry-content {
-            max-width: 100% !important;
+        main#wp--skip-link--target .entry-content,
+        main#wp--skip-link--target .alignfull {
             width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
             padding-left: 0 !important;
             padding-right: 0 !important;
+            left: auto !important;
+            right: auto !important;
         }
 
-        /* 2. Fix WP Flex layout container behavior */
-        main#wp--skip-link--target .is-layout-flex {
-            flex: 1 1 100% !important;
+        /* 2. Reset WordPress flow and flex layout margins */
+        main#wp--skip-link--target .is-layout-flex,
+        main#wp--skip-link--target .is-layout-flow,
+        main#wp--skip-link--target .is-layout-constrained {
             width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
         }
 
-        /* 3. Stretch all custom dashboard containers full bleed */
+        /* 3. Stretch custom dashboard elements full bleed */
         .vinttro-dashboard,
         .dashboard-grid,
         .dashboard-panel,
         .fleet-table {
             width: 100% !important;
             max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
             box-sizing: border-box !important;
         }
-
         .fleet-table {
             table-layout: auto; /* Ensures columns distribute evenly across full width */
         }

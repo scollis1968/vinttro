@@ -29,11 +29,30 @@ function vinttro_get_cover_admin_panel($user_id) {
     ob_start();
     ?>
     <style>
-        /* Force panel and table to stretch full width */
+        /* 1. Unconstrain WordPress theme main container & block wrappers */
+        main#wp--skip-link--target,
+        main#wp--skip-link--target .wp-block-group,
+        main#wp--skip-link--target .entry-content {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        /* 2. Fix WP Flex layout container behavior */
+        main#wp--skip-link--target .is-layout-flex {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+        }
+
+        /* 3. Stretch all custom dashboard containers full bleed */
+        .vinttro-dashboard,
+        .dashboard-grid,
         .dashboard-panel,
         .fleet-table {
             width: 100% !important;
-            box-sizing: border-box;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
         }
 
         .fleet-table {
@@ -42,7 +61,7 @@ function vinttro_get_cover_admin_panel($user_id) {
 
         .vehicle-issue-summary-line { transition: opacity 0.2s ease-in-out; }
         .vehicle-issue-summary-line:hover { opacity: 0.85; }
-    .vehicle-main-row td { vertical-align: top !important; padding-top: 10px; }
+        .vehicle-main-row td { vertical-align: top !important; padding-top: 10px; }
         
         /* Summary Pills */
         .summary-pill {
@@ -113,7 +132,7 @@ function vinttro_get_cover_admin_panel($user_id) {
     </script>
 
     <div class="dashboard-panel fleet-container" style="margin-bottom: 30px;">
-        <h3>✍️ Open Quote Requests:---</h3>
+        <h3>✍️ Open Quote Requests: ***</h3>
         <table class="fleet-table">
             <thead>
                 <tr>

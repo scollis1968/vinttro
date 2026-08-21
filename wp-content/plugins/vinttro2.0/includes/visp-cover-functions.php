@@ -113,7 +113,7 @@ function vinttro_get_cover_admin_panel($user_id) {
     </script>
 
     <div class="dashboard-panel fleet-container" style="margin-bottom: 30px;">
-        <h3>✍️ Open Quote Requests:</h3>
+        <h3>✍️ Open Quote Requests:---</h3>
         <table class="fleet-table">
             <thead>
                 <tr>

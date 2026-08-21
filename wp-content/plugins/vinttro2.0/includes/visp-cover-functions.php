@@ -29,9 +29,20 @@ function vinttro_get_cover_admin_panel($user_id) {
     ob_start();
     ?>
     <style>
+        /* Force panel and table to stretch full width */
+        .dashboard-panel,
+        .fleet-table {
+            width: 100% !important;
+            box-sizing: border-box;
+        }
+
+        .fleet-table {
+            table-layout: auto; /* Ensures columns distribute evenly across full width */
+        }
+
         .vehicle-issue-summary-line { transition: opacity 0.2s ease-in-out; }
         .vehicle-issue-summary-line:hover { opacity: 0.85; }
-        .vehicle-main-row td { vertical-align: top !important; padding-top: 10px; }
+    .vehicle-main-row td { vertical-align: top !important; padding-top: 10px; }
         
         /* Summary Pills */
         .summary-pill {

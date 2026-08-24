@@ -160,6 +160,58 @@ app.get('/api/tasks', async (req, res) => {
     }
 });
 
+const twilio = require('twilio');
+
+// 5. Inbound Client Entry (Puts caller on hold in Conference)
+app.post('/api/inbound-call', (req, res) => {
+    const twiml = new twilio.twiml.VoiceResponse();
+    const dial = twiml.dial();
+    
+    // Caller waits in conference with hold music until agent joins
+    dial.conference({
+        startConferenceOnEnter: false,
+        endConferenceOnExit: true
+    }, 'SalesRoom_101');
+
+    res.type('text/xml');
+    res.send(twiml.toString());
+});
+
+// 6. Whisper Prompt (Executed ONLY when Mobile Agent answers)
+app.post('/api/whisper-prompt', (req, res) => {
+    const twiml = new twilio.twiml.VoiceResponse();
+    const callerName = req.query.caller || 'John Smith';
+
+    const gather = twiml.gather({
+        action: '/api/join-conference',
+        numDigits: 1,
+        timeout: 8
+    });
+    
+    gather.say(`This is an Inbound call to Sales from ${callerName}. Please press 1 to accept the call.`);
+    twiml.hangup(); // Prevents mobile voicemail from bridging if unanswered
+
+    res.type('text/xml');
+    res.send(twiml.toString());
+});
+
+// 7. Accept & Bridge Mobile Agent into Conference
+app.post('/api/join-conference', (req, res) => {
+    const twiml = new twilio.twiml.VoiceResponse();
+
+    if (req.body.Digits === '1') {
+        const dial = twiml.dial();
+        // Agent enters conference and un-holds the client
+        dial.conference({
+            startConferenceOnEnter: true
+        }, 'SalesRoom_101');
+    } else {
+        twiml.hangup();
+    }
+
+    res.type('text/xml');
+    res.send(twiml.toString());
+});
 
 app.listen(PORT, () => {
     console.log(`Call Controller Microservice listening on port ${PORT}`);

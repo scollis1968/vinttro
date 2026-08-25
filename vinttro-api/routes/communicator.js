@@ -21,7 +21,7 @@ redisClient.connect().then(() => console.log('Communicator connected to Redis DB
 
 const STATE_PRIORITY = { 'ringing': 1, 'answered': 2, 'completed': 3 };
 const STUB_AGENTS = [
-    { id: 'agent_mobile_1', type: 'mobile', number: '+447000000000', name: 'Test Agent' }
+    { id: 'agent_mobile_1', type: 'mobile', number: '+447748633867', name: 'Test Agent' }
 ];
 
 // POST /api/communicator/call-event

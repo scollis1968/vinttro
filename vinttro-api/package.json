@@ -1,6 +1,6 @@
 {
   "name": "vinttro-call-controller",
-  "version": "1.0.3",
+  "version": "1.0.01",
   "description": "Real-time Redis Wallboard & Twilio Signaling Engine for VINTTRO",
   "main": "server.js",
   "scripts": {

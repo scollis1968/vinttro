@@ -1,6 +1,13 @@
 # VIsP Call Controller
 
 ## Prerequisits :-
+
+```bash
+cd /var/www/vinttro-api
+sudo -u vinttro npm install dotenv express redis twilio --save
+```
+
+
 ### twilio node app
 ```
 cd /var/www/call-controller

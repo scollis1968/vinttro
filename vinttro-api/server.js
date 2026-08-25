@@ -22,6 +22,21 @@ app.use((req, res, next) => {
     next();
 });
 
+const { version } = require('./package.json');
+
+// ... [existing app setup & middleware] ...
+
+// Version & Health Check Endpoint
+app.get('/api/version', (req, res) => {
+    res.status(200).json({
+        service: 'vinttro-api',
+        version: version,
+        status: 'online',
+        timestamp: new Date().toISOString()
+    });
+});
+
+
 // Mount Routers under clean API paths
 app.use('/api/communicator', communicatorRoutes);
 app.use('/api/tasks', taskRoutes);

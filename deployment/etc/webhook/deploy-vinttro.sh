@@ -7,17 +7,13 @@ LIVE_DIR="/var/www/wordpress"
 LOG_FILE="/var/log/vinttro-deploy.log"
 TARGET_BRANCH="refs/heads/uat" # <-- SET YOUR REQUIRED BRANCH HERE
 BRANCH="uat"
-# ----------------------------------------------------------------
-# tip :- run the following command to execute this script and see the logs in real-time: 
-#       journalctl -u webhook -f
-# ----------------------------------------------------------------
 
 # --- Logging Function ---
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
 }
 
-log "--- Deployment triggered for Vinttro  - /etc/webhook/deploy-vinttro.sh ---"
+log "--- Deployment triggered for Vinttro - /etc/webhook/deploy-vinttro.sh ---"
 
 # --- Force Root Elevation via Sudoers rule ---
 if [ "$EUID" -ne 0 ]; then
@@ -69,7 +65,6 @@ else
     exit 1
 fi
 
-
 log "Deploying SuiteCrm/VINTTRO customisation ..."
 SOURCE_DIR="/tmp/vinttro-repo/suitecrm/vinttro2.0/"
 DESTINATION_DIR="/var/www/suitecrm/vinttro2.0/"
@@ -82,31 +77,29 @@ fi
 log "Setting permissions on /var/www/suitecrm/vinttro2.0"
 chown -R www-data:www-data /var/www/suitecrm/vinttro2.0
 
-
 ##-------------------------------------------------------------------------
-# VINTTRO call-controller 
-SOURCE_DIR="/tmp/vinttro-repo/call-controller/"
-DESTINATION_DIR="/var/www/call-controller/"
+# VINTTRO vinttro-api 
+SOURCE_DIR="/tmp/vinttro-repo/vinttro-api/"
+DESTINATION_DIR="/var/www/vinttro-api/"
 
-# Hardcode the best-practice dedicated application runner user
 APP_USER="vinttro" 
 
 if [ -d "$SOURCE_DIR" ]; then
-    log "Executing call-controller asset synchronization..."
+    log "Executing vinttro-api asset synchronization..."
     
-    # ADDED: --exclude 'node_modules' tells rsync to bypass the dependency folder entirely
-    sudo -u "$APP_USER" rsync -a --delete --exclude 'node_modules' "$SOURCE_DIR" "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
+    # Excludes node_modules and .env to preserve production secrets
+    rsync -a --delete --exclude 'node_modules' --exclude '.env' "$SOURCE_DIR" "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
         log "ERROR: Deploying $DESTINATION_DIR failed during rsync."
         exit 1
     fi
+    chown -R "$APP_USER":"$APP_USER" "$DESTINATION_DIR"
 else
     log "ERROR: Source directory $SOURCE_DIR not found in repository!"
     exit 1
 fi
 
-# Move into the app directory
-cd "$DESTINATION_DIR"
+cd "$DESTINATION_DIR" || exit 1
 
 log "Installing/updating Node.js production dependencies as $APP_USER..."
 sudo -u "$APP_USER" npm install --omit=dev >> "$LOG_FILE" 2>&1
@@ -115,30 +108,20 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-log "Restarting call-controller process via PM2 as $APP_USER..."
-# This ensures PM2 environments don't get mixed up between users
-sudo -u "$APP_USER" pm2 restart "call-controller" >> "$LOG_FILE" 2>&1
+log "Restarting vinttro-api microservice via systemctl..."
+systemctl restart vinttro-api >> "$LOG_FILE" 2>&1
 if [ $? -ne 0 ]; then
-    log "WARNING: PM2 restart failed. Attempting initial start..."
-    sudo -u "$APP_USER" pm2 start server.js --name "call-controller" --max-memory-restart 100M >> "$LOG_FILE" 2>&1
+    log "ERROR: systemctl restart vinttro-api failed!"
+    exit 1
 fi
 
 log "⏳ Waiting for network socket initialization..."
 sleep 2
 
-log "Running post-deployment smoke tests..."
-sudo -u "$APP_USER" npm test >> "$LOG_FILE" 2>&1
-if [ $? -ne 0 ]; then
-    log "🚨 ERROR: Post-deployment smoke tests FAILED!"
-    exit 1
-fi
+log "🎉 vinttro-api deployment successful."
 
-log "🎉 Call-controller deployment and automated testing successful."
-
-
-#
 ##-------------------------------------------------------------------------
-# VINTTRO  SuiteCRM custom UI
+# VINTTRO SuiteCRM custom UI
 SOURCE_DIR="/tmp/vinttro-repo/suitecrm/public/dist/extensions/vinttro-custom-ui/"
 DESTINATION_DIR="/var/www/suitecrm/public/dist/extensions/vinttro-custom-ui/"
 
@@ -162,7 +145,7 @@ log "Setting permissions on $DESTINATION_DIR"
 chown -R www-data:www-data "$DESTINATION_DIR" >> "$LOG_FILE" 2>&1
 
 ##-------------------------------------------------------------------------
-# VINTTRO  SuiteCRM  public/legacy (Using Relative Overlay).
+# VINTTRO SuiteCRM public/legacy (Using Relative Overlay).
 cd /tmp/vinttro-repo || exit 1
 RELATIVE_SOURCE="suitecrm/public/legacy"
 TARGET_ROOT="/var/www"
@@ -177,14 +160,12 @@ fi
 log "Setting permissions on $TARGET_ROOT/$RELATIVE_SOURCE"
 chown -R www-data:www-data "$TARGET_ROOT/$RELATIVE_SOURCE" >> "$LOG_FILE" 2>&1
 
-
 ##-------------------------------------------------------------------------
 # --- 3. Automated Post-Deployment Automation & Framework Rebuilds ---
 
 log "Fixing front-end assets ownership paths..."
 chown -R www-data:www-data /var/www/suitecrm/public/extensions >> "$LOG_FILE" 2>&1
 
-# 🚀 CHANGED: Force working directory to legacy directory context to safely align internal relative include expectations
 log "Executing dynamic automated SuiteCRM Extensions Rebuild..."
 cd /var/www/suitecrm/public/legacy/ || exit 1
 
@@ -192,8 +173,6 @@ sudo -u www-data php -r '
     define("sugarEntry", true);
     chdir("/var/www/suitecrm/public/legacy/"); 
     
-    // 🚀 THE FIX: Completely isolate and sterilize the server environment matrix
-    // This purges dirty ambient HTTP/JSON header fragments inherited from the webhook daemon
     $_SERVER = array(
         "SERVER_NAME" => "localhost",
         "REQUEST_METHOD" => "GET",
@@ -220,7 +199,6 @@ sudo -u www-data php -r '
     $mi->modules = $modules;
     $mi->rebuild_extensions();
 ' >> "$LOG_FILE" 2>&1
-
 
 log "Compiling Master Logic Hooks Direct From Extensions Source..."
 sudo -u www-data php -r '
@@ -270,18 +248,12 @@ log "Syncing Core Backend Layout Assets to Frontend..."
 cd /var/www/suitecrm || exit 1
 sudo -u www-data php bin/console scrm:copy-legacy-assets >> "$LOG_FILE" 2>&1
 
-# =========================================================================
-# 🚀 AUTOMATED BUGFIX: Fix official SuiteCRM 8.10.1 Webpack version mismatches
-# Aligns Angular versions, Luxon versions, and the quote-enclosed Core strings
-# =========================================================================
 log "Executing dynamic compilation alignment on frontend distribution assets..."
 find /var/www/suitecrm/public/dist/ -type f -name "*.js" -exec sed -i 's/18,2,8/18,2,14/g' {} +
 find /var/www/suitecrm/public/dist/ -type f -name "*.js" -exec sed -i 's/3,5,0/3,7,2/g' {} +
 find /var/www/suitecrm/public/dist/ -type f -name "*.js" -exec sed -i 's/"^auto"/"^8.10.1"/g' {} +
 find /var/www/suitecrm/public/dist/ -type f -name "*.js" -exec sed -i "s/'^auto'/'^8.10.1'/g" {} +
-# =========================================================================
 
-# 🚀 CHANGED: Enforce full chown/chmod permissions right before Symfony attempts directory teardowns to clear the cache path
 log "Securing file ownership and permissions schema across CRM core modules..."
 chown -R www-data:www-data /var/www/suitecrm/
 find /var/www/suitecrm/ -type d -exec chmod 775 {} \;

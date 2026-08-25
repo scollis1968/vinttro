@@ -1,10 +1,21 @@
+require('dotenv').config();
+
 const express = require('express');
 const { createClient } = require('redis');
 const twilio = require('twilio');
 
+// Environment Variables
+const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const API_KEY_SID = process.env.TWILIO_API_KEY_SID;
+const API_KEY_SECRET = process.env.TWILIO_API_KEY_SECRET;
+const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
+
+// Initialize Twilio REST Client using API Key + Secret
+const twilioClient = twilio(API_KEY_SID, API_KEY_SECRET, { accountSid: ACCOUNT_SID });
+
 const app = express();
-app.use(express.json()); // Parses incoming JSON payloads
-app.use(express.urlencoded({ extended: true })); // Parses Twilio's default form-urlencoded payloads
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Safe cross-origin access rules for browser interaction
 app.use((req, res, next) => {
@@ -17,11 +28,11 @@ app.use((req, res, next) => {
     next();
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // 1. Connect strictly to Redis Database 1
 const redisClient = createClient({
-    url: 'redis://127.0.0.1:6379',
+    url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
     database: 1
 });
 
@@ -34,6 +45,11 @@ const STATE_PRIORITY = {
     'answered': 2,
     'completed': 3
 };
+
+// STUB: Temporary agent list (Will be replaced by your Redis skill-matching engine later)
+const STUB_AGENTS = [
+    { id: 'agent_mobile_1', type: 'mobile', number: '+447000000000', name: 'Test Agent' }
+];
 
 // 3. Central Webhook Endpoint for Twilio, SuiteCRM, and WP
 app.post('/api/call-event', async (req, res) => {
@@ -136,13 +152,14 @@ app.get('/api/tasks', async (req, res) => {
     }
 });
 
-// 5. Inbound Client Entry (Puts caller on hold in Conference)
-app.post('/api/inbound-call', (req, res) => {
+// 5. Inbound Client Entry point
+app.post('/api/inbound-call', async (req, res) => {
+    const callSid = req.body.CallSid;
+    const clientCallerId = req.body.From || 'Unknown Caller';
+    const roomName = `Room_${callSid}`;
+
     const twiml = new twilio.twiml.VoiceResponse();
     const dial = twiml.dial();
-    
-    // Uses CallSid as dynamic room name to prevent caller collisions
-    const roomName = req.body.CallSid || 'SalesRoom_Default';
     
     dial.conference({
         startConferenceOnEnter: false,
@@ -151,6 +168,24 @@ app.post('/api/inbound-call', (req, res) => {
 
     res.type('text/xml');
     res.send(twiml.toString());
+
+    try {
+        for (const agent of STUB_AGENTS) {
+            if (agent.type === 'mobile') {
+                const whisperUrl = `https://services.uat.vinttro.co.uk/api/whisper-prompt?caller=${encodeURIComponent(clientCallerId)}&room=${encodeURIComponent(roomName)}`;
+
+                console.log(`[Dispatch] Dialing mobile agent ${agent.name} (${agent.number})...`);
+                
+                await twilioClient.calls.create({
+                    to: agent.number,
+                    from: TWILIO_PHONE_NUMBER,
+                    url: whisperUrl
+                });
+            }
+        }
+    } catch (error) {
+        console.error('[Dispatch Error] Failed to place agent outbound call:', error.message);
+    }
 });
 
 // 6. Whisper Prompt (Executed ONLY when Mobile Agent answers)

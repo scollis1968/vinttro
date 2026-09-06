@@ -86,9 +86,13 @@ router.post('/inbound-call', async (req, res) => {
     const twiml = new twilio.twiml.VoiceResponse();
     const dial = twiml.dial();
     
+    // Enable Conference Recording & Event Callback Webhooks
     dial.conference({
         startConferenceOnEnter: false,
-        endConferenceOnExit: true
+        endConferenceOnExit: true,
+        record: 'record-from-start', // Records conference as soon as caller & agent enter
+        recordingStatusCallback: 'https://services.uat.vinttro.co.uk/api/communicator/recording-event',
+        recordingStatusCallbackEvent: 'completed' // Fire webhook when MP3 is ready
     }, roomName);
 
     res.type('text/xml');
@@ -175,6 +179,54 @@ router.post('/join-conference', (req, res) => {
 
     res.type('text/xml');
     res.send(twiml.toString());
+});
+
+// POST /api/communicator/recording-event
+router.post('/recording-event', async (req, res) => {
+    try {
+        const {
+            CallSid,
+            ConferenceSid,
+            RecordingSid,
+            RecordingUrl,
+            RecordingDuration,
+            RecordingStatus
+        } = req.body;
+
+        console.log(`[Recording Ready] Conf: ${ConferenceSid} | Duration: ${RecordingDuration}s`);
+
+        if (RecordingStatus === 'completed') {
+            // Append .mp3 extension to get directly streamable audio URL
+            const publicAudioUrl = `${RecordingUrl}.mp3`;
+
+            // Look up existing call data in Redis DB 1
+            const redisKey = `call:${CallSid}`;
+            const existingDataRaw = await redisClient.get(redisKey);
+            const callData = existingDataRaw ? JSON.parse(existingDataRaw) : {};
+
+            // Update call record with final audio metadata
+            const completeCallRecord = {
+                ...callData,
+                call_id: CallSid,
+                conference_sid: ConferenceSid,
+                recording_sid: RecordingSid,
+                recording_url: publicAudioUrl,
+                duration_seconds: parseInt(RecordingDuration, 10),
+                recording_completed_at: new Date().toISOString()
+            };
+
+            // Store back to Redis (Retain for 30 days)
+            await redisClient.setEx(redisKey, 2592000, JSON.stringify(completeCallRecord));
+
+            // Optional: Push record directly to SuiteCRM Calls module via REST API
+            console.log(`[Success] Call record updated in Redis for ${CallSid}`);
+        }
+
+        return res.status(200).send('<Response/>');
+    } catch (error) {
+        console.error('[Recording Webhook Error]:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 module.exports = router;

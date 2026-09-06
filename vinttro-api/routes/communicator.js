@@ -8,6 +8,7 @@ const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const API_KEY_SID = process.env.TWILIO_API_KEY_SID;
 const API_KEY_SECRET = process.env.TWILIO_API_KEY_SECRET;
 const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
+const SYNC_SERVICE_SID = process.env.TWILIO_SYNC_SERVICE_SID;
 
 const twilioClient = twilio(API_KEY_SID, API_KEY_SECRET, { accountSid: ACCOUNT_SID });
 
@@ -20,8 +21,11 @@ redisClient.on('error', (err) => console.error('Redis Communicator Error:', err)
 redisClient.connect().then(() => console.log('Communicator connected to Redis DB 1'));
 
 const STATE_PRIORITY = { 'ringing': 1, 'answered': 2, 'completed': 3 };
+
+// STUB: Added WRTC agent entry for WebRTC browser notification testing
 const STUB_AGENTS = [
-    { id: 'agent_mobile_1', type: 'mobile', number: '+447748633867', name: 'Test Agent' }
+    { id: 'agent_mobile_1', type: 'mobile', number: '+447748633867', name: 'Test Mobile Agent' },
+    { id: 'agent_wrtc_1', type: 'wrtc', name: 'Test WebRTC Agent', email: 'finley.collis@vinttro.co.uk' }
 ];
 
 // POST /api/communicator/call-event
@@ -92,6 +96,7 @@ router.post('/inbound-call', async (req, res) => {
 
     try {
         for (const agent of STUB_AGENTS) {
+            // A. Dispatch Outbound PSTN Dial to Mobile Agents
             if (agent.type === 'mobile') {
                 const whisperUrl = `https://services.uat.vinttro.co.uk/api/communicator/whisper-prompt?caller=${encodeURIComponent(clientCallerId)}&room=${encodeURIComponent(roomName)}`;
 
@@ -103,9 +108,35 @@ router.post('/inbound-call', async (req, res) => {
                     url: whisperUrl
                 });
             }
+
+            // B. Broadcast Real-Time Push Notification to WebRTC Clients via Twilio Sync
+            if (agent.type === 'wrtc') {
+                if (SYNC_SERVICE_SID) {
+                    console.log(`[Dispatch] Broadcasting WRTC notification for ${agent.name} via Twilio Sync...`);
+                    
+                    await twilioClient.sync.v1
+                        .services(SYNC_SERVICE_SID)
+                        .syncLists('vinttro_live_queue')
+                        .syncListItems
+                        .create({
+                            data: {
+                                callSid: callSid,
+                                callerId: clientCallerId,
+                                roomId: roomName,
+                                roomName: roomName,
+                                agentId: agent.id,
+                                status: 'parked',
+                                timestamp: new Date().toISOString()
+                            },
+                            ttl: 120 // Auto-expire from queue after 2 minutes if unhandled
+                        });
+                } else {
+                    console.warn('[Dispatch Warning] Cannot dispatch WRTC notification: TWILIO_SYNC_SERVICE_SID is missing.');
+                }
+            }
         }
     } catch (error) {
-        console.error('[Dispatch Error] Failed to place agent outbound call:', error.message);
+        console.error('[Dispatch Error] Failed during agent notification dispatch:', error.message);
     }
 });
 

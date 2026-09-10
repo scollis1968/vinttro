@@ -1,6 +1,8 @@
 <?php
 namespace Custom\DataStaging\Mappers;
 
+require_once 'custom/include/DataStaging/Mappers/AbstractLeadStagingMapper.php';
+
 class WordPressStorageQuoteRequestMapper extends AbstractLeadStagingMapper {
 
     protected function getLeadSource(): string {
@@ -9,7 +11,7 @@ class WordPressStorageQuoteRequestMapper extends AbstractLeadStagingMapper {
 
     protected function mapSpecificLeadFields(\SugarBean $lead, array $rawData): void {
         if (!empty($rawData['cover-type'])) {
-            $lead->opportunity_type = $rawData['cover-type'];
+            $lead->opportunity_type = 'Storage Quote' ;
         }
 
         if (!empty($rawData['estimated-value'])) {

@@ -1,6 +1,7 @@
 <?php
 namespace Custom\DataStaging\Mappers;
 
+require_once 'custom/include/DataStaging/Mappers/AbstractLeadStagingMapper.php';
 class WordPressCoverQuoteRequestMapper extends AbstractLeadStagingMapper {
 
     protected function getLeadSource(): string {

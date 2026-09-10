@@ -1,10 +1,10 @@
 <?php
 namespace Custom\DataStaging\Mappers;
 
-class WordPressCoverQuoteRequestMapper extends AbstractLeadStagingMapper {
+class WordPressStorageQuoteRequestMapper extends AbstractLeadStagingMapper {
 
     protected function getLeadSource(): string {
-        return 'WordPress Cover Quote';
+        return 'WordPress Storage Quote';
     }
 
     protected function mapSpecificLeadFields(\SugarBean $lead, array $rawData): void {

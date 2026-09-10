@@ -53,9 +53,6 @@ class ContactService {
         return $contact;
     }
 
-    /**
-     * Finds Contact ID using standard SuiteCRM database execution.
-     */
     public function findContactIdByEmail(string $email): ?string {
         if (empty($email)) {
             return null;

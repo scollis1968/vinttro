@@ -1,6 +1,8 @@
 <?php
 namespace Custom\DataStaging\Services;
 
+require_once 'include/SugarQuery/SugarQuery.php';
+
 use BeanFactory;
 
 class ContactService {

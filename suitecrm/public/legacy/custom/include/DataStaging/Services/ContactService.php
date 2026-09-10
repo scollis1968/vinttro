@@ -1,8 +1,9 @@
 <?php
 namespace Custom\DataStaging\Services;
 
-require_once 'include/SugarQuery/SugarQuery.php';
-
+if (!class_exists('SugarQuery')) {
+    require_once __DIR__ . '/../../../../include/SugarQuery/SugarQuery.php';
+}
 use BeanFactory;
 
 class ContactService {

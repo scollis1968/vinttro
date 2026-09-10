@@ -15,15 +15,14 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
     public function __construct(?ContactService $contactService = null) {
         $this->contactService = $contactService ?? new ContactService();
     }
-
     public function process(array $rawData, \SugarBean $stagingRecord): string {
-        // 1. Resolve or create Contact
+        // 1. Resolve Contact
         $contact = $this->contactService->findOrCreateContact($rawData);
 
-        // 2. Resolve or create Account (B2B or B2C Private Client)
+        // 2. Resolve Account
         $account = $this->resolveAccount($rawData, $contact);
 
-        // 3. Resolve Opportunity and assign Account
+        // 3. Resolve Opportunity
         list($opportunity, $isNewOpp) = $this->resolveOpportunity($rawData, $contact, $account);
 
         // 4. ALWAYS create a new Lead record for source reporting
@@ -36,11 +35,15 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
         $lead->primary_address_postalcode = $contact->primary_address_postalcode;
         $lead->lead_source = $this->getLeadSource();
 
-        // Link Account to Lead
+        // Link Account directly
         $lead->account_id = $account->id;
         $lead->account_name = $account->name;
 
-        // Indicate credit status for affiliate/source reporting
+        // Direct foreign key link to Opportunity BEFORE save
+        $lead->opportunity_id = $opportunity->id;
+        $lead->opportunity_name = $opportunity->name;
+
+        // Credit / Source status
         if ($isNewOpp) {
             $lead->status = 'New';
             $lead->description = "Primary credited lead for Opportunity: {$opportunity->name}";
@@ -49,9 +52,7 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
             $lead->description = "Secondary lead submission linked to existing active Opportunity ID: {$opportunity->id}";
         }
 
-        // Map quote-specific fields onto Lead
         $this->mapSpecificLeadFields($lead, $rawData);
-
         $lead->save();
 
         // Primary email on Lead
@@ -60,15 +61,17 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
             $lead->emailAddress->save($lead->id, $lead->module_dir);
         }
 
-        // 5. Link relationships (Lead -> Contact, Lead -> Opportunity, Lead -> Account)
+        // 5. Establish Bidirectional Relationships
         if ($lead->load_relationship('contacts')) {
             $lead->contacts->add($contact->id);
         }
-        if ($lead->load_relationship('opportunities')) {
-            $lead->opportunities->add($opportunity->id);
-        }
         if ($lead->load_relationship('accounts')) {
             $lead->accounts->add($account->id);
+        }
+
+        // Populate Opportunity -> Leads subpanel explicitly
+        if ($opportunity->load_relationship('leads')) {
+            $opportunity->leads->add($lead->id);
         }
 
         $creditStatus = $isNewOpp ? 'Credited (New Opp)' : 'Uncredited (Existing Opp)';

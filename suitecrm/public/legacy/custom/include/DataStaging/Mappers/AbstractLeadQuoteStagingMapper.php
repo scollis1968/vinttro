@@ -77,7 +77,7 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
 
         if ($existingOppId) {
             /** @var \Opportunity $opportunity */
-            $opportunity = BeanFactory::retrieveBean('Opportunities', $existingOppId);
+            $opportunity = BeanFactory::getBean('Opportunities', $existingOppId);
             $isNewOpp = false;
         } else {
             /** @var \Opportunity $opportunity */

@@ -18,7 +18,7 @@ class ContactService {
         $contactId = $this->findContactIdByEmail($email);
 
         /** @var \Contact|null $contact */
-        $contact = $contactId ? BeanFactory::retrieveBean('Contacts', $contactId) : null;
+        $contact = $contactId ? BeanFactory::getBean('Contacts', $contactId) : null;
 
         if (empty($contact) || empty($contact->id)) {
             $contact = BeanFactory::newBean('Contacts');

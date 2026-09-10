@@ -1,8 +1,8 @@
 <?php
 namespace Custom\DataStaging\Mappers;
 
-require_once 'custom/include/DataStaging/AbstractStagingMapper.php';
-require_once 'custom/include/DataStaging/Services/ContactService.php';
+require_once __DIR__ . '/../AbstractStagingMapper.php';
+require_once __DIR__ . '/../Services/ContactService.php';
 
 use Custom\DataStaging\AbstractStagingMapper;
 use Custom\DataStaging\Services\ContactService;
@@ -17,13 +17,9 @@ abstract class AbstractLeadStagingMapper extends AbstractStagingMapper {
     }
 
     public function process(array $rawData, \SugarBean $stagingRecord): string {
-        // 1. Resolve Contact via service
         $contact = $this->contactService->findOrCreateContact($rawData);
-
-        // 2. Resolve Account using inherited DB lookup if company provided
         $account = $this->resolveAccount($rawData, $contact);
 
-        // 3. Create Lead
         /** @var \Lead $lead */
         $lead = BeanFactory::newBean('Leads');
         $lead->first_name = $contact->first_name;
@@ -33,18 +29,15 @@ abstract class AbstractLeadStagingMapper extends AbstractStagingMapper {
         $lead->primary_address_postalcode = $contact->primary_address_postalcode;
         $lead->lead_source = $this->getLeadSource();
 
-        // 4. Concrete mapper mapping
         $this->mapSpecificLeadFields($lead, $rawData);
 
         $lead->save();
 
-        // 5. Link Email to Lead
         if (isset($lead->emailAddress) && !empty($rawData['email'])) {
             $lead->emailAddress->addAddress(trim($rawData['email']), true);
             $lead->emailAddress->save($lead->id, $lead->module_dir);
         }
 
-        // 6. Link Relationships
         if ($lead->load_relationship('contacts')) {
             $lead->contacts->add($contact->id);
         }

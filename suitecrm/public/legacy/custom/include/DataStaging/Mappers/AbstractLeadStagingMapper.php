@@ -1,6 +1,9 @@
 <?php
 namespace Custom\DataStaging\Mappers;
 
+require_once 'custom/include/DataStaging/AbstractStagingMapper.php';
+require_once 'custom/include/DataStaging/Services/ContactService.php';
+
 use Custom\DataStaging\AbstractStagingMapper;
 use Custom\DataStaging\Services\ContactService;
 use BeanFactory;

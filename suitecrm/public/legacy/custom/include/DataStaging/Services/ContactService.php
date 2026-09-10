@@ -1,17 +1,11 @@
 <?php
 namespace Custom\DataStaging\Services;
 
-if (!class_exists('SugarQuery')) {
-    require_once __DIR__ . '/../../../../include/SugarQuery/SugarQuery.php';
-}
+use DBManagerFactory;
 use BeanFactory;
 
 class ContactService {
 
-    /**
-     * Finds an existing contact by email or creates a new one,
-     * then applies updated fields, phone routing, and email address.
-     */
     public function findOrCreateContact(array $rawData): \Contact {
         if (empty($rawData['email'])) {
             throw new \InvalidArgumentException("Missing required source field: 'email'.");
@@ -30,7 +24,6 @@ class ContactService {
             $contact = BeanFactory::newBean('Contacts');
         }
 
-        // Map basic fields
         if (!empty($rawData['first-name'])) {
             $contact->first_name = $rawData['first-name'];
         }
@@ -41,7 +34,6 @@ class ContactService {
             $contact->primary_address_postalcode = $rawData['postcode'];
         }
 
-        // Custom Phone Routing
         if (!empty($rawData['phone'])) {
             $rawPhone = trim($rawData['phone']);
             if (preg_match('/^(07|7|\+447)/', $rawPhone)) {
@@ -53,7 +45,6 @@ class ContactService {
 
         $contact->save();
 
-        // Assign primary email safely
         if (isset($contact->emailAddress)) {
             $contact->emailAddress->addAddress($email, true);
             $contact->emailAddress->save($contact->id, $contact->module_dir);
@@ -63,24 +54,30 @@ class ContactService {
     }
 
     /**
-     * Reusable contact lookup via standard SuiteCRM SugarQuery API.
+     * Finds Contact ID using standard SuiteCRM database execution.
      */
     public function findContactIdByEmail(string $email): ?string {
         if (empty($email)) {
             return null;
         }
 
-        $seed = BeanFactory::newBean('Contacts');
-        $q = new \SugarQuery();
-        $q->select(['id']);
-        $q->from($seed);
-        $q->join('email_addresses', ['alias' => 'ea']);
-        $q->where()
-            ->equals('ea.email_address_caps', strtoupper(trim($email)))
-            ->equals('ea.deleted', 0);
-        $q->limit(1);
+        $db = DBManagerFactory::getInstance();
+        $cleanEmail = $db->quote(trim($email));
 
-        $results = $q->execute();
-        return !empty($results[0]['id']) ? $results[0]['id'] : null;
+        $query = "SELECT eab.bean_id 
+                  FROM email_addr_bean_rel eab
+                  INNER JOIN email_addresses ea ON ea.id = eab.email_address_id
+                  WHERE ea.email_address_caps = UPPER('{$cleanEmail}')
+                    AND eab.bean_module = 'Contacts'
+                    AND eab.deleted = 0
+                    AND ea.deleted = 0
+                  LIMIT 1";
+
+        $result = $db->query($query);
+        if ($row = $db->fetchByAssoc($result)) {
+            return $row['bean_id'];
+        }
+
+        return null;
     }
 }

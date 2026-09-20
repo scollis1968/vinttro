@@ -1,0 +1,33 @@
+/* Inbound Call Banner Overlay */
+.incoming-call-banner {
+    background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+    border: 2px solid #63b3ed;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 25px -5px rgba(66, 153, 225, 0.4);
+    animation: slideDown 0.3s ease-out;
+}
+.incoming-call-banner .call-info { display: flex; align-items: center; gap: 15px; }
+.incoming-call-banner strong { font-size: 1.2rem; color: #fff; display: block; }
+.incoming-call-banner p { margin: 0; font-size: 0.85rem; color: #e2e8f0; }
+
+.call-actions { display: flex; gap: 10px; }
+.btn-accept { background: #38a169 !important; color: white; padding: 10px 20px !important; }
+.btn-accept:hover { background: #2f855a !important; }
+.btn-reject { background: #4a5568 !important; color: white; padding: 10px 16px !important; }
+
+/* Pulsing Red Ring for Live Calls */
+.pulse-ring {
+    width: 14px; height: 14px; background-color: #e53e3e; border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7);
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(229, 62, 62, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
+}

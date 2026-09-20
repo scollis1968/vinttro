@@ -238,3 +238,38 @@ function vinttro_handle_inbound_voice_call( WP_REST_Request $request ) {
 
     return new WP_REST_Response($twiml, 200, array('Content-Type' => 'application/xml'));
 }
+
+
+// ==========================================================
+// ⚡ 7. ENQUEUE SOCKET.IO & COMMUNICATOR CLIENT SCRIPT
+// ==========================================================
+add_action( 'wp_enqueue_scripts', 'vinttro_enqueue_communicator_socket_assets' );
+function vinttro_enqueue_communicator_socket_assets() {
+    
+    // 1. Enqueue Socket.io Client SDK from CDN
+    wp_enqueue_script( 
+        'socket-io-client', 
+        'https://cdn.socket.io/4.7.5/socket.io.min.js', 
+        array(), 
+        '4.7.5', 
+        true 
+    );
+
+    // 2. Enqueue your communicator script located at: /plugins/vinttro2.0/js/vinttro-communicator.js
+    wp_enqueue_script( 
+        'vinttro-communicator-js', 
+        plugins_url( '../js/vinttro-communicator.js', __FILE__ ), // Points relative from includes/ to js/
+        array('jquery', 'socket-io-client'), 
+        '2.0.0', 
+        true 
+    );
+
+    // 3. Inject PHP configuration & agent details into JavaScript (vinttroConfig)
+    $current_user = wp_get_current_user();
+    wp_localize_script( 'vinttro-communicator-js', 'vinttroConfig', array(
+        'nodeApiUrl' => 'https://services.uat.vinttro.co.uk',
+        'agentId'    => strtolower( trim( $current_user->user_email ) ),
+        'agentName'  => $current_user->display_name ? $current_user->display_name : $current_user->user_login,
+        'restNonce'  => wp_create_nonce( 'wp_rest' )
+    ));
+}

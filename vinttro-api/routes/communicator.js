@@ -1,7 +1,8 @@
+// vinttro-api/routes/communicator.js
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('redis');
 const twilio = require('twilio');
+const redisClient = require('../services/redis'); // Import centralized Redis DB 1
 
 // Environment Credentials
 const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
@@ -12,25 +13,46 @@ const SYNC_SERVICE_SID = process.env.TWILIO_SYNC_SERVICE_SID;
 
 const twilioClient = twilio(API_KEY_SID, API_KEY_SECRET, { accountSid: ACCOUNT_SID });
 
-// Redis DB 1 Connection
-const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
-    database: 1
-});
-redisClient.on('error', (err) => console.error('Redis Communicator Error:', err));
-redisClient.connect().then(() => console.log('Communicator connected to Redis DB 1'));
-
 const STATE_PRIORITY = { 'ringing': 1, 'answered': 2, 'completed': 3 };
 
-// STUB: Added WRTC agent entry for WebRTC browser notification testing
+// STUB Agents
 const STUB_AGENTS = [
     { id: 'agent_mobile_1', type: 'mobile', number: '+447748633867', name: 'Test Mobile Agent' },
     { id: 'agent_wrtc_1', type: 'wrtc', name: 'Test WebRTC Agent', email: 'finley.collis@vinttro.co.uk' }
 ];
 
-// POST /api/communicator/call-event
+// -------------------------------------------------------------------------
+// 1. WALLBOARD HYDRATION ENDPOINT
+// -------------------------------------------------------------------------
+// Used by WordPress wallboards on initial page load to fetch all active calls
+router.get('/active-calls', async (req, res) => {
+    try {
+        // Fetch all call SIDs currently in the 'active_calls' set
+        const activeSids = await redisClient.sMembers('active_calls');
+        if (!activeSids || activeSids.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        // Fetch the Redis record for each active SID
+        const keys = activeSids.map(sid => `call:${sid}`);
+        const rawCalls = await redisClient.mGet(keys);
+        const activeCalls = rawCalls
+            .filter(Boolean)
+            .map(item => JSON.parse(item));
+
+        return res.status(200).json(activeCalls);
+    } catch (error) {
+        console.error('[Hydration Error] Failed to fetch active calls:', error);
+        return res.status(500).json({ error: 'Failed to fetch active calls' });
+    }
+});
+
+// -------------------------------------------------------------------------
+// 2. CENTRAL CALL EVENT INGESTION
+// -------------------------------------------------------------------------
 router.post('/call-event', async (req, res) => {
     try {
+        const io = req.app.get('io'); // Get shared Socket.io instance
         const callId = req.body.CallSid || req.body.call_id;
         const newStatus = (req.body.CallStatus || req.body.status || '').toLowerCase();
         const source = req.body.source || (req.body.CallSid ? 'Twilio' : 'Unknown');
@@ -61,7 +83,19 @@ router.post('/call-event', async (req, res) => {
             updated_by: source
         };
 
+        // Save Call Record to Redis (Expire in 12 hours)
         await redisClient.setEx(redisKey, 43200, JSON.stringify(updatedCallData));
+
+        // Manage the 'active_calls' Set for wallboards
+        if (newStatus === 'ringing' || newStatus === 'answered' || newStatus === 'in-progress') {
+            await redisClient.sAdd('active_calls', callId);
+        } else if (newStatus === 'completed' || newStatus === 'canceled' || newStatus === 'failed') {
+            await redisClient.sRem('active_calls', callId);
+        }
+
+        // BROADCAST via Socket.io to all listening WordPress clients & Wallboards
+        io.emit('call_updated', updatedCallData);
+
         return res.status(200).json({ success: true, state: newStatus });
 
     } catch (error) {
@@ -77,8 +111,11 @@ router.get('/call/:id', async (req, res) => {
     return res.status(200).json(JSON.parse(callData));
 });
 
-// POST /api/communicator/inbound-call
+// -------------------------------------------------------------------------
+// 3. INBOUND CALL DISPATCH
+// -------------------------------------------------------------------------
 router.post('/inbound-call', async (req, res) => {
+    const io = req.app.get('io');
     const callSid = req.body.CallSid;
     const clientCallerId = req.body.From || 'Unknown Caller';
     const roomName = `Room_${callSid}`;
@@ -86,13 +123,12 @@ router.post('/inbound-call', async (req, res) => {
     const twiml = new twilio.twiml.VoiceResponse();
     const dial = twiml.dial();
     
-    // Enable Conference Recording & Event Callback Webhooks
     dial.conference({
         startConferenceOnEnter: false,
         endConferenceOnExit: true,
-        record: 'record-from-start', // Records conference as soon as caller & agent enter
+        record: 'record-from-start',
         recordingStatusCallback: 'https://services.uat.vinttro.co.uk/api/communicator/recording-event',
-        recordingStatusCallbackEvent: 'completed' // Fire webhook when MP3 is ready
+        recordingStatusCallbackEvent: 'completed'
     }, roomName);
 
     res.type('text/xml');
@@ -103,7 +139,6 @@ router.post('/inbound-call', async (req, res) => {
             // A. Dispatch Outbound PSTN Dial to Mobile Agents
             if (agent.type === 'mobile') {
                 const whisperUrl = `https://services.uat.vinttro.co.uk/api/communicator/whisper-prompt?caller=${encodeURIComponent(clientCallerId)}&room=${encodeURIComponent(roomName)}`;
-
                 console.log(`[Dispatch] Dialing mobile agent ${agent.name} (${agent.number})...`);
                 
                 await twilioClient.calls.create({
@@ -113,29 +148,30 @@ router.post('/inbound-call', async (req, res) => {
                 });
             }
 
-            // B. Broadcast Real-Time Push Notification to WebRTC Clients via Twilio Sync
+            // B. Broadcast Real-Time Push Notification to WebRTC Clients
             if (agent.type === 'wrtc') {
+                const payload = {
+                    callSid: callSid,
+                    callerId: clientCallerId,
+                    roomId: roomName,
+                    roomName: roomName,
+                    agentId: agent.id,
+                    status: 'parked',
+                    timestamp: new Date().toISOString()
+                };
+
+                // 1. Socket.io Direct Emission (Primary, zero-latency)
+                // Emits globally and specifically to the agent's socket room
+                io.emit('incoming_call_queue', payload);
+                io.to(agent.id).emit('incoming_call', payload);
+
+                // 2. Twilio Sync Fallback (Optional)
                 if (SYNC_SERVICE_SID) {
-                    console.log(`[Dispatch] Broadcasting WRTC notification for ${agent.name} via Twilio Sync...`);
-                    
                     await twilioClient.sync.v1
                         .services(SYNC_SERVICE_SID)
                         .syncLists('vinttro_live_queue')
                         .syncListItems
-                        .create({
-                            data: {
-                                callSid: callSid,
-                                callerId: clientCallerId,
-                                roomId: roomName,
-                                roomName: roomName,
-                                agentId: agent.id,
-                                status: 'parked',
-                                timestamp: new Date().toISOString()
-                            },
-                            ttl: 120 // Auto-expire from queue after 2 minutes if unhandled
-                        });
-                } else {
-                    console.warn('[Dispatch Warning] Cannot dispatch WRTC notification: TWILIO_SYNC_SERVICE_SID is missing.');
+                        .create({ data: payload, ttl: 120 });
                 }
             }
         }
@@ -181,9 +217,12 @@ router.post('/join-conference', (req, res) => {
     res.send(twiml.toString());
 });
 
-// POST /api/communicator/recording-event
+// -------------------------------------------------------------------------
+// 4. RECORDING COMPLETE EVENT
+// -------------------------------------------------------------------------
 router.post('/recording-event', async (req, res) => {
     try {
+        const io = req.app.get('io');
         const {
             CallSid,
             ConferenceSid,
@@ -193,18 +232,12 @@ router.post('/recording-event', async (req, res) => {
             RecordingStatus
         } = req.body;
 
-        console.log(`[Recording Ready] Conf: ${ConferenceSid} | Duration: ${RecordingDuration}s`);
-
         if (RecordingStatus === 'completed') {
-            // Append .mp3 extension to get directly streamable audio URL
             const publicAudioUrl = `${RecordingUrl}.mp3`;
-
-            // Look up existing call data in Redis DB 1
             const redisKey = `call:${CallSid}`;
             const existingDataRaw = await redisClient.get(redisKey);
             const callData = existingDataRaw ? JSON.parse(existingDataRaw) : {};
 
-            // Update call record with final audio metadata
             const completeCallRecord = {
                 ...callData,
                 call_id: CallSid,
@@ -215,11 +248,11 @@ router.post('/recording-event', async (req, res) => {
                 recording_completed_at: new Date().toISOString()
             };
 
-            // Store back to Redis (Retain for 30 days)
+            // Save back to Redis DB 1 (Retain audio metadata for 30 days)
             await redisClient.setEx(redisKey, 2592000, JSON.stringify(completeCallRecord));
 
-            // Optional: Push record directly to SuiteCRM Calls module via REST API
-            console.log(`[Success] Call record updated in Redis for ${CallSid}`);
+            // Notify Wallboard/WP that recording is processed
+            io.emit('recording_ready', completeCallRecord);
         }
 
         return res.status(200).send('<Response/>');

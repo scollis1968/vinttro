@@ -89,6 +89,23 @@ jQuery(document).ready(function($) {
         if (!activeCallPayload) return;
 
         console.log('[Accept] Joining WebRTC Room:', activeCallPayload.roomId);
+        
+        // 1. Tell Twilio Voice SDK to open WebRTC audio stream to the room
+        if (typeof Twilio !== 'undefined' && Twilio.Device) {
+            Twilio.Device.connect({
+                params: {
+                    RoomName: roomName,
+                    To: roomName
+                }
+            });
+        } else if (window.vinttroTwilioDevice) {
+            // If your device instance is saved on a global window object
+            window.vinttroTwilioDevice.connect({
+                params: { RoomName: roomName }
+            });
+        } else {
+            console.error('❌ Twilio Voice Device is not initialized in the browser!');
+        }
 
         // Hide Pop-up banner
         $('#vinttro-incoming-call-card').slideUp(200);

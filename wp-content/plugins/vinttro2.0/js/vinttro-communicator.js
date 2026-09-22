@@ -1,19 +1,55 @@
 jQuery(document).ready(function($) {
-    
-    // Ensure configuration object from wp_localize_script exists
-    if (typeof vinttroConfig === 'undefined') {
-        console.error('vinttroConfig is missing. Check script localization.');
-        return;
-    }
+    console.log("👉 VINTTRO UNIFIED COMMUNICATOR ENGINE ACTIVE");
 
-    const NODE_URL = vinttroConfig.nodeApiUrl; // https://services.uat.vinttro.co.uk
-    const AGENT_ID = vinttroConfig.agentId;   // Current logged-in user email
-    
+    const NODE_URL = (typeof vinttroConfig !== 'undefined' && vinttroConfig.nodeApiUrl) 
+        ? vinttroConfig.nodeApiUrl 
+        : 'https://services.uat.vinttro.co.uk';
+
+    const AGENT_ID = (typeof vinttroConfig !== 'undefined' && vinttroConfig.agentId) 
+        ? vinttroConfig.agentId 
+        : 'agent_dev_1';
+
     let activeCallPayload = null;
 
-    // -------------------------------------------------------------------------
-    // 1. INITIALIZE SOCKET.IO CONNECTION TO NODE API
-    // -------------------------------------------------------------------------
+    // ==========================================================
+    // 1. INITIALIZE WEBRTC VOICE DEVICE (Twilio.Device)
+    // ==========================================================
+    async function initTwilioVoiceDevice() {
+        try {
+            const tokenUrl = `${NODE_URL}/api/communicator/token?identity=${encodeURIComponent(AGENT_ID)}`;
+            const response = await fetch(tokenUrl);
+            if (!response.ok) throw new Error(`Token fetch failed: HTTP ${response.status}`);
+            
+            const data = await response.json();
+            
+            if (typeof Twilio !== 'undefined' && Twilio.Device) {
+                window.vinttroTwilioDevice = new Twilio.Device(data.token, {
+                    logLevel: 1,
+                    codecPreferences: ['opus', 'pcmu']
+                });
+
+                window.vinttroTwilioDevice.register();
+
+                window.vinttroTwilioDevice.on('registered', () => {
+                    console.log('%c✅ Twilio Voice WebRTC Device Registered & Ready!', 'color: #38a169; font-weight: bold;');
+                });
+
+                window.vinttroTwilioDevice.on('error', (err) => {
+                    console.error('❌ Twilio Voice Device Error:', err);
+                });
+            } else {
+                console.warn('⚠️ Twilio Voice SDK JS library is missing on this page.');
+            }
+        } catch (err) {
+            console.error('❌ Failed to initialize Twilio Voice Device:', err.message);
+        }
+    }
+
+    initTwilioVoiceDevice();
+
+    // ==========================================================
+    // 2. INITIALIZE SOCKET.IO CONNECTION TO NODE API
+    // ==========================================================
     const socket = io(NODE_URL, {
         transports: ['websocket', 'polling']
     });
@@ -21,53 +57,40 @@ jQuery(document).ready(function($) {
     socket.on('connect', () => {
         console.log(`[Socket.io] Connected successfully. Socket ID: ${socket.id}`);
         
-        // Update UI Banner status
         $('#rtc-status-message')
             .removeClass('offline error')
             .addClass('success')
-            .text(`Online — Connected as ${vinttroConfig.agentName}`);
+            .text(`Online — Connected as ${AGENT_ID}`);
 
-        // Join private Agent Room so Node can send targeted calls to this agent
         socket.emit('join_room', AGENT_ID);
-        socket.emit('join_room', 'agent_wrtc_1'); // Also join stub testing room
     });
 
     socket.on('disconnect', () => {
-        console.warn('[Socket.io] Disconnected from Node Controller');
+        console.warn('[Socket.io] Disconnected from Central Controller');
         $('#rtc-status-message')
             .removeClass('success info')
             .addClass('offline')
             .text('Offline. Reconnecting to central controller...');
     });
 
-    // -------------------------------------------------------------------------
-    // 2. LISTEN FOR INBOUND CALL EVENTS FROM NODE
-    // -------------------------------------------------------------------------
-    socket.on('incoming_call_queue', handleIncomingCallEvent);
+    // ==========================================================
+    // 3. LISTEN FOR REAL-TIME INBOUND CALL EVENTS
+    // ==========================================================
     socket.on('incoming_call', handleIncomingCallEvent);
 
     function handleIncomingCallEvent(payload) {
-        console.log('[Socket.io Event Received] Incoming Call Payload:', payload);
-        
+        console.log('🚨 [Socket.io Event] Incoming Call:', payload);
         activeCallPayload = payload;
 
-        // A. Pop-up caller identity and room details
         $('#incoming-caller-id').text(payload.callerId || 'Unknown Caller');
         $('#incoming-call-subtext').text(`Inbound Call Waiting | Room: ${payload.roomId}`);
-        
-        // B. Pre-fill room input box automatically
         $('#vinttro-room-id').val(payload.roomId);
-
-        // C. Show the call card modal
         $('#vinttro-incoming-call-card').slideDown(200);
 
         playRingtone();
     }
 
-    // Listen for Call Status Deltas (e.g., Caller hung up before answer)
     socket.on('call_updated', (data) => {
-        console.log('[Socket.io Event] Call state updated:', data);
-
         if (activeCallPayload && data.call_id === activeCallPayload.callSid) {
             if (['completed', 'canceled', 'failed'].includes(data.status)) {
                 $('#vinttro-incoming-call-card').slideUp(200);
@@ -76,44 +99,47 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // -------------------------------------------------------------------------
-    // 3. AGENT INTERACTION HANDLERS
-    // -------------------------------------------------------------------------
-    
-    // Accept Call Button Clicked
+    // ==========================================================
+    // 4. AGENT INTERACTION HANDLERS (ANSWER & DISCONNECT)
+    // ==========================================================
     $('#vinttro-accept-incoming').on('click', function() {
         if (!activeCallPayload) return;
 
-        const targetRoomName = activeCallPayload.roomId || activeCallPayload.roomName;
+        const targetRoomName = activeCallPayload.roomId;
         console.log('[Accept] Dialing into Conference Room:', targetRoomName);
 
-        // Dial into the conference room via Twilio Voice SDK
         if (window.vinttroTwilioDevice) {
             window.vinttroTwilioDevice.connect({
                 params: { To: targetRoomName }
             });
             console.log('✅ Agent WebRTC audio connecting to conference...');
         } else {
-            console.error('❌ Twilio Voice Device is not initialized in the browser window!');
+            console.error('❌ Twilio Voice Device is not initialized!');
         }
 
-        // Hide Pop-up banner
         $('#vinttro-incoming-call-card').slideUp(200);
-
-        // Update status text
         $('#rtc-status-message')
             .removeClass('offline info success')
             .addClass('info')
             .text(`Active Call in Room: ${targetRoomName}`);
     });
-    
-    // Dismiss Call Button Clicked
+
     $('#vinttro-reject-incoming').on('click', function() {
         $('#vinttro-incoming-call-card').slideUp(200);
         activeCallPayload = null;
     });
 
-    // Helper Audio Alert
+    $('#vinttro-rtc-disconnect').on('click', function() {
+        if (window.vinttroTwilioDevice) {
+            window.vinttroTwilioDevice.disconnectAll();
+        }
+        $('#rtc-status-message')
+            .removeClass('info success')
+            .addClass('offline')
+            .text('Call ended. Online and ready.');
+    });
+
+    // Ringtone generator
     function playRingtone() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -130,5 +156,4 @@ jQuery(document).ready(function($) {
             console.log('Audio chime blocked by browser autoplay policy.');
         }
     }
-
 });

@@ -220,10 +220,10 @@ function vinttro_handle_inbound_voice_call( WP_REST_Request $request ) {
 add_action( 'wp_enqueue_scripts', 'vinttro_enqueue_communicator_socket_assets' );
 function vinttro_enqueue_communicator_socket_assets() {
     
-    // 1. Official Twilio Voice JS SDK (Enables Twilio.Device for PSTN WebRTC Audio)
+    // 1. Official Twilio Voice JS SDK (v2.x via jsDelivr NPM CDN)
     wp_enqueue_script( 
         'twilio-voice-sdk', 
-        'https://sdk.twilio.com/js/voice/releases/2.11.0/twilio-voice.min.js', 
+        'https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.11.0/dist/twilio.min.js', 
         array(), 
         '2.11.0', 
         false 
@@ -256,16 +256,25 @@ function vinttro_enqueue_communicator_socket_assets() {
         true 
     );
 
-    // 5. Enqueue Vinttro Communicator JS with all SDK dependencies declared
+    // 5. Enqueue RTC Client Script (Enforced Dependency on twilio-voice-sdk)
+    wp_enqueue_script( 
+        'vinttro-rtc-client-js', 
+        plugins_url( '../js/rtc-client.js', __FILE__ ), 
+        array('jquery', 'twilio-voice-sdk', 'twilio-sync-sdk', 'twilio-video-sdk'), 
+        '1.1.0', 
+        true 
+    );
+
+    // 6. Enqueue Vinttro Communicator JS with all dependencies declared
     wp_enqueue_script( 
         'vinttro-communicator-js', 
         plugins_url( '../js/vinttro-communicator.js', __FILE__ ), 
-        array('jquery', 'twilio-voice-sdk', 'twilio-sync-sdk', 'twilio-video-sdk', 'socket-io-client'), 
+        array('jquery', 'twilio-voice-sdk', 'twilio-sync-sdk', 'twilio-video-sdk', 'socket-io-client', 'vinttro-rtc-client-js'), 
         '2.0.0', 
         true 
     );
 
-    // 6. Inject localized configuration object for JS
+    // 7. Inject localized configuration object for JS
     $current_user = wp_get_current_user();
     wp_localize_script( 'vinttro-communicator-js', 'vinttroConfig', array(
         'nodeApiUrl' => 'https://services.uat.vinttro.co.uk',

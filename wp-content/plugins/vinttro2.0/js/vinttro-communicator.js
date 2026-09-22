@@ -81,13 +81,39 @@ jQuery(document).ready(function($) {
     // -------------------------------------------------------------------------
     
     // Accept Call Button Clicked
-    $('#vinttro-accept-incoming').on('click', function() {
+    $('#vinttro-accept-incoming').on('click', async function() {
         if (!activeCallPayload) return;
 
-        const targetRoomId = activeCallPayload.roomId || activeCallPayload.roomName;
-        console.log('[Accept] Joining WebRTC Voice Room:', targetRoomId);
-        
-        // Connect WebRTC Voice Device to Twilio Conference Room
+        const targetCallSid = activeCallPayload.callSid;
+        const targetRoomId  = activeCallPayload.roomId || activeCallPayload.roomName;
+
+        console.log('[Accept] Initiating Bridge for CallSid:', targetCallSid, 'Room:', targetRoomId);
+
+        // 1. Tell WordPress REST API to execute the Twilio redirect (Takes caller OFF hold music)
+        try {
+            const bridgeResponse = await fetch('/wp-json/vinttro/v1/accept-call', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-WP-Nonce': vinttroConfig.restNonce 
+                },
+                body: JSON.stringify({ 
+                    callSid: targetCallSid, 
+                    roomId: targetRoomId 
+                })
+            });
+
+            if (!bridgeResponse.ok) {
+                throw new Error('Server rejected the call bridge request.');
+            }
+
+            console.log('✅ Caller successfully moved off hold music into room:', targetRoomId);
+
+        } catch (error) {
+            console.error('❌ Failed to take caller off hold music:', error.message);
+        }
+
+        // 2. Connect the Agent browser microphone to the Twilio Conference Room
         if (window.vinttroTwilioDevice) {
             console.log('✅ Connecting WebRTC audio via window.vinttroTwilioDevice to room:', targetRoomId);
             window.vinttroTwilioDevice.connect({

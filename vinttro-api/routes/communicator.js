@@ -25,23 +25,28 @@ async function saveCallToSuiteCRM(callData) {
 }
 
 // -------------------------------------------------------------------------
-// 1. WEBRTC VOICE TOKEN GENERATOR (Bypasses WP Nonce issues)
+// 1. WEBRTC VOICE TOKEN GENERATOR
 // -------------------------------------------------------------------------
 router.get('/token', (req, res) => {
     try {
         const identity = req.query.identity || 'agent_dev_1';
+        
+        if (!TWIML_APP_SID) {
+            console.error('❌ CRITICAL: TWILIO_TWIML_APP_SID is missing or empty in .env file!');
+            return res.status(500).json({ error: 'Server misconfiguration: TWIML_APP_SID missing' });
+        }
+
         const AccessToken = twilio.jwt.AccessToken;
         const VoiceGrant = AccessToken.VoiceGrant;
 
         const token = new AccessToken(ACCOUNT_SID, API_KEY_SID, API_KEY_SECRET, { ttl: 3600, identity });
         
         const voiceGrant = new VoiceGrant({
-            outgoingApplicationSid: TWIML_APP_SID,
+            outgoingApplicationSid: TWIML_APP_SID, // Enables device.connect() outbound audio stream
             incomingAllow: true
         });
         token.addGrant(voiceGrant);
 
-        // Fixed: Use toJwt() with lowercase 'wt'
         return res.status(200).json({ token: token.toJwt(), identity });
     } catch (error) {
         console.error('[Token Generation Error]:', error);

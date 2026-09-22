@@ -66,7 +66,9 @@ router.post('/call-event', async (req, res) => {
         const callId = req.body.CallSid || req.body.call_id;
         const newStatus = (req.body.CallStatus || req.body.status || '').toLowerCase();
         const source = req.body.source || (req.body.CallSid ? 'Twilio' : 'Unknown');
-
+        
+        console.log(`[Incoming Event] Source: ${source} | CallSid: ${callId} | Status: ${newStatus}`);
+        
         if (!callId || !newStatus) {
             return res.status(400).json({ error: 'Missing call_id or status' });
         }

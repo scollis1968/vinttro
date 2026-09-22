@@ -43,8 +43,6 @@ jQuery(document).ready(function($) {
     // -------------------------------------------------------------------------
     // 2. LISTEN FOR INBOUND CALL EVENTS FROM NODE
     // -------------------------------------------------------------------------
-    
-    // Listening for Global Queue Events or Direct Agent Notifications
     socket.on('incoming_call_queue', handleIncomingCallEvent);
     socket.on('incoming_call', handleIncomingCallEvent);
 
@@ -63,7 +61,6 @@ jQuery(document).ready(function($) {
         // C. Show the call card modal
         $('#vinttro-incoming-call-card').slideDown(200);
 
-        // Optional: Play audio chime
         playRingtone();
     }
 
@@ -73,7 +70,6 @@ jQuery(document).ready(function($) {
 
         if (activeCallPayload && data.call_id === activeCallPayload.callSid) {
             if (['completed', 'canceled', 'failed'].includes(data.status)) {
-                // Hide incoming popup if caller hangs up while ringing
                 $('#vinttro-incoming-call-card').slideUp(200);
                 activeCallPayload = null;
             }
@@ -88,23 +84,17 @@ jQuery(document).ready(function($) {
     $('#vinttro-accept-incoming').on('click', function() {
         if (!activeCallPayload) return;
 
-        console.log('[Accept] Joining WebRTC Room:', activeCallPayload.roomId);
+        const targetRoomId = activeCallPayload.roomId || activeCallPayload.roomName;
+        console.log('[Accept] Joining WebRTC Voice Room:', targetRoomId);
         
-        // 1. Tell Twilio Voice SDK to open WebRTC audio stream to the room
-        if (typeof Twilio !== 'undefined' && Twilio.Device) {
-            Twilio.Device.connect({
-                params: {
-                    RoomName: roomName,
-                    To: roomName
-                }
-            });
-        } else if (window.vinttroTwilioDevice) {
-            // If your device instance is saved on a global window object
+        // Connect WebRTC Voice Device to Twilio Conference Room
+        if (window.vinttroTwilioDevice) {
+            console.log('✅ Connecting WebRTC audio via window.vinttroTwilioDevice to room:', targetRoomId);
             window.vinttroTwilioDevice.connect({
-                params: { RoomName: roomName }
+                params: { RoomName: targetRoomId }
             });
         } else {
-            console.error('❌ Twilio Voice Device is not initialized in the browser!');
+            console.error('❌ Twilio Voice Device is not initialized in the browser window!');
         }
 
         // Hide Pop-up banner
@@ -114,10 +104,7 @@ jQuery(document).ready(function($) {
         $('#rtc-status-message')
             .removeClass('offline info success')
             .addClass('info')
-            .text(`Connecting to Call Room: ${activeCallPayload.roomId}...`);
-
-        // Trigger your existing "Make Call" / "Join Room" button click logic
-        $('#vinttro-rtc-connect').trigger('click');
+            .text(`Connected to Call Room: ${targetRoomId}`);
     });
 
     // Dismiss Call Button Clicked
@@ -133,7 +120,7 @@ jQuery(document).ready(function($) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4 tone
+            osc.frequency.setValueAtTime(440, audioCtx.currentTime);
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             osc.connect(gain);
             gain.connect(audioCtx.destination);

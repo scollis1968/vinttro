@@ -41,7 +41,8 @@ router.get('/token', (req, res) => {
         });
         token.addGrant(voiceGrant);
 
-        return res.status(200).json({ token: token.toJWT(), identity });
+        // Fixed: Use toJwt() with lowercase 'wt'
+        return res.status(200).json({ token: token.toJwt(), identity });
     } catch (error) {
         console.error('[Token Generation Error]:', error);
         return res.status(500).json({ error: 'Failed to generate Twilio token' });

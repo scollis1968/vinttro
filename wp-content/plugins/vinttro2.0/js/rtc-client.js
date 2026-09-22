@@ -5,16 +5,16 @@ jQuery(document).ready(function($) {
     let syncClient = null; 
     let liveToken  = null; 
 
-    const $connectBtn     = $('#vinttro-rtc-connect');
-    const $disconnectBtn  = $('#vinttro-rtc-disconnect');
-    const $localTrackDom  = $('#local-video-feed');
-    const $remoteGridDom  = $('#remote-video-grid');
-    const $statusAlert    = $('#rtc-status-message');
+    const $connectBtn     =$('#vinttro-rtc-connect');
+    const $disconnectBtn  =$('#vinttro-rtc-disconnect');
+    const $localTrackDom  =$('#local-video-feed');
+    const $remoteGridDom  =$('#remote-video-grid');
+    const $statusAlert    =$('#rtc-status-message');
     
-    const $callTypeSelect = $('#vinttro-call-type');
-    const $micSelect      = $('#vinttro-mic-select');
-    const $camSelect      = $('#vinttro-cam-select');
-    const $roomInput      = $('#vinttro-room-id');
+    const $callTypeSelect =$('#vinttro-call-type');
+    const $micSelect      =$('#vinttro-mic-select');
+    const $camSelect      =$('#vinttro-cam-select');
+    const $roomInput      =$('#vinttro-room-id');
 
     // ==========================================================
     // ⚙️ 1. PAGE INITIALIZATION: UNMASK HARDWARE LABELS
@@ -28,8 +28,7 @@ jQuery(document).ready(function($) {
             initialStream.getTracks().forEach(track => track.stop());
             const systemDevices = await navigator.mediaDevices.enumerateDevices();
             
-            $micSelect.empty();
-            $camSelect.empty();
+            $micSelect.empty();$camSelect.empty();
 
             let micCount = 0;
             let camCount = 0;
@@ -58,7 +57,7 @@ jQuery(document).ready(function($) {
 
 
     // ==========================================================
-    // 🛰️ 2. TWILIO SYNC WEBSOCKET INITIALIZATION
+    // 🛰️ 2. TWILIO SYNC & VOICE WEBSOCKET INITIALIZATION
     // ==========================================================
 
     async function activateAgentSyncListeningTerminal() {
@@ -72,15 +71,42 @@ jQuery(document).ready(function($) {
             const data = await response.json();
             liveToken  = data.token; 
 
+            // ------------------------------------------------------
+            // 📞 REGISTER GLOBAL TWILIO VOICE DEVICE FOR PSTN CALLS
+            // ------------------------------------------------------
+            if (typeof Twilio !== 'undefined' && Twilio.Device) {
+                try {
+                    window.vinttroTwilioDevice = new Twilio.Device(liveToken, {
+                        logLevel: 1,
+                        codecPreferences: ['opus', 'pcmu']
+                    });
+
+                    window.vinttroTwilioDevice.register();
+
+                    window.vinttroTwilioDevice.on('registered', () => {
+                        console.log("%c✅ Twilio WebRTC Voice Device Registered & Ready!", "color: #38a169; font-weight: bold;");
+                    });
+
+                    window.vinttroTwilioDevice.on('error', (error) => {
+                        console.error("❌ Twilio Voice Device Error:", error);
+                    });
+                } catch (devErr) {
+                    console.warn("Could not instantiate Twilio.Device:", devErr);
+                }
+            } else {
+                console.warn("⚠️ Twilio Voice SDK (Twilio.Device) is not loaded on this page.");
+            }
+
+            // ------------------------------------------------------
+            // 🛰️ INITIALIZE TWILIO SYNC WEBSOCKET CLIENT
+            // ------------------------------------------------------
             syncClient = new Twilio.Sync.Client(liveToken);
 
             syncClient.on('connectionStateChanged', state => {
                 console.log(`%c📡 WebSocket Node Sync State: ${state}`, "color: #3182ce; font-weight: bold;");
             });
 
-            // ------------------------------------------------------
-            // 📧 NEW: Direct Agent-to-Agent Private Signaling Channel
-            // ------------------------------------------------------
+            // Direct Agent-to-Agent Private Signaling Channel
             if (vinttroSettings.currentUserEmail) {
                 const userEmailClean = vinttroSettings.currentUserEmail.replace(/[^a-zA-Z0-9]/g, '_');
                 
@@ -93,7 +119,7 @@ jQuery(document).ready(function($) {
                         
                         if (callPayload && callPayload.action === 'incoming_call') {
                             triggerInboundCallAlert({
-                                callSid: callPayload.roomId, // Map room identity to callSid for the UI alert
+                                callSid: callPayload.roomId,
                                 roomId: callPayload.roomId,
                                 callerId: callPayload.callerIdentity
                             });
@@ -106,9 +132,7 @@ jQuery(document).ready(function($) {
                 console.warn("⚠️ User-to-user signaling disabled: vinttroSettings.currentUserEmail is missing.");
             }
 
-            // ------------------------------------------------------
-            // 📦 ORIGINAL: Public Customer Inbound Queue Channel
-            // ------------------------------------------------------
+            // Public Customer Inbound Queue Channel
             syncClient.list('vinttro_live_queue').then(list => {
                 console.log("%c✅ SUCCESS: Browser is actively subscribed to the Twilio Sync List channel!", "color: #2f855a; font-weight: bold;");
                 
@@ -126,7 +150,7 @@ jQuery(document).ready(function($) {
                         const cleanData = callPayload.data ? callPayload.data : callPayload;
                         triggerInboundCallAlert(cleanData);
                     } else {
-                        error_log("❌ Event captured, but payload configuration map was empty or unreadable.");
+                        console.error("❌ Event captured, but payload configuration map was empty or unreadable.");
                     }
                 });
             }).catch(listError => {
@@ -147,7 +171,6 @@ jQuery(document).ready(function($) {
     function triggerInboundCallAlert(callData) {
         console.log("🚨 INCOMING QUEUE ASSIGNMENT ALERT RECEIVED:", callData);
         
-        // Quick verification check to ensure fields are populated correctly
         if (!callData.callSid || !callData.roomId) {
             console.error("❌ Aborting alert rendering: callSid or roomId unpacked as undefined!", callData);
             return;
@@ -171,26 +194,22 @@ jQuery(document).ready(function($) {
         alertAudio.play().catch(() => console.log("Audio play deferred until user interacts with document."));
     }
 
-// ==========================================================
+    // ==========================================================
     // 🤝 4. THE CALL ACCEPTANCE HANDSHAKE
     // ==========================================================
     $(document).on('click', '.accept-toast-btn', async function() {
         const targetCallSid = $(this).data('sid');
-        const targetRoomId  = $(this).data('room');
-        
-        $(`#alert-node-${targetCallSid}`).remove();
+        const targetRoomId  = $(this).data('room');$(`#alert-node-${targetCallSid}`).remove();
         updateStatus(`Joining call canvas container: [${targetRoomId}]...`, "info");
 
-        // 🚀 SMART FIX: If this is a pure WebRTC peer-to-peer call, bypass the telephone network intercept!
+        // Bypass PSTN bridge for peer-to-peer browser video calls
         if (targetRoomId && targetRoomId.toString().startsWith('peer_call_')) {
             console.log("🤝 Peer-to-Peer browser video call verified. Connecting directly to room matrix.");
             initializeWebRTCSession(liveToken, targetRoomId);
-            return; // Exit here so we don't hit the unneeded backend API
+            return;
         }
 
-        // ==========================================
-        // ORIGINAL CUSTOMER PSTN PHONE BRIDGE INTERCEPT
-        // ==========================================
+        // CUSTOMER PSTN PHONE BRIDGE INTERCEPT
         try {
             const bridgeResponse = await fetch(`${vinttroSettings.root}vinttro/v1/accept-call`, {
                 method: 'POST',
@@ -200,7 +219,16 @@ jQuery(document).ready(function($) {
 
             if (!bridgeResponse.ok) throw new Error("Server failed to establish media routing intercept.");
 
-            initializeWebRTCSession(liveToken, targetRoomId);
+            // Connect Voice Device Audio for PSTN Conference Call
+            if (window.vinttroTwilioDevice) {
+                console.log("📞 Connecting Twilio Voice Device to PSTN Conference Room:", targetRoomId);
+                window.vinttroTwilioDevice.connect({
+                    params: { RoomName: targetRoomId }
+                });
+            } else {
+                console.warn("Twilio Voice Device not found, falling back to Video room session...");
+                initializeWebRTCSession(liveToken, targetRoomId);
+            }
 
         } catch (error) {
             updateStatus(`Handshake Aborted: ${error.message}`, "error");
@@ -211,128 +239,117 @@ jQuery(document).ready(function($) {
     // 🎛️ 5. UI CONTROLS HANDLERS
     // ==========================================================
     $callTypeSelect.on('change', function() {
-        if ($(this).val() === 'audio') {
-            $('.cam-wrapper').hide(); 
+        if ($(this).val() === 'audio') {$('.cam-wrapper').hide(); 
         } else {
             if ($camSelect.val() !== "") $('.cam-wrapper').show();
         }
     });
 
-$connectBtn.on('click', async function() {
-    const inputValue = $roomInput.val().trim();
-    
-    if (!inputValue) {
-        updateStatus("Please enter a Room ID or Phone Number.", "error");
-        return;
-    }
-
-    // 🔍 Regular expression to check if input looks like an international phone number
-    const isPhoneNumber = /^\+?[1-9]\d{1,14}$/.test(inputValue.replace(/\s+/g, ''));
-
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputValue);
-
-    if (isEmail) {
-        // ==========================================
-        // 📧 PEER-TO-PEER EMAIL CALL FLOW
-        // ==========================================
-        const targetEmail = inputValue.toLowerCase();
-        const adhocRoomName = "peer_call_" + btoa(targetEmail).replace(/=/g, ''); // Safe unique room name
-
-        updateStatus(`Ringing ${targetEmail}...`, "info");
-        $connectBtn.prop('disabled', true);
-
-        try {
-            // Tell the backend to notify the user logged in with this email
-            const response = await fetch(`${vinttroSettings.root}vinttro/v1/peer-call`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
-                body: JSON.stringify({ 
-                    targetEmail: targetEmail,
-                    callerIdentity: "agent_dev_1", // The person making the call
-                    roomId: adhocRoomName 
-                })
-            });
-
-            if (!response.ok) throw new Error("User offline or call rejected.");
-            
-            // Instantly join the room yourself and wait for them to answer
-            initializeWebRTCSession(liveToken, adhocRoomName);
-            $connectBtn.hide();
-            $disconnectBtn.show();
-
-        } catch (error) {
-            updateStatus(`Call Failed: ${error.message}`, "error");
-            $connectBtn.prop('disabled', false);
+    $connectBtn.on('click', async function() {
+        const inputValue = $roomInput.val().trim();
+        
+        if (!inputValue) {
+            updateStatus("Please enter a Room ID or Phone Number.", "error");
+            return;
         }
 
-    } else if (isPhoneNumber) { 
-        const cleanPhoneNumber = inputValue.replace(/\s+/g, '');
-        // Create a unique, web-safe room identifier for this specific lead call
-        const adhocRoomName = "call_lead_" + cleanPhoneNumber.replace('+', '');
+        const isPhoneNumber = /^\+?[1-9]\d{1,14}$/.test(inputValue.replace(/\s+/g, ''));
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputValue);
 
-        updateStatus(`Initiating video room bridge for outbound call...`, "info");
-        $connectBtn.prop('disabled', true);
+        if (isEmail) {
+            const targetEmail = inputValue.toLowerCase();
+            const adhocRoomName = "peer_call_" + btoa(targetEmail).replace(/=/g, '');
 
-        try {
-            // 1. Tell your WordPress backend to trigger the outbound call leg
-            const response = await fetch(`${vinttroSettings.root}vinttro/v1/outbound-call`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
-                body: JSON.stringify({ 
-                    toNumber: cleanPhoneNumber,
-                    leadId: "test_lead_999", // Hardcoded tracking sample
-                    agentId: "agent_dev_1",
-                    roomId: adhocRoomName    // Pass the matching room name to the backend
-                })
-            });
+            updateStatus(`Ringing ${targetEmail}...`, "info");
+            $connectBtn.prop('disabled', true);
 
-            if (!response.ok) throw new Error("Server rejected outbound workspace creation.");
-            const data = await response.json();
-            
-            // 2. IMMEDIATELY dump your local agent into the video room!
-            // Your browser will load up and wait inside the canvas for the phone caller to drop in.
-            updateStatus(`Room active. Dialing lead phone line...`, "success");
-            initializeWebRTCSession(liveToken, adhocRoomName);
+            try {
+                const response = await fetch(`${vinttroSettings.root}vinttro/v1/peer-call`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+                    body: JSON.stringify({ 
+                        targetEmail: targetEmail,
+                        callerIdentity: "agent_dev_1",
+                        roomId: adhocRoomName 
+                    })
+                });
 
-            $connectBtn.hide();
-            $disconnectBtn.show();
+                if (!response.ok) throw new Error("User offline or call rejected.");
+                
+                initializeWebRTCSession(liveToken, adhocRoomName);
+                $connectBtn.hide();$disconnectBtn.show();
+
+            } catch (error) {
+                updateStatus(`Call Failed: ${error.message}`, "error");
+                $connectBtn.prop('disabled', false);
+            }
+
+        } else if (isPhoneNumber) { 
+            const cleanPhoneNumber = inputValue.replace(/\s+/g, '');
+            const adhocRoomName = "call_lead_" + cleanPhoneNumber.replace('+', '');
+
+            updateStatus(`Initiating video room bridge for outbound call...`, "info");
+            $connectBtn.prop('disabled', true);
+
+            try {
+                const response = await fetch(`${vinttroSettings.root}vinttro/v1/outbound-call`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+                    body: JSON.stringify({ 
+                        toNumber: cleanPhoneNumber,
+                        leadId: "test_lead_999",
+                        agentId: "agent_dev_1",
+                        roomId: adhocRoomName
+                    })
+                });
+
+                if (!response.ok) throw new Error("Server rejected outbound workspace creation.");
+                
+                updateStatus(`Room active. Dialing lead phone line...`, "success");
+                
+                if (window.vinttroTwilioDevice) {
+                    window.vinttroTwilioDevice.connect({
+                        params: { RoomName: adhocRoomName, To: cleanPhoneNumber }
+                    });
+                } else {
+                    initializeWebRTCSession(liveToken, adhocRoomName);
+                }
+
+                $connectBtn.hide();$disconnectBtn.show();
 
             } catch (error) {
                 updateStatus(`Bridge Failure: ${error.message}`, "error");
                 $connectBtn.prop('disabled', false);
             }
 
-    } else {
-        // ==========================================
-        // 🎥 ORIGINAL WEBRTC VIDEO ROOM FLOW
-        // ==========================================
-        updateStatus(`Securing terminal connection credentials for space: [${inputValue}]...`, "info");
-        $connectBtn.prop('disabled', true);
+        } else {
+            updateStatus(`Securing terminal connection credentials for space: [${inputValue}]...`, "info");
+            $connectBtn.prop('disabled', true);
 
-        try {
-            if (liveToken) {
-                initializeWebRTCSession(liveToken, inputValue);
-            } else {
-                const response = await fetch(`${vinttroSettings.root}vinttro/v1/rtc-token`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
-                    body: JSON.stringify({ roomName: inputValue })
-                });
+            try {
+                if (liveToken) {
+                    initializeWebRTCSession(liveToken, inputValue);
+                } else {
+                    const response = await fetch(`${vinttroSettings.root}vinttro/v1/rtc-token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': vinttroSettings.nonce },
+                        body: JSON.stringify({ roomName: inputValue })
+                    });
 
-                if (!response.ok) throw new Error("Failed validation check from server.");
-                const data = await response.json();
-                initializeWebRTCSession(data.token, inputValue);
+                    if (!response.ok) throw new Error("Failed validation check from server.");
+                    const data = await response.json();
+                    initializeWebRTCSession(data.token, inputValue);
+                }
+            } catch (error) {
+                updateStatus(`Authorization Denied: ${error.message}`, "error");
+                $connectBtn.prop('disabled', false);
             }
-        } catch (error) {
-            updateStatus(`Authorization Denied: ${error.message}`, "error");
-            $connectBtn.prop('disabled', false);
         }
-    }
-});
+    });
 
 
     // ==========================================================
-    // 📞 6. WEBRTC MEDIA ENGINE ROUTER
+    // 📞 6. WEBRTC MEDIA ENGINE ROUTER (TWILIO VIDEO)
     // ==========================================================
     function initializeWebRTCSession(token, roomName) {
         updateStatus("Routing real-time media streams...", "info");
@@ -359,8 +376,7 @@ $connectBtn.on('click', async function() {
             activeRoom = room;
             updateStatus(`Active Session Channel: Connected to [${roomName}]`, "success");
 
-            $connectBtn.hide();
-            $disconnectBtn.show();
+            $connectBtn.hide();$disconnectBtn.show();
 
             room.localParticipant.videoTracks.forEach(publication => {
                 $localTrackDom.append(publication.track.attach());
@@ -381,7 +397,6 @@ $connectBtn.on('click', async function() {
     function participantConnected(participant) {
         console.log(`Member synced: ${participant.identity}`);
         
-        // 🚀 NEW: If an empty-room alert is counting down, kill it because a user just joined!
         clearInterval(hangupCountdownTimer);
         $('#vinttro-empty-room-modal').remove();
         updateStatus(`Active Session Channel: Connected to [${activeRoom ? activeRoom.name : ''}]`, "success");
@@ -397,37 +412,26 @@ $connectBtn.on('click', async function() {
         });
     }
 
-function participantDisconnected(participant) {
-        // 1. Remove their video/audio feeds from the DOM as before
+    function participantDisconnected(participant) {
         $remoteGridDom.find(`[id^="track-${participant.sid}"]`).remove();
         console.log(`Member disconnected: ${participant.identity}. Remaining remote participants: ${activeRoom ? activeRoom.participants.size : 0}`);
 
-        // 2. 🚀 NEW: Check if you are the last person standing
         if (activeRoom && activeRoom.participants.size === 0) {
-            
-            // 👉 CHOOSE PATH A: Terminate immediately and silently
-            /*
-            console.log("Empty room detected. Auto-disconnecting channel leg.");
-            activeRoom.disconnect();
-            */
-
-            // 👉 CHOOSE PATH B: Show an interactive, modern overlay UI block
             triggerEmptyRoomAlert();
         }
     }
 
     $disconnectBtn.on('click', function() {
         if (activeRoom) activeRoom.disconnect();
+        if (window.vinttroTwilioDevice) window.vinttroTwilioDevice.disconnectAll();
     });
 
     function cleanUpMediaStreams() {
-        clearInterval(hangupCountdownTimer); // 🚀 Add this line
-        $('#vinttro-empty-room-modal').remove(); // 🚀 Add this line
+        clearInterval(hangupCountdownTimer);
+        $('#vinttro-empty-room-modal').remove();
         
-        $localTrackDom.empty();
-        $remoteGridDom.empty();
-        $connectBtn.show().prop('disabled', false);
-        $disconnectBtn.hide();
+        $localTrackDom.empty();$remoteGridDom.empty();
+        $connectBtn.show().prop('disabled', false);$disconnectBtn.hide();
         updateStatus("Session closed. Offline.", "offline");
         activeRoom = null;
     }
@@ -441,7 +445,6 @@ function participantDisconnected(participant) {
     let hangupCountdownTimer = null;
 
     function triggerEmptyRoomAlert() {
-        // Prevent duplicate overlays if one is already active
         if ($('#vinttro-empty-room-modal').length) return;
 
         const modalHtml = `
@@ -458,10 +461,8 @@ function participantDisconnected(participant) {
             </div>
         `;
 
-        // Inject the modal directly over your main video grid workspace container
         $('#vinttro-rtc-workspace').css('position', 'relative').append(modalHtml);
 
-        // Start a 5-second ticking countdown backstop
         let timeLeft = 5;
         hangupCountdownTimer = setInterval(() => {
             timeLeft--;
@@ -476,14 +477,12 @@ function participantDisconnected(participant) {
         }, 1000);
     }
 
-    // Bind Button Click: Hang Up Right Away
     $(document).on('click', '#empty-room-hangup-now', function() {
         clearInterval(hangupCountdownTimer);
         if (activeRoom) activeRoom.disconnect();
         $('#vinttro-empty-room-modal').remove();
     });
 
-    // Bind Button Click: Dismiss and stay in the empty canvas
     $(document).on('click', '#empty-room-stay', function() {
         clearInterval(hangupCountdownTimer);
         $('#vinttro-empty-room-modal').remove();
@@ -491,29 +490,27 @@ function participantDisconnected(participant) {
     });
 
     // ==========================================================
-    // 💼 8. UNIVERSAL WORKSPACE TASK PIPELINE CONTROLLER (REST WITH AUTH)
+    // 💼 8. UNIVERSAL WORKSPACE TASK PIPELINE CONTROLLER
     // ==========================================================
     const currentAgentEmail = "finley.collis@vinttro.co.uk"; 
 
     function loadAgentTasks() {
-        const $container = $('#vinttro-active-tasks');
+        const $container =$('#vinttro-active-tasks');
         $container.html('<p style="padding:15px; color:#a0aec0;">🔄 Fetching secure task matrix...</p>');
 
         const secureWpEndpoint = `/wp-json/vinttro/v1/tasks?agent=${encodeURIComponent(currentAgentEmail)}`;
 
-        // 🚀 THE FIX: Attach the 'X-WP-Nonce' header to satisfy WordPress REST authentication rules
         const requestHeaders = {
             'Content-Type': 'application/json'
         };
         
-        // If our new token config exists globally, append it to the request
         if (typeof vinttroRestConfig !== 'undefined' && vinttroRestConfig.nonce) {
             requestHeaders['X-WP-Nonce'] = vinttroRestConfig.nonce;
         }
 
         fetch(secureWpEndpoint, {
             method: 'GET',
-            headers: requestHeaders // 🔒 Secure authentication payload verified here
+            headers: requestHeaders
         })
             .then(res => res.json())
             .then(data => {
@@ -525,8 +522,7 @@ function participantDisconnected(participant) {
                     return;
                 }
 
-                $container.empty();
-                $('#vinttro-task-count').text(`${payload.tasks.length} Active Task${payload.tasks.length !== 1 ? 's' : ''}`);
+                $container.empty();$('#vinttro-task-count').text(`${payload.tasks.length} Active Task${payload.tasks.length !== 1 ? 's' : ''}`);
 
                 payload.tasks.forEach(task => {
                     let typeBadge = '';
@@ -555,7 +551,5 @@ function participantDisconnected(participant) {
             });
     }
 
-    // Initialize list load
     loadAgentTasks();
 });
-

@@ -1,5 +1,9 @@
 <?php
 
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_Error;
+
 // 🔍 TEMPORARY DIAGNOSTIC WIRETAP: Log raw network data for incoming calls
 add_action( 'init', 'vinttro_spy_on_inbound_headers', 1 );
 function vinttro_spy_on_inbound_headers() {
@@ -46,22 +50,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_action( 'rest_api_init', 'vinttro_register_all_rtc_routes' );
 function vinttro_register_all_rtc_routes() {
     
+    // Endpoint A: Token Distribution Gateway
     register_rest_route( 'vinttro/v1', '/rtc-token', array(
         'methods'             => 'POST',
         'callback'            => 'vinttro_generate_plugin_rtc_token',
         'permission_callback' => 'vinttro_check_plugin_employee_access',
     ) );
 
+    // Endpoint B: Landline Intercept Call Bridge Routing Channel
     register_rest_route( 'vinttro/v1', '/accept-call', array(
         'methods'             => 'POST',
         'callback'            => 'vinttro_agent_bridge_call',
         'permission_callback' => 'vinttro_check_plugin_employee_access',
     ) );
 
+    // Endpoint C: Public Inbound Gateway
     register_rest_route( 'vinttro/v1', '/inbound-call', array(
         'methods'             => 'POST',
         'callback'            => 'vinttro_handle_inbound_voice_call',
         'permission_callback' => '__return_true', 
+    ) );
+
+    // Endpoint D: Browser Twilio.Device Voice Conference Gateway
+    register_rest_route( 'vinttro/v1', '/voice-connect', array(
+        'methods'             => array('GET', 'POST'),
+        'callback'            => 'vinttro_handle_voice_conference_connect',
+        'permission_callback' => '__return_true',
     ) );
 }
 
@@ -147,7 +161,7 @@ function vinttro_generate_plugin_rtc_token( WP_REST_Request $request ) {
 }
 
 // ==========================================================
-// 📞 5. CALLBACK B: REDIRECT TELEPHONE OUT OF HOLD LOOP
+// 📞 5. CALLBACK B: MOVE PSTN CALLER INTO VOICE CONFERENCE
 // ==========================================================
 function vinttro_agent_bridge_call( WP_REST_Request $request ) {
     $call_sid = $request->get_param('callSid');
@@ -163,8 +177,9 @@ function vinttro_agent_bridge_call( WP_REST_Request $request ) {
         }
         $sdk = vinttro_get_twilio_sdk_client();
         
+        // 🚀 Move PSTN Caller into the Voice Conference room
         $sdk->calls($call_sid)->update([
-            "twiml" => '<?xml version="1.0" encoding="UTF-8"?><Response><Connect><Room>' . $room_id . '</Room></Connect></Response>'
+            "twiml" => '<?xml version="1.0" encoding="UTF-8"?><Response><Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true">' . esc_xml($room_id) . '</Conference></Dial></Response>'
         ]);
 
         return new WP_REST_Response(array('success' => true), 200);
@@ -215,7 +230,22 @@ function vinttro_handle_inbound_voice_call( WP_REST_Request $request ) {
 }
 
 // ==========================================================
-// ⚡ 7. ENQUEUE TWILIO SDKs, SOCKET.IO & COMMUNICATOR JS
+// 📞 7. CALLBACK D: BROWSER TWILIO.DEVICE CONFERENCE HANDLER
+// ==========================================================
+function vinttro_handle_voice_conference_connect( WP_REST_Request $request ) {
+    $room_id = $request->get_param('RoomName');
+    if ( empty( $room_id ) ) {
+        $room_id = $request->get_param('To');
+    }
+
+    $twiml  = '<?xml version="1.0" encoding="UTF-8"?>';
+    $twiml .= '<Response><Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true">' . esc_xml($room_id) . '</Conference></Dial></Response>';
+
+    return new WP_REST_Response($twiml, 200, array('Content-Type' => 'application/xml'));
+}
+
+// ==========================================================
+// ⚡ 8. ENQUEUE TWILIO SDKs, SOCKET.IO & COMMUNICATOR JS
 // ==========================================================
 add_action( 'wp_enqueue_scripts', 'vinttro_enqueue_communicator_socket_assets' );
 function vinttro_enqueue_communicator_socket_assets() {

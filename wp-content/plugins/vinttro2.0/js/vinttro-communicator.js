@@ -81,44 +81,18 @@ jQuery(document).ready(function($) {
     // -------------------------------------------------------------------------
     
     // Accept Call Button Clicked
-    $('#vinttro-accept-incoming').on('click', async function() {
+    $('#vinttro-accept-incoming').on('click', function() {
         if (!activeCallPayload) return;
 
-        const targetCallSid = activeCallPayload.callSid;
-        const targetRoomId  = activeCallPayload.roomId || activeCallPayload.roomName;
+        const targetRoomName = activeCallPayload.roomId || activeCallPayload.roomName;
+        console.log('[Accept] Dialing into Conference Room:', targetRoomName);
 
-        console.log('[Accept] Initiating Bridge for CallSid:', targetCallSid, 'Room:', targetRoomId);
-
-        // 1. Tell WordPress REST API to execute the Twilio redirect (Takes caller OFF hold music)
-        try {
-            const bridgeResponse = await fetch('/wp-json/vinttro/v1/accept-call', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-WP-Nonce': vinttroConfig.restNonce 
-                },
-                body: JSON.stringify({ 
-                    callSid: targetCallSid, 
-                    roomId: targetRoomId 
-                })
-            });
-
-            if (!bridgeResponse.ok) {
-                throw new Error('Server rejected the call bridge request.');
-            }
-
-            console.log('✅ Caller successfully moved off hold music into room:', targetRoomId);
-
-        } catch (error) {
-            console.error('❌ Failed to take caller off hold music:', error.message);
-        }
-
-        // 2. Connect the Agent browser microphone to the Twilio Conference Room
+        // Dial into the conference room via Twilio Voice SDK
         if (window.vinttroTwilioDevice) {
-            console.log('✅ Connecting WebRTC audio via window.vinttroTwilioDevice to room:', targetRoomId);
             window.vinttroTwilioDevice.connect({
-                params: { RoomName: targetRoomId }
+                params: { To: targetRoomName }
             });
+            console.log('✅ Agent WebRTC audio connecting to conference...');
         } else {
             console.error('❌ Twilio Voice Device is not initialized in the browser window!');
         }
@@ -130,9 +104,9 @@ jQuery(document).ready(function($) {
         $('#rtc-status-message')
             .removeClass('offline info success')
             .addClass('info')
-            .text(`Connected to Call Room: ${targetRoomId}`);
+            .text(`Active Call in Room: ${targetRoomName}`);
     });
-
+    
     // Dismiss Call Button Clicked
     $('#vinttro-reject-incoming').on('click', function() {
         $('#vinttro-incoming-call-card').slideUp(200);

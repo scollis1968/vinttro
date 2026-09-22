@@ -217,5 +217,23 @@ router.post('/recording-event', async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+// -------------------------------------------------------------------------
+// 5. WEBRTC AGENT VOICE CONNECT (Bridges browser into caller conference)
+// -------------------------------------------------------------------------
+router.all('/voice-connect', (req, res) => {
+    const roomName = req.body.To || req.body.RoomName || req.query.To || 'default-room';
+
+    const twiml = new twilio.twiml.VoiceResponse();
+    const dial = twiml.dial();
+    
+    // Join the exact same conference room and START the conference
+    dial.conference({
+        startConferenceOnEnter: true,
+        endConferenceOnExit: true
+    }, roomName);
+
+    res.type('text/xml');
+    res.send(twiml.toString());
+});
 
 module.exports = router;

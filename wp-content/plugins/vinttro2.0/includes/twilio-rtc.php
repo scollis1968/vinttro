@@ -116,7 +116,7 @@ function vinttro_get_twilio_sdk_client() {
 }
 
 // ==========================================================
-// 🎟️ 4. CALLBACK A: GENERATE VOICE, VIDEO & SYNC ACCESS TOKENS
+// 🎟️ 4. CALLBACK A: GENERATE VOICE ACCESS TOKENS
 // ==========================================================
 function vinttro_generate_plugin_rtc_token( WP_REST_Request $request ) {
     $autoload_path = dirname( __DIR__ ) . '/vendor/autoload.php';
@@ -135,24 +135,13 @@ function vinttro_generate_plugin_rtc_token( WP_REST_Request $request ) {
 
     $token = new \Twilio\Jwt\AccessToken($accountSid, $apiKeySid, $apiKeySecret, 3600, $identity);
 
-    // 1. Inject Twilio Voice Grant (Allows WebRTC Voice Calls & Twilio.Device)
+    // Inject Twilio Voice Grant
     $voiceGrant = new \Twilio\Jwt\Grants\VoiceGrant();
     $voiceGrant->setIncomingAllow(true);
     if ( defined('TWILIO_TWIML_APP_SID') && !empty(TWILIO_TWIML_APP_SID) ) {
         $voiceGrant->setOutgoingApplicationSid(TWILIO_TWIML_APP_SID);
     }
     $token->addGrant($voiceGrant);
-
-    // 2. Inject WebRTC Video Channel Grant
-    $videoGrant = new \Twilio\Jwt\Grants\VideoGrant();
-    $token->addGrant($videoGrant);
-
-    // 3. Inject WebSocket Real-time Sync Grant
-    if ( defined('TWILIO_SYNC_SERVICE_SID') && !empty(TWILIO_SYNC_SERVICE_SID) ) {
-        $syncGrant = new \Twilio\Jwt\Grants\SyncGrant();
-        $syncGrant->setServiceSid(TWILIO_SYNC_SERVICE_SID);
-        $token->addGrant($syncGrant);
-    }
 
     return new WP_REST_Response(array(
         'token'    => $token->toJWT(),
@@ -177,7 +166,6 @@ function vinttro_agent_bridge_call( WP_REST_Request $request ) {
         }
         $sdk = vinttro_get_twilio_sdk_client();
         
-        // 🚀 Move PSTN Caller into the Voice Conference room
         $sdk->calls($call_sid)->update([
             "twiml" => '<?xml version="1.0" encoding="UTF-8"?><Response><Dial><Conference startConferenceOnEnter="true" endConferenceOnExit="true">' . esc_xml($room_id) . '</Conference></Dial></Response>'
         ]);
@@ -190,34 +178,13 @@ function vinttro_agent_bridge_call( WP_REST_Request $request ) {
 }
 
 // ==========================================================
-// 📞 6. CALLBACK C: INBOUND HANDLER & SYNC BROADCAST
+// 📞 6. CALLBACK C: INBOUND HANDLER
 // ==========================================================
 function vinttro_handle_inbound_voice_call( WP_REST_Request $request ) {
     $call_sid  = $request->get_param('CallSid');
-    $caller_id = $request->get_param('From');
 
     if ( empty($call_sid) ) {
         return new WP_Error('invalid_webhook', 'Missing structural telephony attributes.', array('status' => 400));
-    }
-
-    $unique_room_id = 'vinttro-call-' . wp_generate_password(8, false);
-
-    try {
-        $sdk = vinttro_get_twilio_sdk_client();
-        $syncServiceSid = defined('TWILIO_SYNC_SERVICE_SID') ? TWILIO_SYNC_SERVICE_SID : 'default';
-        
-        $sdk->sync->v1->services($syncServiceSid)
-                      ->syncLists('vinttro_live_queue')
-                      ->syncListItems->create([
-                          "data" => [
-                              "callSid"  => $call_sid,
-                              "callerId" => $caller_id ? $caller_id : 'Unknown Web Client',
-                              "roomId"   => $unique_room_id,
-                              "status"   => "parked"
-                          ]
-                      ]);
-    } catch (Exception $e) {
-        error_log('Vinttro Sync Queue Broadcasting Fault: ' . $e->getMessage());
     }
 
     $twiml  = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -245,12 +212,12 @@ function vinttro_handle_voice_conference_connect( WP_REST_Request $request ) {
 }
 
 // ==========================================================
-// ⚡ 8. ENQUEUE TWILIO SDKs, SOCKET.IO & COMMUNICATOR JS
+// ⚡ 8. ENQUEUE TWILIO VOICE SDK, SOCKET.IO & COMMUNICATOR JS
 // ==========================================================
 add_action( 'wp_enqueue_scripts', 'vinttro_enqueue_communicator_socket_assets' );
 function vinttro_enqueue_communicator_socket_assets() {
     
-    // 1. Official Twilio Voice JS SDK (v2.x via jsDelivr NPM CDN)
+    // 1. Official Twilio Voice JS SDK (v2.x)
     wp_enqueue_script( 
         'twilio-voice-sdk', 
         'https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.11.0/dist/twilio.min.js', 
@@ -259,25 +226,7 @@ function vinttro_enqueue_communicator_socket_assets() {
         false 
     );
 
-    // 2. Official Twilio Sync JS SDK (WebSocket State Synchronization)
-    wp_enqueue_script( 
-        'twilio-sync-sdk', 
-        'https://media.twiliocdn.com/sdk/js/sync/v0.12/twilio-sync.min.js', 
-        array(), 
-        '0.12.0', 
-        false 
-    );
-
-    // 3. Official Twilio Video JS SDK (Video Canvas Support)
-    wp_enqueue_script( 
-        'twilio-video-sdk', 
-        'https://sdk.twilio.com/js/video/releases/2.28.1/twilio-video.min.js', 
-        array(), 
-        '2.28.1', 
-        false 
-    );
-
-    // 4. Socket.io Client SDK
+    // 2. Socket.io Client SDK
     wp_enqueue_script( 
         'socket-io-client', 
         'https://cdn.socket.io/4.7.5/socket.io.min.js', 
@@ -286,25 +235,16 @@ function vinttro_enqueue_communicator_socket_assets() {
         true 
     );
 
-    // 5. Enqueue RTC Client Script (Enforced Dependency on twilio-voice-sdk)
-    wp_enqueue_script( 
-        'vinttro-rtc-client-js', 
-        plugins_url( '../js/rtc-client.js', __FILE__ ), 
-        array('jquery', 'twilio-voice-sdk', 'twilio-sync-sdk', 'twilio-video-sdk'), 
-        '1.1.0', 
-        true 
-    );
-
-    // 6. Enqueue Vinttro Communicator JS with all dependencies declared
+    // 3. Enqueue Unified Vinttro Communicator JS
     wp_enqueue_script( 
         'vinttro-communicator-js', 
         plugins_url( '../js/vinttro-communicator.js', __FILE__ ), 
-        array('jquery', 'twilio-voice-sdk', 'twilio-sync-sdk', 'twilio-video-sdk', 'socket-io-client', 'vinttro-rtc-client-js'), 
+        array('jquery', 'twilio-voice-sdk', 'socket-io-client'), 
         '2.0.0', 
         true 
     );
 
-    // 7. Inject localized configuration object for JS
+    // 4. Inject Localized Configuration Object
     $current_user = wp_get_current_user();
     wp_localize_script( 'vinttro-communicator-js', 'vinttroConfig', array(
         'nodeApiUrl' => 'https://services.uat.vinttro.co.uk',

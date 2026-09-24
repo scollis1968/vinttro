@@ -98,6 +98,32 @@ jQuery(document).ready(function($) {
             }
         }
     });
+    
+    // Listen for call dismissal (answered by another agent or caller hung up)
+    socket.on('dismiss_incoming_call', function(data) {
+        console.log('[Communicator] Received dismissal event:', data);
+
+        // If this browser is currently ringing for this specific call_id
+        if (window.activeRingingCallId === data.call_id) {
+            
+            // 1. Stop ringtone audio
+            if (window.vinttroRingtone) {
+                window.vinttroRingtone.pause();
+                window.vinttroRingtone.currentTime = 0;
+            }
+
+            // 2. Hide incoming call modal/alert
+            $('#vinttro-incoming-call-modal').hide();
+            window.activeRingingCallId = null;
+
+            if (data.reason === 'answered') {
+                console.log(`Call was answered by ${data.answered_by}`);
+            } else {
+                console.log('Caller hung up before call was answered.');
+            }
+        }
+    });
+
 
     // ==========================================================
     // 4. AGENT INTERACTION HANDLERS (ANSWER & DISCONNECT)

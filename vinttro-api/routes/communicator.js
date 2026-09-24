@@ -88,7 +88,6 @@ router.post('/call-event', async (req, res) => {
         
         if (!callId || !newStatus) return res.status(400).json({ error: 'Missing call_id or status' });
 
-        // ⚡ 12-Hour Mapping: Save ConferenceSid -> CallSid lookup
         if (conferenceSid) {
             await redisClient.setEx(`map:${conferenceSid}`, 43200, callId);
         }
@@ -97,7 +96,6 @@ router.post('/call-event', async (req, res) => {
         const currentCallDataRaw = await redisClient.get(redisKey);
         let currentCall = currentCallDataRaw ? JSON.parse(currentCallDataRaw) : { legs: [] };
 
-        // Maintain call legs history
         const legs = Array.isArray(currentCall.legs) ? currentCall.legs : [];
         const newLeg = {
             status: newStatus,
@@ -107,7 +105,6 @@ router.post('/call-event', async (req, res) => {
         };
         legs.push(newLeg);
 
-        // Derive top-level first_agent and last_agent
         let firstAgent = currentCall.first_agent || null;
         let lastAgent = currentCall.last_agent || null;
 
@@ -171,7 +168,6 @@ router.post('/inbound-call', async (req, res) => {
     res.type('text/xml');
     res.send(twiml.toString());
 
-    // ⚡ Initialize call state in Redis with initial "inbound_park" leg
     const initialLeg = {
         leg_type: 'inbound_park',
         status: 'parked',
@@ -194,7 +190,6 @@ router.post('/inbound-call', async (req, res) => {
     
     await redisClient.setEx(`call:${callSid}`, 43200, JSON.stringify(callPayload));
 
-    // Emit Socket.io alert to connected agents
     if (io) io.emit('incoming_call', callPayload);
 });
 
@@ -206,15 +201,11 @@ router.all('/voice-connect', async (req, res) => {
         const roomName = req.body.To || req.body.RoomName || req.query.To || 'default-room';
         const conferenceSid = req.body.ConferenceSid || req.body.conference_sid;
         
-        // Twilio WebRTC client passes identity in From as "client:finley.collis@vinttro.co.uk"
         const rawCaller = req.body.From || req.body.Caller || req.query.From || req.body.identity || '';
         const agentId = rawCaller.replace(/^client:/i, '') || 'Unknown Agent';
-
-        // Extract callSid from Room_CAxxx naming convention used in /inbound-call
         const callSid = roomName.startsWith('Room_') ? roomName.replace('Room_', '') : roomName;
 
         if (callSid && callSid !== 'default-room') {
-            // ⚡ 12-Hour Mapping: Save ConferenceSid -> CallSid lookup
             if (conferenceSid) {
                 await redisClient.setEx(`map:${conferenceSid}`, 43200, callSid);
             }
@@ -226,7 +217,6 @@ router.all('/voice-connect', async (req, res) => {
                 let currentCall = JSON.parse(currentCallDataRaw);
                 const legs = Array.isArray(currentCall.legs) ? currentCall.legs : [];
 
-                // Record the agent connect leg
                 legs.push({
                     leg_type: 'agent_connect',
                     agent_id: agentId,
@@ -254,6 +244,17 @@ router.all('/voice-connect', async (req, res) => {
             }
         }
 
+        // ⚡ Broadcast dismissal BEFORE returning HTTP response
+        const io = req.app.get('io');
+        if (io && callSid) {
+            console.log(`[Voice Connect] Emitting dismissal for call ${callSid} answered by ${agentId}`);
+            io.emit('dismiss_incoming_call', {
+                call_id: callSid,
+                answered_by: agentId,
+                reason: 'answered'
+            });
+        }
+
         const twiml = new twilio.twiml.VoiceResponse();
         const dial = twiml.dial();
         
@@ -265,20 +266,9 @@ router.all('/voice-connect', async (req, res) => {
         res.type('text/xml');
         return res.send(twiml.toString());
 
-        // ⚡ Broadcast alert dismissal to all agents
-        const io = req.app.get('io');
-        if (io) {
-            io.emit('dismiss_incoming_call', {
-                call_id: callSid,
-                answered_by: agentId,
-                reason: 'answered'
-            });
-        }
-
     } catch (error) {
         console.error('[Voice Connect Error]:', error);
 
-        // Fallback TwiML so audio bridges even if Redis fails
         const twiml = new twilio.twiml.VoiceResponse();
         const dial = twiml.dial();
         dial.conference({ startConferenceOnEnter: true, endConferenceOnExit: true }, 'default-room');
@@ -298,25 +288,20 @@ router.post('/recording-event', async (req, res) => {
         const recordingUrl  = req.body.RecordingUrl || req.body.recording_url;
         const duration      = req.body.RecordingDuration || req.body.duration_seconds || 0;
         
-        // Check POST body and URL query string for room & call_id
         const friendlyName  = req.body.FriendlyName || req.body.RoomName || req.body.roomId || req.query.room || '';
         let targetCallSid   = req.body.CallSid || req.body.call_id || req.query.call_id;
 
-        // A. Resolve CallSid from room name (e.g. "Room_CA12345" -> "CA12345")
         if (!targetCallSid && friendlyName.startsWith('Room_CA')) {
             targetCallSid = friendlyName.replace('Room_', '');
         }
 
-        // B. Resolve CallSid from Redis mapping
         if (!targetCallSid && conferenceSid) {
             const mappedSid = await redisClient.get(`map:${conferenceSid}`);
             if (mappedSid) targetCallSid = mappedSid;
         }
 
-        // C. Fallback: Query Twilio REST API to fetch Conference FriendlyName
         if (!targetCallSid && conferenceSid) {
             try {
-                console.log(`[Recording Event] Fetching Conference details from Twilio API for ${conferenceSid}...`);
                 const confDetails = await twilioClient.conferences(conferenceSid).fetch();
                 if (confDetails && confDetails.friendlyName && confDetails.friendlyName.startsWith('Room_CA')) {
                     targetCallSid = confDetails.friendlyName.replace('Room_', '');
@@ -331,25 +316,18 @@ router.post('/recording-event', async (req, res) => {
             return res.status(400).json({ error: 'Missing or unresolvable CallSid' });
         }
 
-        // Save mapping for future lookups
         if (conferenceSid && targetCallSid) {
             await redisClient.setEx(`map:${conferenceSid}`, 43200, targetCallSid);
         }
 
-        console.log(`✅ [Recording Event] Successfully Resolved Primary CallSid: ${targetCallSid}`);
-
-        // Fetch master call record from Redis DB 1
         const redisKey = `call:${targetCallSid}`;
         const currentCallRaw = await redisClient.get(redisKey);
 
         let callData = {};
         if (currentCallRaw) {
             callData = JSON.parse(currentCallRaw);
-        } else {
-            console.warn(`⚠️ [Recording Event] No existing record found for ${targetCallSid}. Creating fallback.`);
         }
 
-        // Merge recording metadata
         callData.call_id = targetCallSid;
         if (conferenceSid) callData.conference_sid = conferenceSid;
         if (recordingSid)  callData.recording_sid  = recordingSid;
@@ -358,10 +336,7 @@ router.post('/recording-event', async (req, res) => {
         callData.duration_seconds = parseInt(duration, 10) || callData.duration_seconds || 0;
         callData.recording_completed_at = new Date().toISOString();
 
-        // Save back to Redis
         await redisClient.setEx(redisKey, 43200, JSON.stringify(callData));
-
-        // Write complete unified record to SuiteCRM
         await saveCallToSuiteCRM(callData);
 
         return res.status(200).json({ success: true, call_id: targetCallSid });
@@ -395,23 +370,24 @@ router.post('/status-callback', async (req, res) => {
 
             const legs = Array.isArray(callData.legs) ? callData.legs : [];
             
-            // Append call end leg
             legs.push({
                 leg_type: 'call_end',
                 status: callStatus,
                 timestamp: new Date().toISOString()
             });
 
-            // ⚡ Broadcast alert dismissal to all agents
-            const io = req.app.get('io');
-            if (io) {
-                io.emit('dismiss_incoming_call', {
-                    call_id: callSid,
-                    answered_by: agentId,
-                    reason: 'answered'
-                });
+            // ⚡ Broadcast dismissal with correct variable name and scope
+            if (['completed', 'canceled', 'failed', 'no-answer'].includes(callStatus)) {
+                const io = req.app.get('io');
+                if (io) {
+                    console.log(`[Status Callback] Emitting dismissal for call ${targetCallSid} (${callStatus})`);
+                    io.emit('dismiss_incoming_call', {
+                        call_id: targetCallSid,
+                        reason: 'terminated'
+                    });
+                }
             }
-            // If no agent ever answered, mark top-level status accordingly
+
             const isAnswered = Boolean(callData.first_agent);
             const finalStatus = isAnswered ? 'completed' : 'no-answer';
 
@@ -426,11 +402,7 @@ router.post('/status-callback', async (req, res) => {
             };
 
             await redisClient.setEx(redisKey, 43200, JSON.stringify(updatedRecord));
-
-            // Remove from wallboard active calls list
             await redisClient.sRem('active_calls', targetCallSid);
-            
-            // Sync final call record (both answered & missed calls) to SuiteCRM
             await saveCallToSuiteCRM(updatedRecord);
         }
 
@@ -440,4 +412,5 @@ router.post('/status-callback', async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 module.exports = router;

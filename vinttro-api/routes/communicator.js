@@ -78,35 +78,47 @@ router.get('/active-calls', async (req, res) => {
 // -------------------------------------------------------------------------
 // 3. CENTRAL CALL EVENT INGESTION
 // -------------------------------------------------------------------------
+// Inside routes/communicator.js -> POST /call-event
 router.post('/call-event', async (req, res) => {
     try {
         const io = req.app.get('io');
         const callId = req.body.CallSid || req.body.call_id;
         const newStatus = (req.body.CallStatus || req.body.status || '').toLowerCase();
         const source = req.body.source || (req.body.CallSid ? 'Twilio' : 'Unknown');
-        
-        console.log(`[Incoming Event] Source: ${source} | CallSid: ${callId} | Status: ${newStatus}`);
+        const agentId = req.body.agent_id || req.body.identity || null;
         
         if (!callId || !newStatus) return res.status(400).json({ error: 'Missing call_id or status' });
 
         const redisKey = `call:${callId}`;
         const currentCallDataRaw = await redisClient.get(redisKey);
-        let currentCall = currentCallDataRaw ? JSON.parse(currentCallDataRaw) : { segments: [] };
-        
-        if (currentCallDataRaw) {
-            const currentPriority = STATE_PRIORITY[currentCall.status] || 0;
-            const newPriority = STATE_PRIORITY[newStatus] || 0;
+        let currentCall = currentCallDataRaw ? JSON.parse(currentCallDataRaw) : { legs: [] };
 
-            if (newPriority <= currentPriority && currentCall.status !== newStatus) {
-                return res.status(200).json({ message: 'State ignored due to priority rules' });
-            }
+        // Maintain call legs history
+        const legs = Array.isArray(currentCall.legs) ? currentCall.legs : [];
+        const newLeg = {
+            status: newStatus,
+            agent_id: agentId,
+            source: source,
+            timestamp: new Date().toISOString()
+        };
+        legs.push(newLeg);
+
+        // Derive top-level first_agent and last_agent
+        let firstAgent = currentCall.first_agent || null;
+        let lastAgent = currentCall.last_agent || null;
+
+        if (agentId) {
+            if (!firstAgent) firstAgent = agentId;
+            lastAgent = agentId;
         }
 
         const updatedCallData = {
             ...currentCall,
             call_id: callId,
             status: newStatus,
-            agent_id: req.body.agent_id || currentCall.agent_id || null,
+            first_agent: firstAgent,
+            last_agent: lastAgent,
+            legs: legs,
             last_updated: new Date().toISOString(),
             updated_by: source
         };
@@ -167,19 +179,75 @@ router.post('/inbound-call', async (req, res) => {
 // -------------------------------------------------------------------------
 // 5. WEBRTC VOICE CONNECT (Bridges browser into conference)
 // -------------------------------------------------------------------------
-router.all('/voice-connect', (req, res) => {
-    const roomName = req.body.To || req.body.RoomName || req.query.To || 'default-room';
+router.all('/voice-connect', async (req, res) => {
+    try {
+        const roomName = req.body.To || req.body.RoomName || req.query.To || 'default-room';
+        
+        // Twilio WebRTC client passes identity in From as "client:finley.collis@vinttro.co.uk"
+        const rawCaller = req.body.From || req.body.Caller || req.query.From || req.body.identity || '';
+        const agentId = rawCaller.replace(/^client:/i, '') || 'Unknown Agent';
 
-    const twiml = new twilio.twiml.VoiceResponse();
-    const dial = twiml.dial();
-    
-    dial.conference({
-        startConferenceOnEnter: true,
-        endConferenceOnExit: true
-    }, roomName);
+        // Extract callSid from Room_CAxxx naming convention used in /inbound-call
+        const callSid = roomName.startsWith('Room_') ? roomName.replace('Room_', '') : roomName;
 
-    res.type('text/xml');
-    res.send(twiml.toString());
+        if (callSid && callSid !== 'default-room') {
+            const redisKey = `call:${callSid}`;
+            const currentCallDataRaw = await redisClient.get(redisKey);
+
+            if (currentCallDataRaw) {
+                let currentCall = JSON.parse(currentCallDataRaw);
+                const legs = Array.isArray(currentCall.legs) ? currentCall.legs : [];
+
+                // Record the agent connect leg
+                legs.push({
+                    leg_type: 'agent_connect',
+                    agent_id: agentId,
+                    status: 'answered',
+                    timestamp: new Date().toISOString()
+                });
+
+                const firstAgent = currentCall.first_agent || agentId;
+                const lastAgent = agentId;
+
+                const updatedCallData = {
+                    ...currentCall,
+                    status: 'answered',
+                    first_agent: firstAgent,
+                    last_agent: lastAgent,
+                    legs: legs,
+                    last_updated: new Date().toISOString(),
+                    updated_by: `WebRTC (${agentId})`
+                };
+
+                await redisClient.setEx(redisKey, 43200, JSON.stringify(updatedCallData));
+
+                const io = req.app.get('io');
+                if (io) io.emit('call_updated', updatedCallData);
+            }
+        }
+
+        const twiml = new twilio.twiml.VoiceResponse();
+        const dial = twiml.dial();
+        
+        dial.conference({
+            startConferenceOnEnter: true,
+            endConferenceOnExit: true
+        }, roomName);
+
+        res.type('text/xml');
+        return res.send(twiml.toString());
+
+    } catch (error) {
+        console.error('[Voice Connect Error]:', error);
+
+        // Fallback TwiML so audio bridges even if Redis fails
+        const twiml = new twilio.twiml.VoiceResponse();
+        const dial = twiml.dial();
+        dial.conference({ startConferenceOnEnter: true, endConferenceOnExit: true }, 'default-room');
+        
+        res.type('text/xml');
+        return res.send(twiml.toString());
+    }
 });
 
 // -------------------------------------------------------------------------

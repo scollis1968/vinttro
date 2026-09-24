@@ -114,9 +114,9 @@ async function saveCallRecord(callData) {
         description: `Call SID: ${identifier}\nCaller: ${callerNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}`,
         
         // SuiteCRM Custom Fields (Populate these if created in SuiteCRM Studio)
-        first_agent_c: callData.first_agent || '',
-        last_agent_c: callData.last_agent || '',
-        call_legs_json_c: JSON.stringify(callData.legs || [])
+        // first_agent_c: callData.first_agent || '',
+        // last_agent_c: callData.last_agent || '',
+        // call_legs_json_c: JSON.stringify(callData.legs || [])
     };
 
     console.log(`[SuiteCRM Sync] Pushing Call ${identifier} (First Agent: ${callData.first_agent || 'None'}) to SuiteCRM...`);

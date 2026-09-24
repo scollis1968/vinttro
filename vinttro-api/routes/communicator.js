@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const twilio = require('twilio');
 const redisClient = require('../services/redis'); // Centralized Redis DB 1
+const suitecrmService = require('../services/suitecrm');
 
 const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const API_KEY_SID = process.env.TWILIO_API_KEY_SID;
@@ -20,59 +21,7 @@ const STUB_AGENTS = [
 // Helper method to push structured call records to SuiteCRM
 async function saveCallToSuiteCRM(callData) {
     try {
-        const identifier = callData.call_id || callData.conference_sid || 'UNKNOWN_CALL';
-        const callerNumber = callData.from || callData.callerId || 'Unknown';
-        const durationSeconds = parseInt(callData.duration_seconds || 0, 10);
-
-        console.log(`[SuiteCRM Sync] Writing call record for ${identifier} (${callerNumber})...`);
-
-        // Convert duration seconds to SuiteCRM hours & minutes
-        const durationHours = Math.floor(durationSeconds / 3600);
-        const durationMinutes = Math.floor((durationSeconds % 3600) / 60);
-
-        // Format dates for SuiteCRM (ISO -> YYYY-MM-DD HH:MM:SS)
-        const startTime = callData.timestamp 
-            ? new Date(callData.timestamp).toISOString().replace('T', ' ').substring(0, 19)
-            : new Date().toISOString().replace('T', ' ').substring(0, 19);
-
-        // Payload for SuiteCRM V8 API / Bridge
-        const crmPayload = {
-            data: {
-                type: 'Calls',
-                attributes: {
-                    name: `Inbound Call - ${callerNumber}`,
-                    direction: 'Inbound',
-                    status: 'Held', // SuiteCRM standard for completed calls
-                    date_start: startTime,
-                    duration_hours: durationHours,
-                    duration_minutes: durationMinutes,
-                    description: `Call ID: ${identifier}\nCaller: ${callerNumber}\nRecording: ${callData.recording_url || 'N/A'}\nAgent: ${callData.agent_id || 'System'}`,
-                    // Custom Vinttro tracking fields (if added to SuiteCRM studio)
-                    vinttro_call_sid_c: identifier,
-                    vinttro_recording_url_c: callData.recording_url || ''
-                }
-            }
-        };
-
-        // Option A: Send via internal PHP API bridge in SuiteCRM
-        const bridgeUrl = 'https://services.uat.vinttro.co.uk/vinttro-api/public/index.php/calls'; 
-        
-        /* 
-        const response = await fetch(bridgeUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(crmPayload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`SuiteCRM endpoint returned HTTP ${response.status}`);
-        }
-
-        console.log(`✅ [SuiteCRM Sync] Call record ${identifier} created successfully.`);
-        */
-
-        console.log('[SuiteCRM Sync] Formatted Payload Ready:', JSON.stringify(crmPayload, null, 2));
-
+        await suitecrmService.saveCallRecord(callData);
     } catch (err) {
         console.error('🚨 [SuiteCRM Sync Error]:', err.message);
     }

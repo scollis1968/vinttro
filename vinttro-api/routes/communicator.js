@@ -152,8 +152,8 @@ router.post('/inbound-call', async (req, res) => {
     const clientCallerId = req.body.From || 'Unknown Caller';
     const roomName = `Room_${callSid}`;
 
-    // ⚡ Inject call_id & room directly into the callback URL
     const recordingCallbackUrl = `https://services.uat.vinttro.co.uk/api/communicator/recording-event?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
+    const statusCallbackUrl = `https://services.uat.vinttro.co.uk/api/communicator/status-callback?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
 
     const twiml = new twilio.twiml.VoiceResponse();
     const dial = twiml.dial();
@@ -163,13 +163,22 @@ router.post('/inbound-call', async (req, res) => {
         endConferenceOnExit: true,
         record: 'record-from-start',
         recordingStatusCallback: recordingCallbackUrl,
-        recordingStatusCallbackEvent: 'completed'
+        recordingStatusCallbackEvent: 'completed',
+        statusCallback: statusCallbackUrl,
+        statusCallbackEvent: 'end'
     }, roomName);
 
     res.type('text/xml');
     res.send(twiml.toString());
 
-    // Store call state in Redis DB 1
+    // ⚡ Initialize call state in Redis with initial "inbound_park" leg
+    const initialLeg = {
+        leg_type: 'inbound_park',
+        status: 'parked',
+        caller_id: clientCallerId,
+        timestamp: new Date().toISOString()
+    };
+
     const callPayload = {
         call_id: callSid,
         callSid: callSid,
@@ -177,8 +186,12 @@ router.post('/inbound-call', async (req, res) => {
         from: clientCallerId,
         roomId: roomName,
         status: 'parked',
+        first_agent: null,
+        last_agent: null,
+        legs: [initialLeg],
         timestamp: new Date().toISOString()
     };
+    
     await redisClient.setEx(`call:${callSid}`, 43200, JSON.stringify(callPayload));
 
     // Emit Socket.io alert to connected agents
@@ -354,31 +367,52 @@ router.post('/recording-event', async (req, res) => {
 // -------------------------------------------------------------------------
 router.post('/status-callback', async (req, res) => {
     try {
-        const callId = req.body.CallSid || req.body.callSid || req.body.call_id;
-        const callStatus = (req.body.CallStatus || req.body.status || '').toLowerCase();
+        const friendlyName = req.body.FriendlyName || req.body.RoomName || req.query.room || '';
+        let targetCallSid = req.body.CallSid || req.body.callSid || req.body.call_id || req.query.call_id;
+
+        if (!targetCallSid && friendlyName.startsWith('Room_CA')) {
+            targetCallSid = friendlyName.replace('Room_', '');
+        }
+
+        const callStatus = (req.body.CallStatus || req.body.status || req.body.Status || 'completed').toLowerCase();
         const duration = req.body.CallDuration || req.body.duration || 0;
         const from = req.body.From || req.body.from;
 
-        if (callId) {
-            const redisKey = `call:${callId}`;
+        if (targetCallSid) {
+            const redisKey = `call:${targetCallSid}`;
             const existingDataRaw = await redisClient.get(redisKey);
-            const callData = existingDataRaw ? JSON.parse(existingDataRaw) : {};
+            let callData = existingDataRaw ? JSON.parse(existingDataRaw) : { legs: [] };
+
+            const legs = Array.isArray(callData.legs) ? callData.legs : [];
+            
+            // Append call end leg
+            legs.push({
+                leg_type: 'call_end',
+                status: callStatus,
+                timestamp: new Date().toISOString()
+            });
+
+            // If no agent ever answered, mark top-level status accordingly
+            const isAnswered = Boolean(callData.first_agent);
+            const finalStatus = isAnswered ? 'completed' : 'no-answer';
 
             const updatedRecord = {
                 ...callData,
-                call_id: callId,
-                status: callStatus,
-                from: from || callData.callerId,
-                duration_seconds: parseInt(duration, 10),
+                call_id: targetCallSid,
+                status: finalStatus,
+                from: from || callData.callerId || callData.from || 'Unknown',
+                duration_seconds: parseInt(duration, 10) || callData.duration_seconds || 0,
+                legs: legs,
                 last_updated: new Date().toISOString()
             };
 
             await redisClient.setEx(redisKey, 43200, JSON.stringify(updatedRecord));
 
-            if (['completed', 'canceled', 'failed'].includes(callStatus)) {
-                await redisClient.sRem('active_calls', callId);
-                await saveCallToSuiteCRM(updatedRecord);
-            }
+            // Remove from wallboard active calls list
+            await redisClient.sRem('active_calls', targetCallSid);
+            
+            // Sync final call record (both answered & missed calls) to SuiteCRM
+            await saveCallToSuiteCRM(updatedRecord);
         }
 
         return res.status(200).send('<Response/>');
@@ -387,5 +421,4 @@ router.post('/status-callback', async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
-
 module.exports = router;

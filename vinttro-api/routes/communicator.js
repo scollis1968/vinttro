@@ -7,7 +7,7 @@ const redisClient = require('../services/redis'); // Centralized Redis DB 1
 const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const API_KEY_SID = process.env.TWILIO_API_KEY_SID;
 const API_KEY_SECRET = process.env.TWILIO_API_KEY_SECRET;
-const TWIML_APP_SID = process.env.TWILIO_TWIML_APP_SID;
+const TWIML_APP_SID = process.env.TWILIO_TWIML_APP_SID || process.env.TWIML_APP_SID;
 
 const twilioClient = twilio(API_KEY_SID, API_KEY_SECRET, { accountSid: ACCOUNT_SID });
 const STATE_PRIORITY = { 'ringing': 1, 'answered': 2, 'completed': 3 };
@@ -16,9 +16,13 @@ const STUB_AGENTS = [
     { id: 'agent_wrtc_1', type: 'wrtc', name: 'Test WebRTC Agent', email: 'finley.collis@vinttro.co.uk' }
 ];
 
+// Helper method to push structured call records to SuiteCRM
 async function saveCallToSuiteCRM(callData) {
     try {
-        console.log(`[SuiteCRM Sync] Writing call record for ${callData.call_id}...`);
+        const identifier = callData.call_id || callData.conference_sid || 'UNKNOWN_CALL';
+        console.log(`[SuiteCRM Sync] Writing call record for ${identifier}...`);
+        
+        // TODO: Insert SuiteCRM API call (v8 REST or DB write) here
     } catch (err) {
         console.error('[SuiteCRM Sync Error]:', err.message);
     }
@@ -42,7 +46,7 @@ router.get('/token', (req, res) => {
         const token = new AccessToken(ACCOUNT_SID, API_KEY_SID, API_KEY_SECRET, { ttl: 3600, identity });
         
         const voiceGrant = new VoiceGrant({
-            outgoingApplicationSid: TWIML_APP_SID, // Enables device.connect() outbound audio stream
+            outgoingApplicationSid: TWIML_APP_SID,
             incomingAllow: true
         });
         token.addGrant(voiceGrant);
@@ -180,22 +184,32 @@ router.all('/voice-connect', (req, res) => {
 });
 
 // -------------------------------------------------------------------------
-// 6. RECORDING COMPLETE EVENT
+// 6. RECORDING COMPLETE EVENT (Triggered when Twilio recording finishes)
 // -------------------------------------------------------------------------
 router.post('/recording-event', async (req, res) => {
     try {
         const io = req.app.get('io');
-        const { CallSid, ConferenceSid, RecordingSid, RecordingUrl, RecordingDuration, RecordingStatus } = req.body;
+        
+        // Flexible key extraction (Twilio passes uppercase Form fields, Postman might pass JSON)
+        const CallSid = req.body.CallSid || req.body.callSid || req.body.call_id;
+        const ConferenceSid = req.body.ConferenceSid || req.body.conferenceSid;
+        const RecordingSid = req.body.RecordingSid || req.body.recordingSid;
+        const RecordingUrl = req.body.RecordingUrl || req.body.recordingUrl;
+        const RecordingDuration = req.body.RecordingDuration || req.body.recordingDuration || 0;
+        const RecordingStatus = req.body.RecordingStatus || req.body.recordingStatus;
 
-        if (RecordingStatus === 'completed') {
-            const publicAudioUrl = `${RecordingUrl}.mp3`;
-            const redisKey = `call:${CallSid}`;
+        // Use CallSid if available, otherwise fallback to ConferenceSid
+        const effectiveCallId = CallSid || ConferenceSid;
+
+        if (RecordingStatus === 'completed' && effectiveCallId) {
+            const publicAudioUrl = RecordingUrl ? `${RecordingUrl}.mp3` : '';
+            const redisKey = `call:${effectiveCallId}`;
             const existingDataRaw = await redisClient.get(redisKey);
             const callData = existingDataRaw ? JSON.parse(existingDataRaw) : {};
 
             const completeCallRecord = {
                 ...callData,
-                call_id: CallSid,
+                call_id: effectiveCallId,
                 conference_sid: ConferenceSid,
                 recording_sid: RecordingSid,
                 recording_url: publicAudioUrl,
@@ -210,6 +224,46 @@ router.post('/recording-event', async (req, res) => {
 
         return res.status(200).send('<Response/>');
     } catch (error) {
+        console.error('[Recording Event Error]:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// -------------------------------------------------------------------------
+// 7. TWILIO STATUS CALLBACK ROUTE (Handles call completion webhooks)
+// -------------------------------------------------------------------------
+router.post('/status-callback', async (req, res) => {
+    try {
+        const callId = req.body.CallSid || req.body.callSid || req.body.call_id;
+        const callStatus = (req.body.CallStatus || req.body.status || '').toLowerCase();
+        const duration = req.body.CallDuration || req.body.duration || 0;
+        const from = req.body.From || req.body.from;
+
+        if (callId) {
+            const redisKey = `call:${callId}`;
+            const existingDataRaw = await redisClient.get(redisKey);
+            const callData = existingDataRaw ? JSON.parse(existingDataRaw) : {};
+
+            const updatedRecord = {
+                ...callData,
+                call_id: callId,
+                status: callStatus,
+                from: from || callData.callerId,
+                duration_seconds: parseInt(duration, 10),
+                last_updated: new Date().toISOString()
+            };
+
+            await redisClient.setEx(redisKey, 43200, JSON.stringify(updatedRecord));
+
+            if (['completed', 'canceled', 'failed'].includes(callStatus)) {
+                await redisClient.sRem('active_calls', callId);
+                await saveCallToSuiteCRM(updatedRecord);
+            }
+        }
+
+        return res.status(200).send('<Response/>');
+    } catch (error) {
+        console.error('[Status Callback Error]:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });

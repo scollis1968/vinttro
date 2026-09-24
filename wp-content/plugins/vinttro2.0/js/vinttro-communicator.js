@@ -82,6 +82,9 @@ jQuery(document).ready(function($) {
         console.log('🚨 [Socket.io Event] Incoming Call:', payload);
         activeCallPayload = payload;
 
+        // ⚡ Set global tracking variable so dismissal match succeeds
+        window.activeRingingCallId = payload.call_id || payload.callSid;
+
         $('#incoming-caller-id').text(payload.callerId || 'Unknown Caller');
         $('#incoming-call-subtext').text(`Inbound Call Waiting | Room: ${payload.roomId}`);
         $('#vinttro-room-id').val(payload.roomId);
@@ -95,6 +98,7 @@ jQuery(document).ready(function($) {
             if (['completed', 'canceled', 'failed'].includes(data.status)) {
                 $('#vinttro-incoming-call-card').slideUp(200);
                 activeCallPayload = null;
+                window.activeRingingCallId = null;
             }
         }
     });
@@ -103,27 +107,27 @@ jQuery(document).ready(function($) {
     socket.on('dismiss_incoming_call', function(data) {
         console.log('[Communicator] Received dismissal event:', data);
 
-        // If this browser is currently ringing for this specific call_id
-        if (window.activeRingingCallId === data.call_id) {
+        // Check against active call tracking variable
+        if (window.activeRingingCallId === data.call_id || (activeCallPayload && activeCallPayload.callSid === data.call_id)) {
             
-            // 1. Stop ringtone audio
+            // 1. Stop ringtone audio if playing
             if (window.vinttroRingtone) {
                 window.vinttroRingtone.pause();
                 window.vinttroRingtone.currentTime = 0;
             }
 
-            // 2. Hide incoming call modal/alert
-            $('#vinttro-incoming-call-modal').hide();
+            // 2. Hide incoming call card/popup
+            $('#vinttro-incoming-call-card').slideUp(200);
             window.activeRingingCallId = null;
+            activeCallPayload = null;
 
             if (data.reason === 'answered') {
                 console.log(`Call was answered by ${data.answered_by}`);
             } else {
-                console.log('Caller hung up before call was answered.');
+                console.log('Caller hung up or call terminated before answer.');
             }
         }
     });
-
 
     // ==========================================================
     // 4. AGENT INTERACTION HANDLERS (ANSWER & DISCONNECT)
@@ -144,6 +148,8 @@ jQuery(document).ready(function($) {
         }
 
         $('#vinttro-incoming-call-card').slideUp(200);
+        window.activeRingingCallId = null;
+
         $('#rtc-status-message')
             .removeClass('offline info success')
             .addClass('info')
@@ -153,6 +159,7 @@ jQuery(document).ready(function($) {
     $('#vinttro-reject-incoming').on('click', function() {
         $('#vinttro-incoming-call-card').slideUp(200);
         activeCallPayload = null;
+        window.activeRingingCallId = null;
     });
 
     $('#vinttro-rtc-disconnect').on('click', function() {
@@ -165,7 +172,6 @@ jQuery(document).ready(function($) {
             .text('Call ended. Online and ready.');
     });
 
-    // Ringtone generator
     function playRingtone() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();

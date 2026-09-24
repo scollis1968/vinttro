@@ -265,6 +265,16 @@ router.all('/voice-connect', async (req, res) => {
         res.type('text/xml');
         return res.send(twiml.toString());
 
+        // ⚡ Broadcast alert dismissal to all agents
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('dismiss_incoming_call', {
+                call_id: callSid,
+                answered_by: agentId,
+                reason: 'answered'
+            });
+        }
+
     } catch (error) {
         console.error('[Voice Connect Error]:', error);
 
@@ -392,6 +402,15 @@ router.post('/status-callback', async (req, res) => {
                 timestamp: new Date().toISOString()
             });
 
+            // ⚡ Broadcast alert dismissal to all agents
+            const io = req.app.get('io');
+            if (io) {
+                io.emit('dismiss_incoming_call', {
+                    call_id: callSid,
+                    answered_by: agentId,
+                    reason: 'answered'
+                });
+            }
             // If no agent ever answered, mark top-level status accordingly
             const isAnswered = Boolean(callData.first_agent);
             const finalStatus = isAnswered ? 'completed' : 'no-answer';

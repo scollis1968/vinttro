@@ -102,17 +102,24 @@ async function saveCallRecord(callData) {
         ? new Date(callData.timestamp).toISOString().replace('T', ' ').substring(0, 19)
         : new Date().toISOString().replace('T', ' ').substring(0, 19);
 
+    const legsJson = JSON.stringify(callData.legs || [], null, 2);
+
     const attributes = {
         name: `Inbound Call - ${callerNumber}`,
         direction: 'Inbound',
-        status: 'Held', // SuiteCRM standard for completed call
+        status: 'Held',
         date_start: startTime,
         duration_hours: durationHours,
         duration_minutes: durationMinutes,
-        description: `Call SID: ${identifier}\nCaller: ${callerNumber}\nRecording URL: ${callData.recording_url || 'N/A'}\nAgent: ${callData.agent_id || 'System'}`
+        description: `Call SID: ${identifier}\nCaller: ${callerNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}`,
+        
+        // SuiteCRM Custom Fields (Populate these if created in SuiteCRM Studio)
+        first_agent_c: callData.first_agent || '',
+        last_agent_c: callData.last_agent || '',
+        call_legs_json_c: JSON.stringify(callData.legs || [])
     };
 
-    console.log(`[SuiteCRM Sync] Pushing Call ${identifier} to SuiteCRM...`);
+    console.log(`[SuiteCRM Sync] Pushing Call ${identifier} (First Agent: ${callData.first_agent || 'None'}) to SuiteCRM...`);
     const result = await createRecord('Calls', attributes);
     console.log(`✅ [SuiteCRM Sync Success] Call record created with ID: ${result?.data?.id || 'OK'}`);
     return result;

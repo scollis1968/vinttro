@@ -18,7 +18,6 @@ const STUB_AGENTS = [
 ];
 
 // Helper method to push structured call records to SuiteCRM
-// Helper method to push structured call records to SuiteCRM
 async function saveCallToSuiteCRM(callData) {
     try {
         await suitecrmService.saveCallRecord(callData);
@@ -78,16 +77,21 @@ router.get('/active-calls', async (req, res) => {
 // -------------------------------------------------------------------------
 // 3. CENTRAL CALL EVENT INGESTION
 // -------------------------------------------------------------------------
-// Inside routes/communicator.js -> POST /call-event
 router.post('/call-event', async (req, res) => {
     try {
         const io = req.app.get('io');
         const callId = req.body.CallSid || req.body.call_id;
+        const conferenceSid = req.body.ConferenceSid || req.body.conference_sid;
         const newStatus = (req.body.CallStatus || req.body.status || '').toLowerCase();
         const source = req.body.source || (req.body.CallSid ? 'Twilio' : 'Unknown');
         const agentId = req.body.agent_id || req.body.identity || null;
         
         if (!callId || !newStatus) return res.status(400).json({ error: 'Missing call_id or status' });
+
+        // ⚡ 12-Hour Mapping: Save ConferenceSid -> CallSid lookup
+        if (conferenceSid) {
+            await redisClient.setEx(`map:${conferenceSid}`, 43200, callId);
+        }
 
         const redisKey = `call:${callId}`;
         const currentCallDataRaw = await redisClient.get(redisKey);
@@ -145,8 +149,14 @@ router.post('/call-event', async (req, res) => {
 router.post('/inbound-call', async (req, res) => {
     const io = req.app.get('io');
     const callSid = req.body.CallSid;
+    const conferenceSid = req.body.ConferenceSid || req.body.conference_sid;
     const clientCallerId = req.body.From || 'Unknown Caller';
     const roomName = `Room_${callSid}`;
+
+    // ⚡ 12-Hour Mapping: Save ConferenceSid -> CallSid lookup if present
+    if (conferenceSid && callSid) {
+        await redisClient.setEx(`map:${conferenceSid}`, 43200, callSid);
+    }
 
     const twiml = new twilio.twiml.VoiceResponse();
     const dial = twiml.dial();
@@ -182,6 +192,7 @@ router.post('/inbound-call', async (req, res) => {
 router.all('/voice-connect', async (req, res) => {
     try {
         const roomName = req.body.To || req.body.RoomName || req.query.To || 'default-room';
+        const conferenceSid = req.body.ConferenceSid || req.body.conference_sid;
         
         // Twilio WebRTC client passes identity in From as "client:finley.collis@vinttro.co.uk"
         const rawCaller = req.body.From || req.body.Caller || req.query.From || req.body.identity || '';
@@ -191,6 +202,11 @@ router.all('/voice-connect', async (req, res) => {
         const callSid = roomName.startsWith('Room_') ? roomName.replace('Room_', '') : roomName;
 
         if (callSid && callSid !== 'default-room') {
+            // ⚡ 12-Hour Mapping: Save ConferenceSid -> CallSid lookup
+            if (conferenceSid) {
+                await redisClient.setEx(`map:${conferenceSid}`, 43200, callSid);
+            }
+
             const redisKey = `call:${callSid}`;
             const currentCallDataRaw = await redisClient.get(redisKey);
 
@@ -255,44 +271,69 @@ router.all('/voice-connect', async (req, res) => {
 // -------------------------------------------------------------------------
 router.post('/recording-event', async (req, res) => {
     try {
-        const io = req.app.get('io');
-        
-        // Flexible key extraction (Twilio passes uppercase Form fields, Postman might pass JSON)
-        const CallSid = req.body.CallSid || req.body.callSid || req.body.call_id;
-        const ConferenceSid = req.body.ConferenceSid || req.body.conferenceSid;
-        const RecordingSid = req.body.RecordingSid || req.body.recordingSid;
-        const RecordingUrl = req.body.RecordingUrl || req.body.recordingUrl;
-        const RecordingDuration = req.body.RecordingDuration || req.body.recordingDuration || 0;
-        const RecordingStatus = req.body.RecordingStatus || req.body.recordingStatus;
+        const conferenceSid = req.body.ConferenceSid || req.body.conference_sid;
+        const recordingSid  = req.body.RecordingSid || req.body.recording_sid;
+        const recordingUrl  = req.body.RecordingUrl || req.body.recording_url;
+        const duration      = req.body.RecordingDuration || req.body.duration_seconds || 0;
+        const friendlyName  = req.body.FriendlyName || req.body.RoomName || req.body.roomId || '';
 
-        // Use CallSid if available, otherwise fallback to ConferenceSid
-        const effectiveCallId = CallSid || ConferenceSid;
+        // 1. Resolve primary parent CallSid (CA...)
+        let targetCallSid = req.body.CallSid || req.body.call_id;
 
-        if (RecordingStatus === 'completed' && effectiveCallId) {
-            const publicAudioUrl = RecordingUrl ? `${RecordingUrl}.mp3` : '';
-            const redisKey = `call:${effectiveCallId}`;
-            const existingDataRaw = await redisClient.get(redisKey);
-            const callData = existingDataRaw ? JSON.parse(existingDataRaw) : {};
-
-            const completeCallRecord = {
-                ...callData,
-                call_id: effectiveCallId,
-                conference_sid: ConferenceSid,
-                recording_sid: RecordingSid,
-                recording_url: publicAudioUrl,
-                duration_seconds: parseInt(RecordingDuration, 10),
-                recording_completed_at: new Date().toISOString()
-            };
-
-            await redisClient.setEx(redisKey, 2592000, JSON.stringify(completeCallRecord));
-            await saveCallToSuiteCRM(completeCallRecord);
-            io.emit('recording_ready', completeCallRecord);
+        // If Twilio sends RoomName as "Room_CAdb4d790c...", strip "Room_" to get true CallSid
+        if (friendlyName.startsWith('Room_CA')) {
+            targetCallSid = friendlyName.replace('Room_', '');
+        } else if (conferenceSid) {
+            // Check if a ConferenceSid -> CallSid mapping exists in Redis
+            const mappedSid = await redisClient.get(`map:${conferenceSid}`);
+            if (mappedSid) {
+                targetCallSid = mappedSid;
+            }
         }
 
-        return res.status(200).send('<Response/>');
+        if (!targetCallSid) {
+            console.error('🚨 [Recording Event] Could not resolve primary CallSid');
+            return res.status(400).json({ error: 'Missing or unresolvable CallSid' });
+        }
+
+        // ⚡ 12-Hour Mapping: Save mapping once resolved for any future event lookups
+        if (conferenceSid && targetCallSid) {
+            await redisClient.setEx(`map:${conferenceSid}`, 43200, targetCallSid);
+        }
+
+        console.log(`[Recording Event] Resolved Recording for Primary CallSid: ${targetCallSid}`);
+
+        // 2. Fetch existing master call record from Redis (CA...)
+        const redisKey = `call:${targetCallSid}`;
+        const currentCallRaw = await redisClient.get(redisKey);
+
+        let callData = {};
+        if (currentCallRaw) {
+            callData = JSON.parse(currentCallRaw);
+        } else {
+            console.warn(`⚠️ [Recording Event] No existing record found for ${targetCallSid}. Creating fallback.`);
+        }
+
+        // 3. Merge recording metadata into master object
+        callData.call_id = targetCallSid;
+        if (conferenceSid) callData.conference_sid = conferenceSid;
+        if (recordingSid)  callData.recording_sid  = recordingSid;
+        if (recordingUrl)  callData.recording_url  = recordingUrl;
+        
+        callData.duration_seconds = parseInt(duration, 10) || callData.duration_seconds || 0;
+        callData.recording_completed_at = new Date().toISOString();
+
+        // 4. Save unified object back to Redis
+        await redisClient.setEx(redisKey, 43200, JSON.stringify(callData));
+
+        // 5. Write complete, unified call record to SuiteCRM
+        await saveCallToSuiteCRM(callData);
+
+        return res.status(200).json({ success: true, call_id: targetCallSid });
+
     } catch (error) {
-        console.error('[Recording Event Error]:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        console.error('🚨 [Recording Event Error]:', error);
+        return res.status(500).json({ error: 'Failed to process recording event' });
     }
 });
 

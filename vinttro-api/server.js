@@ -72,6 +72,6 @@ app.use('/api/tasks', taskRoutes);
 const PORT = process.env.PORT || 3000;
 
 // Listen on HTTP Server wrapper (not app.listen)
-server.listen(PORT, () => {
-    console.log(`Vinttro API Microservice (HTTP + Socket.io) listening on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Vinttro API Microservice listening on port ${PORT}`);
 });

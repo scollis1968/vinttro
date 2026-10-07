@@ -628,3 +628,20 @@ exports.handleAcceptProbe = async (req, res) => {
     res.type('text/xml');
     res.send(twiml.toString());
 };
+exports.acceptCallWebRTC = async (req, res) => {
+    try {
+        const { callId, agentId } = req.body;
+
+        const claimResult = await deliveryPlanEngine.claimAndCleanupCall(
+            callId,
+            agentId || 'WebRTC Agent',
+            'webrtc',
+            req.app
+        );
+
+        return res.json(claimResult);
+    } catch (error) {
+        console.error('[WebRTC Accept Error]:', error);
+        return res.status(500).json({ error: 'Failed to process WebRTC call claim' });
+    }
+};

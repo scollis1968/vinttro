@@ -26,6 +26,6 @@ router.all('/voice-connect', controller.handleVoiceConnect);
 router.post('/recording-event', controller.handleRecordingEvent);
 router.post('/status-callback', controller.handleStatusCallback);
 router.post('/accept-probe', controller.handleAcceptProbe);
-router.post('/accept-webrtc', communicatorController.acceptCallWebRTC);
+router.post('/accept-webrtc', controller.acceptCallWebRTC);
 
 module.exports = router;

@@ -628,45 +628,20 @@ exports.handleAcceptProbe = async (req, res) => {
     res.type('text/xml');
     res.send(twiml.toString());
 };
-// wp-content/plugins/vinttro2.0/js/vinttro-communicator.js
-
-$('#vinttro-accept-incoming').on('click', async function() {
-    if (!activeCallPayload) return;
-
-    const callId = activeCallPayload.call_id || activeCallPayload.callSid;
-    const targetRoomName = activeCallPayload.roomId;
-    console.log('[Accept] Claiming call and dialing into Conference Room:', targetRoomName);
-
-    // 1. Notify Node API to claim call (cancels PSTN probes & dismisses other browser popups)
+exports.acceptCallWebRTC = async (req, res) => {
     try {
-        await fetch(`${NODE_URL}/api/communicator/accept-webrtc`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                callId: callId,
-                agentId: AGENT_ID
-            })
-        });
-    } catch (err) {
-        console.error('⚠️ Failed to report call claim to Node API:', err.message);
+        const { callId, agentId } = req.body;
+
+        const claimResult = await deliveryPlanEngine.claimAndCleanupCall(
+            callId,
+            agentId || 'WebRTC Agent',
+            'webrtc',
+            req.app
+        );
+
+        return res.json(claimResult);
+    } catch (error) {
+        console.error('[WebRTC Accept Error]:', error);
+        return res.status(500).json({ error: 'Failed to process WebRTC call claim' });
     }
-
-    // 2. Connect Twilio WebRTC audio
-    if (window.vinttroTwilioDevice) {
-        window.vinttroTwilioDevice.connect({
-            params: { To: targetRoomName }
-        });
-        console.log('✅ Agent WebRTC audio connecting to conference...');
-    } else {
-        console.error('❌ Twilio Voice Device is not initialized!');
-    }
-
-    // 3. Update local UI
-    $('#vinttro-incoming-call-card').slideUp(200);
-    window.activeRingingCallId = null;
-
-    $('#rtc-status-message')
-        .removeClass('offline info success')
-        .addClass('info')
-        .text(`Active Call in Room: ${targetRoomName}`);
-});
+};

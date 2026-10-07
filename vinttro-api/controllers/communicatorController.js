@@ -591,20 +591,36 @@ exports.handleStatusCallback = async (req, res) => {
 exports.handleAcceptProbe = async (req, res) => {
     const digits = req.body.Digits;
     const roomId = req.query.roomId;
+    const callId = req.query.callId;
+    const agentName = req.query.agentName || 'PSTN Agent';
+    const currentProbeSid = req.body.CallSid; // The Twilio CallSid of this specific probe call
 
     const twiml = new twilio.twiml.VoiceResponse();
 
-    if (digits === '1' && roomId) {
-        console.log(`✅ Agent pressed 1! Bridging PSTN probe call into room: ${roomId}`);
-        
-        // Connect agent directly into caller's conference room
-        const dial = twiml.dial();
-        dial.conference({
-            startConferenceOnEnter: true,
-            endConferenceOnExit: true
-        }, roomId);
+    if (digits === '1' && roomId && callId) {
+        // Attempt atomic claim
+        const claimResult = await deliveryPlanEngine.claimAndCleanupCall(
+            callId, 
+            agentName, 
+            'pstn', 
+            req.app, 
+            currentProbeSid
+        );
+
+        if (claimResult.success) {
+            console.log(`✅ PSTN Call claimed by ${agentName}. Bridging into ${roomId}...`);
+            const dial = twiml.dial();
+            dial.conference({
+                startConferenceOnEnter: true,
+                endConferenceOnExit: true
+            }, roomId);
+        } else {
+            console.log(`❌ PSTN Press 1 rejected: ${claimResult.reason}`);
+            twiml.say('Sorry, this call has already been answered by another agent.');
+            twiml.hangup();
+        }
     } else {
-        console.log('❌ Agent declined or entered invalid key.');
+        console.log('❌ Agent declined PSTN probe or entered invalid key.');
         twiml.say('Call declined.');
         twiml.hangup();
     }
@@ -612,3 +628,45 @@ exports.handleAcceptProbe = async (req, res) => {
     res.type('text/xml');
     res.send(twiml.toString());
 };
+// wp-content/plugins/vinttro2.0/js/vinttro-communicator.js
+
+$('#vinttro-accept-incoming').on('click', async function() {
+    if (!activeCallPayload) return;
+
+    const callId = activeCallPayload.call_id || activeCallPayload.callSid;
+    const targetRoomName = activeCallPayload.roomId;
+    console.log('[Accept] Claiming call and dialing into Conference Room:', targetRoomName);
+
+    // 1. Notify Node API to claim call (cancels PSTN probes & dismisses other browser popups)
+    try {
+        await fetch(`${NODE_URL}/api/communicator/accept-webrtc`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                callId: callId,
+                agentId: AGENT_ID
+            })
+        });
+    } catch (err) {
+        console.error('⚠️ Failed to report call claim to Node API:', err.message);
+    }
+
+    // 2. Connect Twilio WebRTC audio
+    if (window.vinttroTwilioDevice) {
+        window.vinttroTwilioDevice.connect({
+            params: { To: targetRoomName }
+        });
+        console.log('✅ Agent WebRTC audio connecting to conference...');
+    } else {
+        console.error('❌ Twilio Voice Device is not initialized!');
+    }
+
+    // 3. Update local UI
+    $('#vinttro-incoming-call-card').slideUp(200);
+    window.activeRingingCallId = null;
+
+    $('#rtc-status-message')
+        .removeClass('offline info success')
+        .addClass('info')
+        .text(`Active Call in Room: ${targetRoomName}`);
+});

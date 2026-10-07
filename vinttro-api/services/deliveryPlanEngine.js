@@ -85,13 +85,11 @@ const actionHandlers = {
                 // --- BRANCH B: PSTN Probe Call (Outbound Phone Call) ---
                 else if (targetType === 'pstn') {
                     const formattedTarget = normalizePhoneNumber(target);
-                    console.log(`📱 [PSTN Probe] Preparing call to: ${member.name} (${formattedTarget})`);
-                    console.log(`   └─ From Number: ${twilioFromNumber}`);
-                    console.log(`   └─ Twilio Client Ready: ${!!twilioClient}`);
+                    console.log(`📱 Initiating PSTN Probe Call to: ${member.name} (${formattedTarget})`);
 
                     if (twilioClient && twilioFromNumber) {
                         try {
-                            const callbackUrl = `${process.env.PUBLIC_API_URL || 'https://services.uat.vinttro.co.uk'}/api/communicator/accept-probe?roomId=${encodeURIComponent(callPayload.roomId)}&clientName=${encodeURIComponent(clientName)}`;
+                            const callbackUrl = `${process.env.PUBLIC_API_URL || 'https://services.uat.vinttro.co.uk'}/api/communicator/accept-probe?roomId=${encodeURIComponent(callPayload.roomId)}&callId=${encodeURIComponent(callPayload.call_id)}&agentName=${encodeURIComponent(member.name)}`;
 
                             const twiml = new twilio.twiml.VoiceResponse();
                             const gather = twiml.gather({
@@ -103,21 +101,21 @@ const actionHandlers = {
                             gather.say(`This is an inbound call from ${clientName}. Press 1 to accept.`);
                             twiml.say('Call acceptance timed out. Goodbye.');
 
-                            console.log(`🚀 [Twilio API] Sending calls.create request for ${formattedTarget}...`);
-
-                            const call = await twilioClient.calls.create({
+                            const probeCall = await twilioClient.calls.create({
                                 twiml: twiml.toString(),
                                 to: formattedTarget,
                                 from: twilioFromNumber
                             });
 
-                            console.log(`✅ [Twilio API Success] Call queued in Twilio! CallSid: ${call.sid}`);
+                            // Store the Probe Call SID in Redis set for cleanup later
+                            await redisClient.sAdd(`call:${callPayload.call_id}:probes`, probeCall.sid);
+                            await redisClient.expire(`call:${callPayload.call_id}:probes`, 3600);
+
+                            console.log(`✅ [PSTN Probe Queued] Sid: ${probeCall.sid}`);
 
                         } catch (err) {
-                            console.error(`❌ [Twilio API Error] Code: ${err.code} | Message: ${err.message}`);
+                            console.error(`❌ PSTN Probe call failed to ${formattedTarget}:`, err.message);
                         }
-                    } else {
-                        console.warn('⚠️ Twilio client or TWILIO_PHONE_NUMBER missing; skipping PSTN probe.');
                     }
                 }
             }
@@ -180,7 +178,72 @@ async function processDeliveryPlan(callPayload, routeRecord, reqApp) {
     return stepResults;
 }
 
+
+/**
+ * Atomically claims an inbound call, cancels remaining PSTN probes, and notifies WebRTC clients.
+ */
+async function claimAndCleanupCall(callId, answeredByAgent, channel, reqApp, currentProbeSid = null) {
+    const redisKey = `call:${callId}`;
+    const rawCallData = await redisClient.get(redisKey);
+
+    if (!rawCallData) {
+        return { success: false, reason: 'call_not_found' };
+    }
+
+    const callPayload = JSON.parse(rawCallData);
+
+    // 1. Atomic Check: Has another agent already claimed this call?
+    if (callPayload.status === 'answered' || callPayload.status === 'connected') {
+        console.log(`⚠️ Call ${callId} was already claimed by ${callPayload.answered_by}`);
+        return { success: false, reason: 'already_answered', answeredBy: callPayload.answered_by };
+    }
+
+    // 2. Update Call State in Redis
+    callPayload.status = 'answered';
+    callPayload.answered_by = answeredByAgent;
+    callPayload.answered_via = channel; // 'webrtc' or 'pstn'
+    callPayload.answered_at = new Date().toISOString();
+
+    await redisClient.setEx(redisKey, 43200, JSON.stringify(callPayload));
+
+    // 3. Cancel outstanding Twilio PSTN Probes
+    const probesKey = `call:${callId}:probes`;
+    const probeSids = await redisClient.sMembers(probesKey);
+
+    if (probeSids && probeSids.length > 0 && twilioClient) {
+        for (const probeSid of probeSids) {
+            // Don't cancel the active PSTN probe call that the agent is currently answering on
+            if (probeSid === currentProbeSid) continue;
+
+            try {
+                console.log(`🛑 Canceling pending PSTN probe call: ${probeSid}`);
+                // Updating status to 'completed' or 'canceled' hangs up the ringing phone
+                await twilioClient.calls(probeSid).update({ status: 'completed' });
+            } catch (err) {
+                // Call may have already ended or been missed
+                console.log(`ℹ️ Probe ${probeSid} teardown notice: ${err.message}`);
+            }
+        }
+        await redisClient.del(probesKey);
+    }
+
+    // 4. Broadcast 'call_answered' event to all WebRTC clients to clear UI notifications
+    const io = reqApp.get('io');
+    if (io) {
+        console.log(`📢 Broadcasting 'dismiss_incoming_call' for call: ${callId}`);
+        io.emit('dismiss_incoming_call', {
+            call_id: callId,
+            answered_by: answeredByAgent,
+            channel: channel,
+            reason: 'answered'
+        });
+    }
+
+    return { success: true, callPayload };
+}
+
 module.exports = {
     getOuState,
-    processDeliveryPlan
+    processDeliveryPlan,
+    claimAndCleanupCall
 };

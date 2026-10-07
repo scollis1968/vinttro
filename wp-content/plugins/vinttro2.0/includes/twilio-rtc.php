@@ -1,8 +1,8 @@
 <?php
 
-use WP_REST_Request;
-use WP_REST_Response;
-use WP_Error;
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
 // 🔍 TEMPORARY DIAGNOSTIC WIRETAP: Log raw network data for incoming calls
 add_action( 'init', 'vinttro_spy_on_inbound_headers', 1 );

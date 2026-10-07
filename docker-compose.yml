@@ -1,0 +1,80 @@
+services:
+  # --- Shared Infrastructure ---
+  db:
+    image: mariadb:10.6
+    container_name: vinttro_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: suitecrm
+      MYSQL_USER: vinttro_user
+      MYSQL_PASSWORD: vinttro_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    container_name: vinttro_redis
+    restart: always
+    ports:
+      - "6381:6379"
+
+  # --- Vinttro API (Node.js Microservice) ---
+  vinttro-api:
+    build:
+      context: ./vinttro-api
+      dockerfile: Dockerfile
+    container_name: vinttro_api
+    restart: always
+    ports:
+      - "3005:3005"
+    env_file:
+      - ./vinttro-api/.env.local
+    environment:
+      - PORT=3005
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=development
+    volumes:
+      - ./vinttro-api:/app
+      - /app/node_modules
+    depends_on:
+      - redis
+
+  # --- SuiteCRM 8 ---
+  suitecrm:
+    image: chialab/php-dev:8.1-apache
+    container_name: suitecrm_web
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - APACHE_DOCUMENT_ROOT=/var/www/html/public
+    volumes:
+      - ./suitecrm:/var/www/html
+    depends_on:
+      - db
+      - vinttro-api
+
+  # --- WordPress ---
+  wordpress:
+    image: wordpress:6-apache
+    container_name: wordpress_web
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: vinttro_user
+      WORDPRESS_DB_PASSWORD: vinttro_password
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - ./wp-content/plugins/vinttro2.0:/var/www/html/wp-content/plugins/vinttro2.0
+      - ./wp-content/themes/vinttro_child_theme:/var/www/html/wp-content/themes/vinttro_child_theme
+    depends_on:
+      - db
+
+volumes:
+  db_data:

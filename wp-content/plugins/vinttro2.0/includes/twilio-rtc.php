@@ -244,10 +244,22 @@ function vinttro_enqueue_communicator_socket_assets() {
         true 
     );
 
-    // 4. Inject Localized Configuration Object
+    // 4. Determine Node API URL dynamically based on environment
+    $node_api_url = 'https://services.uat.vinttro.co.uk';
+    $http_host    = $_SERVER['HTTP_HOST'] ?? '';
+
+    if ( defined( 'VINTTRO_NODE_API_URL' ) ) {
+        // Allows optional explicit override in wp-config.php if needed
+        $node_api_url = VINTTRO_NODE_API_URL;
+    } elseif ( strpos( $http_host, 'localhost' ) !== false || strpos( $http_host, '127.0.0.1' ) !== false ) {
+        // Automatically switch to local API container on port 3005
+        $node_api_url = 'http://localhost:3005';
+    }
+
+    // 5. Inject Localized Configuration Object
     $current_user = wp_get_current_user();
     wp_localize_script( 'vinttro-communicator-js', 'vinttroConfig', array(
-        'nodeApiUrl' => 'https://services.uat.vinttro.co.uk',
+        'nodeApiUrl' => $node_api_url,
         'agentId'    => strtolower( trim( $current_user->user_email ) ),
         'agentName'  => $current_user->display_name ? $current_user->display_name : $current_user->user_login,
         'restNonce'  => wp_create_nonce( 'wp_rest' )

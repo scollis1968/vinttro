@@ -73,5 +73,5 @@ const PORT = process.env.PORT || 3000;
 
 // Listen on HTTP Server wrapper (not app.listen)
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Vinttro API Microservice listening on port ${PORT}`);
+    console.log(`Vinttro API :) Microservice listening on port ${PORT}`);
 });

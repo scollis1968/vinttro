@@ -4,28 +4,25 @@ const redisClient = require('./redis');
 /**
  * Perform hierarchical call route lookup:
  * 1. CLI + DDI
- * 2. CLI + *
- * 3. * + DDI
+ * 2. DDI only
+ * 3. CLI only
  */
 async function findRouteRecord(cli, ddi) {
-    const rawCli = cli ? cli.trim() : '*';
-    const rawDdi = ddi ? ddi.trim() : '*';
-
-    const searchKeys = [
-        `route:${rawCli}:${rawDdi}`,
-        `route:${rawCli}:*`,
-        `route:*:${rawDdi}`
+    // Try exact CLI + DDI match first, then DDI, then CLI
+    const keysToTry = [
+        `route:cli:${cli}:ddi:${ddi}`,
+        `route:ddi:${ddi}`,
+        `route:cli:${cli}`
     ];
 
-    for (const key of searchKeys) {
-        try {
-            const rawRecord = await redisClient.get(key);
-            if (rawRecord) {
-                const parsed = JSON.parse(rawRecord);
-                return { matched_key: key, ...parsed };
-            }
-        } catch (err) {
-            console.error(`[Redis Route Lookup Error] Key ${key}:`, err.message);
+    for (const key of keysToTry) {
+        const rawData = await redisClient.get(key);
+        if (rawData) {
+            const parsed = JSON.parse(rawData);
+            return {
+                matched_key: key,
+                ...parsed
+            };
         }
     }
 
@@ -35,25 +32,40 @@ async function findRouteRecord(cli, ddi) {
 /**
  * Save or update a call routing record in Redis
  */
-async function saveRouteRecord(data) {
-    const { cli, ddi, client_name, client_id, ou, delivery_plan, screen_pop } = data;
+async function saveRouteRecord(payload) {
+    const { 
+        cli = '', 
+        ddi = '', 
+        ou = '', 
+        screen_pop = {}, 
+        delivery_plan = {} 
+    } = payload;
 
-    const normalizedCli = cli ? cli.trim() : '*';
-    const normalizedDdi = ddi ? ddi.trim() : '*';
-    const redisKey = `route:${normalizedCli}:${normalizedDdi}`;
+    // 1. Determine key precedence (DDI + CLI match, or DDI only, or CLI only)
+    let redisKey = '';
+    if (cli && ddi) {
+        redisKey = `route:cli:${cli}:ddi:${ddi}`;
+    } else if (ddi) {
+        redisKey = `route:ddi:${ddi}`;
+    } else if (cli) {
+        redisKey = `route:cli:${cli}`;
+    } else {
+        throw new Error('Either CLI or DDI is required to save a route key');
+    }
 
+    // 2. Build full payload
     const routeData = {
-        cli: normalizedCli,
-        ddi: normalizedDdi,
-        client_name: client_name || null,
-        client_id: client_id || null,
-        ou: ou || null,
-        delivery_plan: delivery_plan || null,
-        screen_pop: screen_pop || {},
+        cli,
+        ddi,
+        ou,
+        screen_pop,
+        delivery_plan,
         updated_at: new Date().toISOString()
     };
 
+    // 3. Save as JSON string in Redis (no TTL so routes persist)
     await redisClient.set(redisKey, JSON.stringify(routeData));
+
     return { redisKey, routeData };
 }
 
@@ -70,7 +82,7 @@ async function deleteRouteRecord(cli, ddi) {
 }
 
 module.exports = {
-    findRouteRecord,
     saveRouteRecord,
+    findRouteRecord,
     deleteRouteRecord
 };

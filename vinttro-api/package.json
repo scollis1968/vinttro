@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test-deploy.js"
+    "test": "node test-deploy.js",
+    "dev": "node server.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

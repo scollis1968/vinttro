@@ -15,6 +15,7 @@ async function getOuState(ouName) {
 
 // vinttro-api/services/deliveryPlanEngine.js
 const twilio = require('twilio');
+const redisClient = require('./redis');
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const apiKeySid = process.env.TWILIO_API_KEY_SID;

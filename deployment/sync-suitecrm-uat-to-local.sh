@@ -1,4 +1,5 @@
 #!/bin/bash
+# test
 # sync-suitecrm-uat-to-local.sh
 # Pulls full SuiteCRM 8 codebase and database (via Cloud SQL proxy on port 3330) from UAT into local Docker
 

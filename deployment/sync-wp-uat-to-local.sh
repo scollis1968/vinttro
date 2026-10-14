@@ -1,4 +1,5 @@
 #!/bin/bash
+# test 
 # sync-wp-uat-to-local.sh
 # Pulls WordPress database, assets, and optional plugins/themes/users from UAT into local Docker
 
@@ -32,7 +33,7 @@ UAT_USER="webhook"
 UAT_PATH="/var/www/wordpress"
 UAT_URL="https://uat.vinttro.co.uk"
 
-LOCAL_URL="http://localhost:8081"
+LOCAL_URL="http://localhost:8083"
 SSH_KEY="$HOME/.ssh/id_ed25519"
 
 WP_CONTAINER="wordpress_web"
@@ -105,7 +106,7 @@ rm -rf /tmp/wp-uploads-temp
 # --- 5. SEARCH & REPLACE URLS ---
 echo "🔍 Running Search and Replace..."
 docker exec -i -u www-data $WP_CONTAINER wp search-replace "https://uat.vinttro.co.uk" "$LOCAL_URL" --all-tables --path=/var/www/html
-docker exec -i -u www-data $WP_CONTAINER wp search-replace "uat.vinttro.co.uk" "localhost:8081" --all-tables --path=/var/www/html
+docker exec -i -u www-data $WP_CONTAINER wp search-replace "uat.vinttro.co.uk" "localhost:8083" --all-tables --path=/var/www/html
 docker exec -i -u www-data $WP_CONTAINER wp search-replace ".uat@" "@" --all-tables --path=/var/www/html
 
 echo "⚙️ Updating siteurl and home options..."

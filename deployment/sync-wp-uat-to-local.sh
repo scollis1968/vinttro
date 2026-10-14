@@ -60,9 +60,9 @@ docker exec -u 0 -i $WP_CONTAINER bash -c "
 
 # --- 2. SYNC PLUGINS & THEMES FIRST (IF REQUESTED) ---
 if [ "$INCLUDE_PLUGINS" = true ]; then
-  echo "🔌 Syncing plugins directory from UAT..."
+  echo "🔌 Syncing plugins directory from UAT (excluding local custom plugin)..."
   mkdir -p /tmp/wp-plugins-temp
-  rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_HOST:$UAT_PATH/wp-content/plugins/ /tmp/wp-plugins-temp/
+  rsync -avz --exclude='vinttro2.0' -e "ssh $SSH_OPTS" $UAT_USER@$UAT_HOST:$UAT_PATH/wp-content/plugins/ /tmp/wp-plugins-temp/
 
   echo "📦 Copying plugins into container..."
   docker exec -u 0 -i $WP_CONTAINER mkdir -p /var/www/html/wp-content/plugins
@@ -70,9 +70,9 @@ if [ "$INCLUDE_PLUGINS" = true ]; then
   docker exec -u 0 -i $WP_CONTAINER chown -R www-data:www-data /var/www/html/wp-content/plugins
   rm -rf /tmp/wp-plugins-temp
 
-  echo "🎨 Syncing themes directory from UAT..."
+  echo "🎨 Syncing themes directory from UAT (excluding local custom theme)..."
   mkdir -p /tmp/wp-themes-temp
-  rsync -avz -e "ssh $SSH_OPTS" $UAT_USER@$UAT_HOST:$UAT_PATH/wp-content/themes/ /tmp/wp-themes-temp/
+  rsync -avz --exclude='vinttro_child_theme' -e "ssh $SSH_OPTS" $UAT_USER@$UAT_HOST:$UAT_PATH/wp-content/themes/ /tmp/wp-themes-temp/
 
   echo "📦 Copying themes into container..."
   docker exec -u 0 -i $WP_CONTAINER mkdir -p /var/www/html/wp-content/themes
@@ -88,7 +88,8 @@ ssh $SSH_OPTS $UAT_USER@$UAT_HOST "wp db export --path=$UAT_PATH $EXCLUDE_TABLES
 echo "🚚 Transferring SQL dump to local machine..."
 scp $SSH_OPTS $UAT_USER@$UAT_HOST:/tmp/uat_wp_local_dump.sql /tmp/uat_wp_local_dump.sql
 
-echo "📂 Importing SQL dump into local MariaDB container..."
+echo "📂 Ensuring database exists and importing SQL dump into local MariaDB container..."
+docker exec -i $DB_CONTAINER mysql -uroot -proot_password -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
 docker exec -i $DB_CONTAINER mysql -uroot -proot_password $DB_NAME < /tmp/uat_wp_local_dump.sql
 
 # --- 4. SYNC UPLOADS MEDIA DIRECTORY ---
@@ -128,7 +129,8 @@ docker exec -i -u www-data $WP_CONTAINER wp rewrite flush --path=/var/www/html
 docker exec -i vinttro_redis redis-cli -n 0 flushdb > /dev/null 2>&1
 
 echo "🔒 Setting permissions..."
-docker exec -u 0 -i $WP_CONTAINER chown -R www-data:www-data /var/www/html/wp-content
+#docker exec -u 0 -i $WP_CONTAINER chown -R www-data:www-data /var/www/html/wp-content
+docker exec -u 0 -i $WP_CONTAINER chown -R www-data:www-data /var/www/html/wp-content/uploads
 
 # --- 8.1 Force password protection to 0
 docker exec -i -u www-data $WP_CONTAINER wp option update password_protected_status 0 --path=/var/www/html

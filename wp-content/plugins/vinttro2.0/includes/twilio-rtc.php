@@ -235,12 +235,16 @@ function vinttro_enqueue_communicator_socket_assets() {
         true 
     );
 
+    // Dynamic file versioning based on last modified timestamp
+    $js_file_path = dirname( __DIR__ ) . '/js/vinttro-communicator.js';
+    $js_version   = file_exists( $js_file_path ) ? filemtime( $js_file_path ) : '2.0.1';
+
     // 3. Enqueue Unified Vinttro Communicator JS
     wp_enqueue_script( 
         'vinttro-communicator-js', 
         plugins_url( '../js/vinttro-communicator.js', __FILE__ ), 
         array('jquery', 'twilio-voice-sdk', 'socket-io-client'), 
-        '2.0.0', 
+        $js_version, 
         true 
     );
 
@@ -249,10 +253,8 @@ function vinttro_enqueue_communicator_socket_assets() {
     $http_host    = $_SERVER['HTTP_HOST'] ?? '';
 
     if ( defined( 'VINTTRO_NODE_API_URL' ) ) {
-        // Allows optional explicit override in wp-config.php if needed
         $node_api_url = VINTTRO_NODE_API_URL;
     } elseif ( strpos( $http_host, 'localhost' ) !== false || strpos( $http_host, '127.0.0.1' ) !== false ) {
-        // Automatically switch to local API container on port 3005
         $node_api_url = 'http://localhost:3005';
     }
 

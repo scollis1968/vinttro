@@ -222,7 +222,7 @@ function vinttro_enqueue_communicator_socket_assets() {
         'twilio-voice-sdk', 
         'https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.11.0/dist/twilio.min.js', 
         array(), 
-        '2.11.0', 
+        '2.18.1', 
         false 
     );
 

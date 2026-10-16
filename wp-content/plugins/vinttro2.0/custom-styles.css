@@ -3,9 +3,11 @@
 /* Container for the image, usually the custom-upload-area */
 
 /* @import url('auto-listings.css'); */
-@import url('membership.css');
-@import url('dialler.css');
-@import url('communicator.css');
+@import url('css/membership.css');
+@import url('css/dialler.css');
+@import url('css/communicator.css');
+@import url('css/visp-header-cti.css');
+
 
 
 /* The actual uploaded preview image */

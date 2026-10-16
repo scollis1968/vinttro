@@ -130,3 +130,60 @@ module.exports = {
     createRecord,
     saveCallRecord
 };
+
+/**
+ * Fetch a paginated batch of Contacts from SuiteCRM V8 API
+ */
+async function fetchContactsBatch(pageNumber = 1, pageSize = 500) {
+    const token = await getAccessToken();
+    const apiUrl = `${SUITECRM_URL}/V8/module/Contacts?page[size]=${pageSize}&page[number]=${pageNumber}`;
+
+    const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+        }
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`SuiteCRM Contacts fetch failed (${response.status}): ${errText}`);
+    }
+
+    const data = await response.json();
+    return {
+        records: data.data || [],
+        totalPages: data.meta?.['total-pages'] || 1
+    };
+}
+
+/**
+ * Iterates through all pages to retrieve all contacts from SuiteCRM
+ */
+async function getAllContacts() {
+    let currentPage = 1;
+    let totalPages = 1;
+    let allContacts = [];
+
+    console.log('[SuiteCRM Sync] Starting Contacts extraction...');
+
+    do {
+        const { records, totalPages: pages } = await fetchContactsBatch(currentPage, 500);
+        totalPages = pages;
+        allContacts = allContacts.concat(records);
+        console.log(`[SuiteCRM Sync] Fetched page ${currentPage} of ${totalPages} (${records.length} contacts)`);
+        currentPage++;
+    } while (currentPage <= totalPages);
+
+    console.log(`✅ [SuiteCRM Sync] Total Contacts retrieved: ${allContacts.length}`);
+    return allContacts;
+}
+
+module.exports = {
+    getAccessToken,
+    createRecord,
+    saveCallRecord,
+    fetchContactsBatch,
+    getAllContacts
+};

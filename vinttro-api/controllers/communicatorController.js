@@ -345,6 +345,7 @@ exports.handleInboundCall = async (req, res) => {
         };
 
         // Build the call payload
+
         const callPayload = {
             call_id: callSid,
             callSid: callSid,
@@ -366,6 +367,9 @@ exports.handleInboundCall = async (req, res) => {
             // Client / Screen Pop details
             client_name: clientData?.client_name || routeRecord?.client_name || null,
             client_id: clientData?.client_id || routeRecord?.client_id || null,
+            account_name: clientData?.account_name || null,
+            contact_id: clientData?.contact_id || null,
+            client_matches: clientData?.matches || [], // <-- ADD THIS LINE
             crm_url: clientData?.crm_url || null,
             account_tier: clientData?.account_tier || null,
             active_leads: clientData?.active_leads || [],
@@ -643,5 +647,43 @@ exports.acceptCallWebRTC = async (req, res) => {
     } catch (error) {
         console.error('[WebRTC Accept Error]:', error);
         return res.status(500).json({ error: 'Failed to process WebRTC call claim' });
+    }
+};
+// Add to exports in communicatorController.js
+
+exports.syncSuiteCRMClients = async (req, res) => {
+    try {
+        // Trigger background sync or wait for result
+        const result = await clientCacheService.syncClientsFromSuiteCRM();
+        return res.status(200).json({ success: true, ...result });
+    } catch (error) {
+        console.error('[SuiteCRM Client Sync Controller Error]:', error);
+        return res.status(500).json({ error: 'Failed to sync clients from SuiteCRM', details: error.message });
+    }
+};
+// Add to exports in communicatorController.js
+
+exports.updateCallContact = async (req, res) => {
+    try {
+        const { callId, contactId, clientId, contactName, accountName } = req.body;
+        if (!callId) return res.status(400).json({ error: 'Missing callId' });
+
+        const redisKey = `call:${callId}`;
+        const currentCallDataRaw = await redisClient.get(redisKey);
+
+        if (currentCallDataRaw) {
+            let currentCall = JSON.parse(currentCallDataRaw);
+            currentCall.contact_id = contactId || null;
+            currentCall.client_id = clientId || null;
+            currentCall.client_name = contactName || currentCall.client_name;
+            currentCall.account_name = accountName || currentCall.account_name;
+
+            await redisClient.setEx(redisKey, 43200, JSON.stringify(currentCall));
+        }
+
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('[Update Call Contact Error]:', error);
+        return res.status(500).json({ error: 'Failed to update call contact' });
     }
 };

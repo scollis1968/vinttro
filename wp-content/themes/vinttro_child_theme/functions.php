@@ -512,3 +512,16 @@ function vinttro_render_account_avatar_menu() {
 }
 add_action( 'wp_footer', 'vinttro_render_account_avatar_menu' );
 
+add_filter( 'wpcf7_spam', function( $spam ) {
+    // Check if running on localhost or in development mode
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    $is_dev = ( function_exists( 'wp_get_environment_type' ) && wp_get_environment_type() === 'development' )
+              || str_contains( $host, 'localhost' )
+              || str_contains( $host, '127.0.0.1' );
+
+    if ( $is_dev ) {
+        return false; // Force 'not spam', overriding reCAPTCHA, WP Armour, and Akismet
+    }
+
+    return $spam; // Preserves full spam protection on UAT and Production
+}, 999 );

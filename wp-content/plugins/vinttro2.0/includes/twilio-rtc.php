@@ -267,3 +267,7 @@ function vinttro_enqueue_communicator_socket_assets() {
         'restNonce'  => wp_create_nonce( 'wp_rest' )
     ));
 }
+add_action( 'send_headers', 'vinttro_allow_unload_permission_policy' );
+function vinttro_allow_unload_permission_policy() {
+    header( 'Permissions-Policy: unload=*' );
+}

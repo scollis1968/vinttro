@@ -119,9 +119,10 @@ function vinttro_render_acturis_import_page() {
             <div class="upload-options">
                 <label for="batch-size-select">Batch Size (Rows per Request):</label>
                 <select id="batch-size-select">
-                    <option value="250">250 records</option>
-                    <option value="500" selected>500 records (Recommended)</option>
-                    <option value="1000">1,000 records</option>
+                    <option value="25">25 records (Ultra-safe)</option>
+                    <option value="50" selected>50 records (Recommended for Remote UAT)</option>
+                    <option value="100">100 records</option>
+                    <option value="250">250 records (Local dev only)</option>
                 </select>
                 <button type="button" class="button button-primary button-hero" id="btn-start-import" disabled>
                     Start Processing File

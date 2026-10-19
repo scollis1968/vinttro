@@ -19,6 +19,8 @@ require_once 'includes/membership-functions.php';
 require_once 'includes/visp-cover-functions.php';
 require_once 'includes/twilio-rtc.php';
 require_once 'includes/call-controller-functions.php';
+require_once 'includes/visp-header-cti.php';
+require_once 'includes/visp-admin-functions.php';
 
 
 function my_plugin_load_styles() {

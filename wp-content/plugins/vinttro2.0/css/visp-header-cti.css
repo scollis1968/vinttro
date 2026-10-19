@@ -1,0 +1,280 @@
+/* Standalone CTI Header Bar on /visp pages */
+.visp-cti-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #aaabaf;
+    color: #f8fafc;
+    padding: 6px 16px;
+    border-bottom: 1px solid #999da4;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    width: 100%;
+    box-sizing: border-box;
+    z-index: 9999;
+}
+
+/* Presence & Avatar Pill */
+.vinttro-presence-pill {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    background: #1e293b;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #f8fafc;
+}
+
+.vinttro-avatar-wrap {
+    position: relative;
+    width: 24px;
+    height: 24px;
+}
+
+.vinttro-agent-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.vinttro-status-badge {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 2px solid #0f172a;
+}
+
+.status-available { background-color: #22c55e; }
+.status-away { background-color: #eab308; }
+.status-dnd { background-color: #ef4444; }
+
+.vinttro-presence-dropdown {
+    display: none;
+    position: absolute;
+    top: 38px;
+    right: 0;
+    left: auto;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    z-index: 99999;
+    min-width: 170px;
+    padding: 6px 0;
+}
+
+.vinttro-presence-option {
+    padding: 8px 12px;
+    color: #f8fafc;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.vinttro-presence-option:hover { background: #334155; }
+
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot-available { background: #22c55e; }
+.dot-away { background: #eab308; }
+.dot-dnd { background: #ef4444; }
+
+/* WebRTC Health Indicator */
+.vinttro-webrtc-health {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #0f172a;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    color: #cbd5e1;
+}
+
+.vinttro-pulse-dot { width: 8px; height: 8px; border-radius: 50%; }
+.health-online { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.health-connecting { background: #eab308; }
+.health-offline { background: #ef4444; }
+
+.vinttro-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    margin-left: 2px;
+}
+
+/* Call Control Segment & Bar */
+.vinttro-header-call-bar {
+    display: flex;
+    align-items: center;
+    background: #1e293b;
+    border-radius: 20px;
+    padding: 4px 12px;
+    border: 1px solid #334155;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.vinttro-call-segment {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #f8fafc;
+}
+
+/* Ringing Segment & Caller Info High Contrast */
+.vinttro-call-segment.segment-ringing {
+    gap: 10px;
+}
+
+.vinttro-caller-info {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: #0f172a;
+    padding: 3px 12px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.vinttro-call-pulse {
+    width: 8px;
+    height: 8px;
+    background-color: #ef4444;
+    border-radius: 50%;
+    display: inline-block;
+    animation: vinttro-ring-pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes vinttro-ring-pulse {
+    0% { transform: scale(0.85); opacity: 0.7; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); }
+    50% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    100% { transform: scale(0.85); opacity: 0.7; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.vinttro-hdr-btn {
+    border: none;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.btn-accept { background: #16a34a; color: white; }
+.btn-accept:hover { background: #15803d; }
+.btn-reject { background: #dc2626; color: white; }
+.btn-reject:hover { background: #b91c1c; }
+.btn-control { background: #334155; color: #f8fafc; }
+.btn-control:hover { background: #475569; }
+.btn-end { background: #dc2626; color: white; }
+.btn-end:hover { background: #b91c1c; }
+
+/* Active Call Timer */
+.vinttro-timer {
+    font-weight: 700;
+    color: #22c55e;
+    font-family: monospace;
+    font-size: 13px;
+    background: #0f172a;
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+}
+
+.vinttro-active-party {
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+/* 1. Suppress redundant mobile header bar, admin bar, and duplicate avatar node on /visp pages */
+body.is-visp-page .mob-menu-header-holder,
+body.is-visp-page .vinttro-global-account-node,
+body.is-visp-page #wpadminbar,
+.page-template-vinttro-visp-template .mob-menu-header-holder,
+.page-template-vinttro-visp-template .vinttro-global-account-node,
+.page-template-vinttro-visp-template #wpadminbar {
+    display: none !important;
+}
+
+body.is-visp-page,
+body.page-template-vinttro-visp-template {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* 2. Header Actions Right Layout */
+.vinttro-hdr-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 3. Hamburger Trigger Button */
+.vinttro-burger-trigger {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 5px 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.vinttro-burger-trigger:hover {
+    background: #334155;
+    border-color: #475569;
+    color: #ffffff;
+}
+
+/* 4. Dropdown Section Headers and Items */
+.vinttro-menu-section-label {
+    padding: 6px 12px 2px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.05em;
+}
+
+.vinttro-dropdown-divider {
+    height: 1px;
+    background: #334155;
+    margin: 6px 0;
+}
+
+.vinttro-dropdown-item {
+    display: block;
+    padding: 8px 12px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 12px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.vinttro-dropdown-item:hover {
+    background: #334155;
+    color: #ffffff;
+}
+
+.vinttro-dropdown-item.logout-link {
+    color: #f87171;
+}
+
+.vinttro-dropdown-item.logout-link:hover {
+    background: #7f1d1d;
+    color: #ffffff;
+}

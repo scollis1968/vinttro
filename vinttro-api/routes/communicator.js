@@ -27,5 +27,8 @@ router.post('/recording-event', controller.handleRecordingEvent);
 router.post('/status-callback', controller.handleStatusCallback);
 router.post('/accept-probe', controller.handleAcceptProbe);
 router.post('/accept-webrtc', controller.acceptCallWebRTC);
+router.post('/clients/sync-suitecrm', controller.syncSuiteCRMClients);
+// Add this route
+router.post('/update-call-contact', controller.updateCallContact);
 
 module.exports = router;

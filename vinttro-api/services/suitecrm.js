@@ -88,6 +88,66 @@ async function createRecord(moduleName, attributes) {
 }
 
 /**
+ * Generic JSON API Record Updater for SuiteCRM V8
+ */
+async function updateRecord(moduleName, id, attributes) {
+    const token = await getAccessToken();
+    const apiUrl = `${SUITECRM_URL}/V8/module`;
+
+    const payload = {
+        data: {
+            type: moduleName,
+            id: id,
+            attributes: attributes
+        }
+    };
+
+    const response = await fetch(apiUrl, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/vnd.api+json',
+            'Accept': 'application/vnd.api+json'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`SuiteCRM V8 module update failed (${response.status}): ${errText}`);
+    }
+
+    return await response.json();
+}
+
+/**
+ * Lookup Contact by primary email address using SuiteCRM V8 filters
+ */
+async function findContactByEmail(email) {
+    if (!email) return null;
+
+    const token = await getAccessToken();
+    const cleanEmail = encodeURIComponent(email.trim().toLowerCase());
+    const apiUrl = `${SUITECRM_URL}/V8/module/Contacts?filter[email1][eq]=${cleanEmail}&page[size]=1`;
+
+    const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+        }
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`SuiteCRM Contact lookup failed (${response.status}): ${errText}`);
+    }
+
+    const data = await response.json();
+    return data.data?.[0]?.id || null;
+}
+
+/**
  * Formats and writes completed call records to SuiteCRM
  */
 async function saveCallRecord(callData) {
@@ -111,12 +171,7 @@ async function saveCallRecord(callData) {
         date_start: startTime,
         duration_hours: durationHours,
         duration_minutes: durationMinutes,
-        description: `Call SID: ${identifier}\nCaller: ${callerNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}`,
-        
-        // SuiteCRM Custom Fields (Populate these if created in SuiteCRM Studio)
-        // first_agent_c: callData.first_agent || '',
-        // last_agent_c: callData.last_agent || '',
-        // call_legs_json_c: JSON.stringify(callData.legs || [])
+        description: `Call SID: ${identifier}\nCaller: ${callerNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}`
     };
 
     console.log(`[SuiteCRM Sync] Pushing Call ${identifier} (First Agent: ${callData.first_agent || 'None'}) to SuiteCRM...`);
@@ -124,12 +179,6 @@ async function saveCallRecord(callData) {
     console.log(`✅ [SuiteCRM Sync Success] Call record created with ID: ${result?.data?.id || 'OK'}`);
     return result;
 }
-
-module.exports = {
-    getAccessToken,
-    createRecord,
-    saveCallRecord
-};
 
 /**
  * Fetch a paginated batch of Contacts from SuiteCRM V8 API
@@ -180,10 +229,22 @@ async function getAllContacts() {
     return allContacts;
 }
 
+async function createContact(attributes) {
+    return await createRecord('Contacts', attributes);
+}
+
+async function updateContact(id, attributes) {
+    return await updateRecord('Contacts', id, attributes);
+}
+
 module.exports = {
     getAccessToken,
     createRecord,
+    updateRecord,
+    findContactByEmail,
     saveCallRecord,
     fetchContactsBatch,
-    getAllContacts
-};
+    getAllContacts,
+    createContact,
+    updateContact
+};      

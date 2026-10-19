@@ -53,15 +53,19 @@ function vinttro_enqueue_acturis_import_scripts($hook) {
         true
     );
 
-    // 4. Pass REST API config & nonce to JavaScript
-    wp_localize_script('vinttro-acturis-uploader', 'vinttroImportConfig', array(
-        'apiUrl'  => rest_url('vinttro/v1/stage-acturis-batch'),
-        'nonce'   => wp_create_nonce('wp_rest')
-    ));
+    // 4. Pass REST API config & target URL to JavaScript
+    $baseUrl = getenv('VINTTRO_API_PUBLIC_URL') 
+        ?: ($_ENV['VINTTRO_API_PUBLIC_URL'] ?? (defined('VINTTRO_API_PUBLIC_URL') ? VINTTRO_API_PUBLIC_URL : 'http://localhost:3000'));
+
+    $cleanBaseUrl = rtrim($baseUrl, '/');
+
+    wp_localize_script('vinttro-acturis-uploader', 'vinttroImportConfig', [
+        'apiUrl' => $cleanBaseUrl . '/api/import/batch'
+    ]);
 }
 
 /**
- * Register REST API Endpoint to Receive Chunked Batches
+ * Register REST API Endpoint to Receive Chunked Batches (Legacy Fallback)
  */
 add_action('rest_api_init', function () {
     register_rest_route('vinttro/v1', '/stage-acturis-batch', array(
@@ -85,9 +89,6 @@ function vinttro_handle_acturis_batch(WP_REST_Request $request) {
         return new WP_Error('empty_batch', 'No records supplied in batch', array('status' => 400));
     }
 
-    // Optional: Call SuiteCRM API or DB directly to push into visp_data_staging
-    // e.g., $result = vinttro_push_to_suitecrm_staging($batch);
-
     return new WP_REST_Response(array(
         'success'      => true,
         'batch_index'  => $batchIndex,
@@ -103,7 +104,7 @@ function vinttro_render_acturis_import_page() {
     ?>
     <div class="wrap">
         <h1>Acturis CSV Data Staging Upload</h1>
-        <p>Select or drag an exported Acturis CSV file. Data will be parsed in client-side batches and pushed to <code>visp_data_staging</code>.</p>
+        <p>Select or drag an exported Acturis CSV file. Data will be parsed in client-side batches and pushed to <code>vinttro-api</code>.</p>
 
         <div class="acturis-upload-card">
             <div class="drop-zone" id="acturis-drop-zone">

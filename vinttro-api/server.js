@@ -37,12 +37,9 @@ io.on('connection', (socket) => {
 // Load Domain Routers
 const communicatorRoutes = require('./routes/communicator');
 const taskRoutes = require('./routes/tasks');
+const importRoutes = require('./routes/import');
 
-// Global Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Global CORS Handler
+// 1. GLOBAL CORS HANDLER FIRST (Ensures all errors return valid CORS headers)
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -52,6 +49,10 @@ app.use((req, res, next) => {
     }
     next();
 });
+
+// 2. BODY PARSERS SECOND (With increased 25MB limits)
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 const { version } = require('./package.json');
 
@@ -68,6 +69,7 @@ app.get('/api/version', (req, res) => {
 // Mount Routers
 app.use('/api/communicator', communicatorRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/import', importRoutes);
 
 const PORT = process.env.PORT || 3000;
 

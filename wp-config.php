@@ -138,7 +138,9 @@ define('SUITECRM_PASSWORD',       'Password1$');
 define('SUITECRM_CLIENT_ID',      'b5a93a83-395e-ffee-9161-68e66cdabea8');
 define('SUITECRM_CLIENT_SECRET',  'tSKGdv0bO9kUHMP6OFI8LjgqQlK6f8kH');
 
-
+if (!defined('VINTTRO_API_PUBLIC_URL')) {
+    define('VINTTRO_API_PUBLIC_URL', getenv('VINTTRO_API_PUBLIC_URL') ?: 'http://localhost:3000');
+}
 
 /* That's all, stop editing! Happy publishing. */
 

@@ -75,6 +75,7 @@ services:
       WORDPRESS_DB_USER: vinttro_user
       WORDPRESS_DB_PASSWORD: vinttro_password
       WORDPRESS_DB_NAME: wordpress
+      VINTTRO_API_PUBLIC_URL : ${VINTTRO_API_PUBLIC_URL:-http://localhost:3005}
     volumes:
       - wp_data:/var/www/html
       - ./wp-config.php:/var/www/html/wp-config.php

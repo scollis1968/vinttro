@@ -2,12 +2,14 @@
 $module_name = 'visp_data_staging';
 $listViewDefs [$module_name] = 
 array (
-  'ID' => array (
-        'width' => '25%',
-        'label' => 'LBL_ID', // You can map this to "GUID" in your language files
-        'default' => true,
-        'link' => true,     // Makes the GUID a clickable link to open the record
-    ),
+  'NAME' => 
+  array (
+    'type' => 'name',
+    'link' => true,
+    'label' => 'LBL_NAME',
+    'width' => '10%',
+    'default' => true,
+  ),
   'DATE_ENTERED' => 
   array (
     'type' => 'datetime',
@@ -27,6 +29,15 @@ array (
     'type' => 'enum',
     'studio' => 'visible',
     'label' => 'LBL_SOURCE_SYSTEM',
+    'width' => '10%',
+    'default' => true,
+  ),
+  'RAW_DATA' => 
+  array (
+    'type' => 'text',
+    'studio' => 'visible',
+    'label' => 'LBL_RAW_DATA',
+    'sortable' => false,
     'width' => '10%',
     'default' => true,
   ),
@@ -61,6 +72,13 @@ array (
     'type' => 'text',
     'label' => 'LBL_DESCRIPTION',
     'sortable' => false,
+    'width' => '10%',
+    'default' => false,
+  ),
+  'DATA_TYPE' => 
+  array (
+    'type' => 'varchar',
+    'label' => 'LBL_DATA_TYPE',
     'width' => '10%',
     'default' => false,
   ),

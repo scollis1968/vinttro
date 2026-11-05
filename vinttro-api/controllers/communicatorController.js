@@ -687,3 +687,62 @@ exports.updateCallContact = async (req, res) => {
         return res.status(500).json({ error: 'Failed to update call contact' });
     }
 };
+
+// Add to vinttro-api/controllers/communicatorController.js
+//const clientCacheService = require('../services/clientCacheService');
+const MapperFactory = require('../mappers/mapperFactory');
+
+/**
+ * POST /communicator/clients/:id/summary
+ * Uploads client summary payload to Redis
+ */
+exports.saveClientSummary = async (req, res) => {
+    try {
+        const { id } = req.params;
+        let payload = req.body;
+
+        if (!payload || Object.keys(payload).length === 0) {
+            return res.status(400).json({ success: false, message: 'Payload body is empty' });
+        }
+
+        // Optional: If source header is present, normalize using MapperFactory
+        const source = req.headers['x-source-system']; // e.g., 'acturis' or 'suitecrm'
+        if (source) {
+            try {
+                const mapper = MapperFactory.getMapper(source, 'client');
+                payload = mapper.toDashboardSummary(payload);
+            } catch (mapperErr) {
+                console.warn(`[MapperFactory] Bypass mapping: ${mapperErr.message}`);
+            }
+        }
+
+        const result = await clientCacheService.saveClientSummary(id, payload);
+        return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+        console.error('[saveClientSummary Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+/**
+ * GET /communicator/clients/:id/summary
+ * Returns the cached dashboard JSON for the React screen
+ */
+exports.getClientSummary = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const summary = await clientCacheService.getClientSummary(id);
+
+        if (!summary) {
+            return res.status(404).json({ 
+                success: false, 
+                message: `No cached summary found for client ID: ${id}` 
+            });
+        }
+
+        return res.status(200).json(summary);
+    } catch (err) {
+        console.error('[getClientSummary Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+};

@@ -66,6 +66,15 @@ app.get('/api/version', (req, res) => {
     });
 });
 
+const cors = require('cors');
+
+// Allow requests from your local WordPress instance
+app.use(cors({
+    origin: ['http://localhost:8083', 'https://uat.vinttro.co.uk'],
+    methods: ['GET', 'POST'],
+    credentials: true
+}));
+
 // Mount Routers
 app.use('/api/communicator', communicatorRoutes);
 app.use('/api/tasks', taskRoutes);

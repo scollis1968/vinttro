@@ -46,6 +46,31 @@ services:
     depends_on:
       - redis
 
+  # --- Acturis Import Watcher Worker ---
+  acturis-watcher:
+    build:
+      context: ./vinttro-api
+      dockerfile: Dockerfile
+    container_name: acturis_inbox_watcher
+    restart: unless-stopped
+    command: ["node", "workers/gcsInboxWatcher.js"]
+    working_dir: /app
+    env_file:
+      - ./vinttro-api/.env.local
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ACTURIS_MOUNT_PATH=/data/acturis
+      - POLL_INTERVAL_MS=3000
+    volumes:
+      - ./vinttro-api:/app
+      - api_node_modules:/app/node_modules
+      - /mnt/d/data/vinttro/acturisImports:/data/acturis
+    depends_on:
+      - redis
+      - vinttro-api
+
   # --- SuiteCRM 8 ---
   suitecrm:
     image: chialab/php-dev:8.1-apache
@@ -75,7 +100,7 @@ services:
       WORDPRESS_DB_USER: vinttro_user
       WORDPRESS_DB_PASSWORD: vinttro_password
       WORDPRESS_DB_NAME: wordpress
-      VINTTRO_API_PUBLIC_URL : ${VINTTRO_API_PUBLIC_URL:-http://localhost:3005}
+      VINTTRO_API_PUBLIC_URL: ${VINTTRO_API_PUBLIC_URL:-http://localhost:3005}
     volumes:
       - wp_data:/var/www/html
       - ./wp-config.php:/var/www/html/wp-config.php

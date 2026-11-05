@@ -215,10 +215,67 @@ async function deleteClientRecord(rawCli) {
     return { redisKey, removed: removed > 0 };
 }
 
+// Add to vinttro-api/services/clientCacheService.js
+
+/**
+ * Save or overwrite the structured Client Summary document for the Agent Dashboard
+ * @param {string} clientId - SuiteCRM Account/Client ID
+ * @param {object} summaryData - The parsed JSON structure (details, opportunities, retail)
+ * @param {number} [ttlSeconds=0] - Optional TTL (0 = persist until next sync/update)
+ */
+async function saveClientSummary(clientId, summaryData, ttlSeconds = 0) {
+    if (!clientId) throw new Error('clientId is required to cache client summary');
+    if (!summaryData || typeof summaryData !== 'object') {
+        throw new Error('summaryData must be a valid object');
+    }
+
+    const key = `client_summary:${clientId}`;
+    
+    // Inject/standardize metadata
+    const payload = {
+        ...summaryData,
+        client_id: clientId,
+        cached_at: new Date().toISOString()
+    };
+
+    const serialized = JSON.stringify(payload);
+
+    if (ttlSeconds > 0) {
+        await redisClient.setex(key, ttlSeconds, serialized);
+    } else {
+        await redisClient.set(key, serialized);
+    }
+
+    return { key, client_id: clientId, cached_at: payload.cached_at };
+}
+
+/**
+ * Fetch the Client Summary document by Client ID for the Agent Dashboard
+ * @param {string} clientId 
+ */
+async function getClientSummary(clientId) {
+    if (!clientId) return null;
+
+    const key = `client_summary:${clientId}`;
+    const rawData = await redisClient.get(key);
+
+    if (!rawData) return null;
+
+    try {
+        return JSON.parse(rawData);
+    } catch (err) {
+        console.error(`[ClientCache] Error parsing summary for ${clientId}:`, err.message);
+        return null;
+    }
+}
+
+// Export the new methods alongside existing ones
 module.exports = {
     normalizeCli,
     getClientByCli,
     syncClientsFromSuiteCRM,
     saveClientRecord,
-    deleteClientRecord
+    deleteClientRecord,
+    saveClientSummary,
+    getClientSummary
 };

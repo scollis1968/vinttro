@@ -42,19 +42,26 @@ function visp_render_cti_header() {
     <div id="vinttro-header-cti-container" class="visp-cti-header-bar">
         <!-- 1. Left: Brand Logo -->
         <div class="vinttro-hdr-brand">
-            <img style="max-width: 100px;" src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/images/vinttro_visp_black.png' ); ?>" alt="Vinttro VISP" class="visp-hdr-logo" />
+            <img style="max-width: 40px;" src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/images/visp_logo.png' ); ?>" alt="VISP" class="visp-hdr-logo" />
         </div>
 
         <!-- 2. Center: Floating Call Controls & WebRTC Health -->
         <div class="vinttro-header-call-bar state-idle" id="vinttro-header-call-bar">
-            <!-- Idle State (WebRTC Health Status) -->
+            <!-- Idle State -->
             <div class="vinttro-call-segment segment-idle">
-                <div class="vinttro-webrtc-health" id="vinttro-webrtc-health-btn">
-                    <span class="vinttro-pulse-dot health-connecting" id="vinttro-health-dot"></span>
-                    <span class="vinttro-health-text" id="vinttro-health-text">RTC Off</span>
+                <!-- Health status pill (Clicking also launches phone) -->
+                <div class="vinttro-webrtc-health" id="vinttro-webrtc-health-btn" title="Click to launch or focus softphone" style="cursor: pointer;">
+                    <span class="vinttro-pulse-dot health-offline" id="vinttro-health-dot"></span>
+                    <span class="vinttro-health-text" id="vinttro-health-text">Phone Off</span>
                     <button class="vinttro-icon-btn" id="vinttro-open-devices" title="Audio Device Settings">⚙️</button>
                 </div>
-                <span class="vinttro-idle-text">Ready for calls</span>
+                
+                <!-- Explicit Launch Softphone Button -->
+                <button type="button" class="vinttro-hdr-btn btn-launch-phone" id="vinttro-btn-launch-phone" title="Launch softphone audio window" style="display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:4px 10px; background:#2563eb; color:#ffffff; border:none; border-radius:4px; cursor:pointer;">
+                    📞 Softphone
+                </button>
+
+                <span class="vinttro-idle-text" id="vinttro-idle-text">Ready for calls</span>
             </div>
 
             <!-- Ringing State -->
@@ -76,9 +83,8 @@ function visp_render_cti_header() {
             </div>
         </div>
 
-        <!-- 3. Right: Combined Presence & Mobile Menu Trigger -->
+        <!-- 3. Right: Presence & Account -->
         <div class="vinttro-hdr-right-actions">
-            <!-- Agent Presence Pill + Account Menu -->
             <div class="vinttro-presence-pill" id="vinttro-presence-toggle" title="Click to change state or view profile options">
                 <div class="vinttro-avatar-wrap">
                     <img src="<?php echo esc_url( $avatar_url ); ?>" class="vinttro-agent-avatar" alt="Avatar" />
@@ -87,7 +93,6 @@ function visp_render_cti_header() {
                 <span class="vinttro-agent-name"><?php echo esc_html( $display_name ); ?></span>
                 <span class="vinttro-dropdown-arrow">▼</span>
 
-                <!-- Presence & Account Dropdown Menu -->
                 <div class="vinttro-presence-dropdown" id="vinttro-presence-menu">
                     <div class="vinttro-menu-section-label">PRESENCE</div>
                     <div class="vinttro-presence-option" data-status="available">
@@ -108,7 +113,6 @@ function visp_render_cti_header() {
                 </div>
             </div>
 
-            <!-- Hamburger Button (Triggers WP Mobile Menu Slideout Panel) -->
             <button class="vinttro-burger-trigger mobmenu-trigger-action" data-panel-target="mobmenu-right-panel" aria-label="Toggle Navigation Menu">
                 <svg class="vinttro-burger-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -127,13 +131,59 @@ add_shortcode( 'visp_cti_header', function() {
     return ob_get_clean();
 } );
 
+// Enqueue CTI Styles & Scripts
 add_action( 'wp_enqueue_scripts', function() {
-    if ( visp_is_cti_allowed() ) {
-        wp_enqueue_style(
-            'visp-header-cti-css',
-            plugins_url( '../css/visp-header-cti.css', __FILE__ ),
-            array(),
-            '2.0.0'
-        );
+    if ( ! visp_is_cti_allowed() ) {
+        return;
     }
+
+    // 1. CTI Bar Styles
+    wp_enqueue_style(
+        'visp-header-cti-css',
+        plugins_url( '../css/visp-header-cti.css', __FILE__ ),
+        array(),
+        '2.0.0'
+    );
+
+    // 2. Socket.io Client
+    wp_enqueue_script(
+        'socket-io-cdn',
+        'https://cdn.socket.io/4.7.5/socket.io.min.js',
+        array(),
+        '4.7.5',
+        true
+    );
+
+    wp_add_inline_script(
+        'socket-io-cdn',
+        'window.vinttroSocketIO = (typeof io === "function") ? io : null;',
+        'after'
+    );
+
+    // 3. Communicator Controller Script (No twilio dependency needed in main tab!)
+    wp_enqueue_script(
+        'vinttro-communicator',
+        plugins_url( '../js/vinttro-communicator.js', __FILE__ ),
+        array( 'jquery', 'socket-io-cdn' ),
+        time(), // Dev cache-busting
+        true
+    );
+
+    // 4. Shared CTI & Node API Configuration
+    $current_user = wp_get_current_user();
+    $agent_email  = ! empty( $current_user->user_email ) ? sanitize_email( $current_user->user_email ) : 'agent_dev_1';
+
+    $default_node = ( defined('WP_ENVIRONMENT_TYPE') && wp_get_environment_type() === 'development' )
+        ? 'http://localhost:3005'
+        : 'https://services.uat.vinttro.co.uk';
+
+    $node_url = defined('VINTTRO_NODE_URL') ? VINTTRO_NODE_URL : $default_node;
+
+    wp_localize_script( 'vinttro-communicator', 'vinttroConfig', array(
+        'nodeApiUrl'    => untrailingslashit( esc_url_raw( $node_url ) ),
+        'apiBase'       => untrailingslashit( esc_url_raw( $node_url ) ) . '/api',
+        'agentId'       => strtolower( trim( $agent_email ) ),
+        'agentPhoneUrl' => home_url( '/visp/agent-phone' ),
+        'nonce'         => wp_create_nonce( 'wp_rest' ),
+    ) );
 } );

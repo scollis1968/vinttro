@@ -1,0 +1,23 @@
+<?php
+ // created: 2026-11-05 07:02:59
+$layout_defs["visp_lead"]["subpanel_setup"]['visp_lead_am_projecttemplates'] = array (
+  'order' => 100,
+  'module' => 'AM_ProjectTemplates',
+  'subpanel_name' => 'default',
+  'sort_order' => 'asc',
+  'sort_by' => 'id',
+  'title_key' => 'LBL_VISP_LEAD_AM_PROJECTTEMPLATES_FROM_AM_PROJECTTEMPLATES_TITLE',
+  'get_subpanel_data' => 'visp_lead_am_projecttemplates',
+  'top_buttons' => 
+  array (
+    0 => 
+    array (
+      'widget_class' => 'SubPanelTopButtonQuickCreate',
+    ),
+    1 => 
+    array (
+      'widget_class' => 'SubPanelTopSelectButton',
+      'mode' => 'MultiSelect',
+    ),
+  ),
+);

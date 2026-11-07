@@ -87,4 +87,6 @@ $mod_strings = array (
   'LBL_COMMISSION_PAYABLE' => 'Commission Payable',
   'LBL_COMMISSION_PAID_DATE' => 'Commission Paid Date',
   'LBL_SUPPLIER_CALLBACK_LOG' => 'Supplier Callback Log',
+  'LBL_DETAILVIEW_PANEL1' => 'New Panel 1',
+  'LBL_EDITVIEW_PANEL1' => 'New Panel 1',
 );

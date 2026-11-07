@@ -31,7 +31,7 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
 
         // 5. Create visp_Lead record
         /** @var \SugarBean $lead */
-        $lead = BeanFactory::newBean('visp_Lead');
+        $lead = BeanFactory::newBean('visp_lead');
         if (empty($lead)) {
             throw new \RuntimeException("Module 'visp_Lead' could not be loaded via BeanFactory. Ensure it is deployed in Module Builder.");
         }

@@ -167,9 +167,8 @@ if (file_exists($jsonFile)) {
 EOF
 
 
-# Ensure permissions on modified assets before running PHP CLI
-chown -R www-data:www-data /var/www/suitecrm/public/dist/
-chown -R www-data:www-data /var/www/suitecrm/public/legacy/
+# Ensure full permissions across public and extensions before running Symfony / PHP CLI
+chown -R www-data:www-data /var/www/suitecrm/public/ /var/www/suitecrm/extensions/
 
 ##-------------------------------------------------------------------------
 # --- 3. Automated Post-Deployment Automation & Framework Rebuilds ---

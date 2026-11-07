@@ -82,6 +82,7 @@ services:
       - APACHE_DOCUMENT_ROOT=/var/www/html/public
     volumes:
       - suitecrm_data:/var/www/html
+      - ./suitecrm/public/legacy/custom/include:/var/www/html/public/legacy/custom/include
       - ./docker-config/php/suitecrm.ini:/usr/local/etc/php/conf.d/zz-suitecrm.ini:ro
       - ./docker-config/apache/suitecrm.conf:/etc/apache2/sites-available/000-default.conf:ro
     depends_on:

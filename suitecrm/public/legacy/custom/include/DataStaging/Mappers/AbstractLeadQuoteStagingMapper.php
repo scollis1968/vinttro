@@ -15,6 +15,7 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
     public function __construct(?ContactService $contactService = null) {
         $this->contactService = $contactService ?? new ContactService();
     }
+
     public function process(array $rawData, \SugarBean $stagingRecord): string {
         // 1. Resolve Contact
         $contact = $this->contactService->findOrCreateContact($rawData);
@@ -25,64 +26,135 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
         // 3. Resolve Opportunity
         list($opportunity, $isNewOpp) = $this->resolveOpportunity($rawData, $contact, $account);
 
-        // 4. ALWAYS create a new Lead record for source reporting
-        /** @var \Lead $lead */
-        $lead = BeanFactory::newBean('Leads');
-        $lead->first_name = $contact->first_name;
-        $lead->last_name = $contact->last_name;
-        $lead->phone_work = $contact->phone_work;
-        $lead->phone_mobile = $contact->phone_mobile;
-        $lead->primary_address_postalcode = $contact->primary_address_postalcode;
-        $lead->lead_source = $this->getLeadSource();
+        // 4. Calculate Presentation Rank
+        $rank = $isNewOpp ? 1 : $this->getNextPresentationRank($opportunity);
 
-        // Link Account directly
-        $lead->account_id = $account->id;
-        $lead->account_name = $account->name;
-
-        // Direct foreign key link to Opportunity BEFORE save
-        $lead->opportunity_id = $opportunity->id;
-        $lead->opportunity_name = $opportunity->name;
-
-        // Credit / Source status
-        if ($isNewOpp) {
-            $lead->status = 'New';
-            $lead->description = "Primary credited lead for Opportunity: {$opportunity->name}";
-        } else {
-            $lead->status = 'Recycled';
-            $lead->description = "Secondary lead submission linked to existing active Opportunity ID: {$opportunity->id}";
+        // 5. Create visp_Lead record
+        /** @var \SugarBean $lead */
+        $lead = BeanFactory::newBean('visp_lead');
+        if (empty($lead)) {
+            throw new \RuntimeException("Module 'visp_Lead' could not be loaded via BeanFactory. Ensure it is deployed in Module Builder.");
         }
 
+        // Standard Tracking & Identification
+        $leadRef = $rawData['lead_ref'] ?? $rawData['submission_id'] ?? $rawData['form_id'] ?? ('WEB-' . time() . '-' . rand(100, 999));
+        $lead->name = (string)$leadRef;
+        $lead->supplier_lead_ref_c = (string)$leadRef;
+        $lead->supplier_name_c = $rawData['supplier_name'] ?? 'Vinttro Direct';
+        $lead->received_at_c = date('Y-m-d H:i:s');
+        $lead->presentation_rank_c = $rank;
+        $lead->commercial_type_c = $rawData['commercial_type'] ?? 'direct';
+
+        // Attribution & Commercial Logic
+        if ($rank === 1) {
+            $lead->attribution_pct_c = 100.00;
+            $lead->lead_status_c = 'received';
+            $lead->commission_status_c = 'pending';
+            $lead->description = "Primary credited lead (Rank 1) for Opportunity: {$opportunity->name}";
+        } else {
+            $lead->attribution_pct_c = 0.00;
+            $lead->lead_status_c = 'duplicate_ntu';
+            $lead->commission_status_c = 'disqualified';
+            $lead->disqualification_reason_c = 'duplicate_window';
+            $lead->description = "Secondary lead (Rank {$rank}) for active Opportunity ID: {$opportunity->id}";
+        }
+
+        // Apply form-specific overrides from child mapper
         $this->mapSpecificLeadFields($lead, $rawData);
         $lead->save();
 
-        // Primary email on Lead
-        if (isset($lead->emailAddress) && !empty($rawData['email'])) {
-            $lead->emailAddress->addAddress(trim($rawData['email']), true);
-            $lead->emailAddress->save($lead->id, $lead->module_dir);
+        // 6. Establish Relationships
+        // Link Opportunity -> visp_Lead
+        $this->linkBeans($opportunity, $lead, [
+            'opportunities_visp_lead_1',
+            'visp_lead_opportunities',
+            'opportunities_visp_lead'
+        ]);
+
+        // Link Contact -> visp_Lead
+        $this->linkBeans($contact, $lead, [
+            'contacts_visp_lead_1',
+            'visp_lead_contacts',
+            'contacts_visp_lead'
+        ]);
+
+        // Link Account -> visp_Lead (if defined)
+        $this->linkBeans($account, $lead, [
+            'accounts_visp_lead_1',
+            'visp_lead_accounts',
+            'accounts_visp_lead'
+        ]);
+
+        // 7. Invalidate Redis front-end summary cache for this contact
+        $this->invalidateRedisClientSummary($contact->id);
+
+        $creditStatus = ($rank === 1) ? 'Credited (Rank 1)' : "Uncredited (Rank {$rank})";
+        return "visp_Lead ID: {$lead->id} [{$lead->name}] created for Source '{$this->getLeadSource()}' [{$creditStatus}]. Contact: {$contact->id}, Account: {$account->id}, Opportunity: {$opportunity->id}";
+    }
+
+    /**
+     * Inspects Opportunity to determine next presentation rank
+     */
+    protected function getNextPresentationRank(\Opportunity $opportunity): int {
+        $possibleRels = [
+            'opportunities_visp_lead_1',
+            'visp_lead_opportunities',
+            'opportunities_visp_lead'
+        ];
+
+        foreach ($possibleRels as $rel) {
+            if ($opportunity->load_relationship($rel)) {
+                $related = $opportunity->$rel->get();
+                if (is_array($related)) {
+                    return count($related) + 1;
+                }
+            }
         }
 
-        // 5. Establish Bidirectional Relationships
-        if ($lead->load_relationship('contacts')) {
-            $lead->contacts->add($contact->id);
-        }
-        if ($lead->load_relationship('accounts')) {
-            $lead->accounts->add($account->id);
-        }
+        return 1;
+    }
 
-        // Populate Opportunity -> Leads subpanel explicitly
-        if ($opportunity->load_relationship('leads')) {
-            $opportunity->leads->add($lead->id);
+    /**
+     * Flexible relationship linker that checks both LHS and RHS relationship names
+     */
+    protected function linkBeans(\SugarBean $beanA, \SugarBean $beanB, array $possibleRelationshipNames): bool {
+        foreach ($possibleRelationshipNames as $relName) {
+            if ($beanA->load_relationship($relName)) {
+                $beanA->$relName->add($beanB->id);
+                return true;
+            }
+            if ($beanB->load_relationship($relName)) {
+                $beanB->$relName->add($beanA->id);
+                return true;
+            }
         }
+        return false;
+    }
 
-        $creditStatus = $isNewOpp ? 'Credited (New Opp)' : 'Uncredited (Existing Opp)';
-        return "Lead ID: {$lead->id} created for Source '{$this->getLeadSource()}' [{$creditStatus}]. Contact: {$contact->id}, Account: {$account->id}, Opportunity: {$opportunity->id}";
+    /**
+     * Invalidates Redis cache key so the front end gets fresh data
+     */
+    protected function invalidateRedisClientSummary(string $contactId): void {
+        try {
+            if (class_exists('\Redis')) {
+                $redis = new \Redis();
+                $host = getenv('REDIS_HOST') ?: 'redis';
+                $port = (int)(getenv('REDIS_PORT') ?: 6379);
+                if (@$redis->connect($host, $port, 1.0)) {
+                    $redis->select(1); // Centralized DB 1
+                    $redis->del("client:summary:{$contactId}");
+                    $redis->close();
+                }
+            }
+        } catch (\Throwable $e) {
+            // Silently skip if Redis connection times out in cron
+        }
     }
 
     protected function resolveAccount(array $rawData, \Contact $contact): \Account {
         $companyName = !empty($rawData['company_name']) ? trim($rawData['company_name']) : null;
 
         if ($companyName) {
-            // B2B: Lookup existing Account by name or create a new corporate Account
             $accountId = $this->findAccountIdByName($companyName);
             /** @var \Account|null $account */
             $account = $accountId ? BeanFactory::getBean('Accounts', $accountId) : null;
@@ -96,7 +168,6 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
                 $account->save();
             }
         } else {
-            // B2C / Private Line: Reuse Account already linked to Contact, or create a Private Client Account
             $account = $this->findAccountLinkedToContact($contact->id);
 
             if (empty($account) || empty($account->id)) {
@@ -115,7 +186,6 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
             }
         }
 
-        // Always ensure Contact is linked to the Account
         if ($contact->load_relationship('accounts')) {
             $contact->accounts->add($account->id);
         }
@@ -142,7 +212,7 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
             $opportunity = BeanFactory::newBean('Opportunities');
             $opportunity->name = $this->getOpportunityName($rawData, $vrm);
             $opportunity->sales_stage = 'New Quote Request';
-            $opportunity->lead_source = $this->getLeadSource(); // Protected first-touch attribution
+            $opportunity->lead_source = $this->getLeadSource();
 
             if ($vrm && isset($opportunity->field_defs['vehicle_reg_c'])) {
                 $opportunity->vehicle_reg_c = $vrm;
@@ -150,7 +220,6 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
             $isNewOpp = true;
         }
 
-        // Link Account to Opportunity
         $opportunity->account_id = $account->id;
         $opportunity->account_name = $account->name;
 
@@ -198,9 +267,9 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
                   LEFT JOIN opportunities_cstm o_cstm ON o_cstm.id_c = o.id
                   WHERE oc.contact_id = '{$cleanContactId}'
                     AND o.sales_stage NOT IN ('Closed Won', 'Closed Lost')
-                    AND o.deleted = 0
+                    AND o.deleted = 0 
                     {$vrmWhere}
-                  ORDER BY o.date_entered DESC
+                  ORDER BY o.date_entered DESC 
                   LIMIT 1";
 
         $result = $db->query($query);
@@ -213,6 +282,6 @@ abstract class AbstractLeadQuoteStagingMapper extends AbstractStagingMapper {
 
     abstract protected function getLeadSource(): string;
     abstract protected function getOpportunityName(array $rawData, ?string $vrm): string;
-    abstract protected function mapSpecificLeadFields(\Lead $lead, array $rawData): void;
+    abstract protected function mapSpecificLeadFields(\SugarBean $lead, array $rawData): void;
     abstract protected function mapSpecificOpportunityFields(\Opportunity $opportunity, array $rawData, bool $isNewOpp): void;
 }

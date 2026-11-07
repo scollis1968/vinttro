@@ -214,59 +214,59 @@ function vinttro_handle_voice_conference_connect( WP_REST_Request $request ) {
 // ==========================================================
 // ⚡ 8. ENQUEUE TWILIO VOICE SDK, SOCKET.IO & COMMUNICATOR JS
 // ==========================================================
-add_action( 'wp_enqueue_scripts', 'vinttro_enqueue_communicator_socket_assets' );
-function vinttro_enqueue_communicator_socket_assets() {
+#add_action( 'wp_enqueue_scripts', 'vinttro_enqueue_communicator_socket_assets' );
+// function vinttro_enqueue_communicator_socket_assets() {
     
-    // 1. Official Twilio Voice JS SDK (v2.x)
-    wp_enqueue_script( 
-        'twilio-voice-sdk', 
-        'https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.11.0/dist/twilio.min.js', 
-        array(), 
-        '2.18.1', 
-        false 
-    );
+//     // 1. Official Twilio Voice JS SDK (v2.x)
+//     wp_enqueue_script( 
+//         'twilio-voice-sdk', 
+//         'https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.11.0/dist/twilio.min.js', 
+//         array(), 
+//         '2.18.1', 
+//         false 
+//     );
 
-    // 2. Socket.io Client SDK
-    wp_enqueue_script( 
-        'socket-io-client', 
-        'https://cdn.socket.io/4.7.5/socket.io.min.js', 
-        array(), 
-        '4.7.5', 
-        true 
-    );
+//     // 2. Socket.io Client SDK
+//     wp_enqueue_script( 
+//         'socket-io-client', 
+//         'https://cdn.socket.io/4.7.5/socket.io.min.js', 
+//         array(), 
+//         '4.7.5', 
+//         true 
+//     );
 
-    // Dynamic file versioning based on last modified timestamp
-    $js_file_path = dirname( __DIR__ ) . '/js/vinttro-communicator.js';
-    $js_version   = file_exists( $js_file_path ) ? filemtime( $js_file_path ) : '2.0.1';
+//     // Dynamic file versioning based on last modified timestamp
+//     $js_file_path = dirname( __DIR__ ) . '/js/vinttro-communicator.js';
+//     $js_version   = file_exists( $js_file_path ) ? filemtime( $js_file_path ) : '2.0.1';
 
-    // 3. Enqueue Unified Vinttro Communicator JS
-    wp_enqueue_script( 
-        'vinttro-communicator-js', 
-        plugins_url( '../js/vinttro-communicator.js', __FILE__ ), 
-        array('jquery', 'twilio-voice-sdk', 'socket-io-client'), 
-        $js_version, 
-        true 
-    );
+//     // 3. Enqueue Unified Vinttro Communicator JS
+//     #wp_enqueue_script( 
+//     #    'vinttro-communicator-js', 
+//     #    plugins_url( '../js/vinttro-communicator.js', __FILE__ ), 
+//     #    array('jquery', 'twilio-voice-sdk', 'socket-io-client'), 
+//     #    $js_version, 
+//     #    true 
+//     #);
 
-    // 4. Determine Node API URL dynamically based on environment
-    $node_api_url = 'https://services.uat.vinttro.co.uk';
-    $http_host    = $_SERVER['HTTP_HOST'] ?? '';
+//     // 4. Determine Node API URL dynamically based on environment
+//     $node_api_url = 'https://services.uat.vinttro.co.uk';
+//     $http_host    = $_SERVER['HTTP_HOST'] ?? '';
 
-    if ( defined( 'VINTTRO_NODE_API_URL' ) ) {
-        $node_api_url = VINTTRO_NODE_API_URL;
-    } elseif ( strpos( $http_host, 'localhost' ) !== false || strpos( $http_host, '127.0.0.1' ) !== false ) {
-        $node_api_url = 'http://localhost:3005';
-    }
+//     if ( defined( 'VINTTRO_NODE_API_URL' ) ) {
+//         $node_api_url = VINTTRO_NODE_API_URL;
+//     } elseif ( strpos( $http_host, 'localhost' ) !== false || strpos( $http_host, '127.0.0.1' ) !== false ) {
+//         $node_api_url = 'http://localhost:3005';
+//     }
 
-    // 5. Inject Localized Configuration Object
-    $current_user = wp_get_current_user();
-    wp_localize_script( 'vinttro-communicator-js', 'vinttroConfig', array(
-        'nodeApiUrl' => $node_api_url,
-        'agentId'    => strtolower( trim( $current_user->user_email ) ),
-        'agentName'  => $current_user->display_name ? $current_user->display_name : $current_user->user_login,
-        'restNonce'  => wp_create_nonce( 'wp_rest' )
-    ));
-}
+//     // 5. Inject Localized Configuration Object
+//     $current_user = wp_get_current_user();
+//     wp_localize_script( 'vinttro-communicator-js', 'vinttroConfig', array(
+//         'nodeApiUrl' => $node_api_url,
+//         'agentId'    => strtolower( trim( $current_user->user_email ) ),
+//         'agentName'  => $current_user->display_name ? $current_user->display_name : $current_user->user_login,
+//         'restNonce'  => wp_create_nonce( 'wp_rest' )
+//     ));
+// }
 add_action( 'send_headers', 'vinttro_allow_unload_permission_policy' );
 function vinttro_allow_unload_permission_policy() {
     header( 'Permissions-Policy: unload=*' );

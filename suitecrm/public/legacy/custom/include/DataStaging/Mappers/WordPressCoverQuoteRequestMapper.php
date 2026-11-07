@@ -18,13 +18,27 @@ class WordPressCoverQuoteRequestMapper extends AbstractLeadQuoteStagingMapper {
         return $vrm ? "{$coverType} - {$vrm} ({$fullName})" : "{$coverType} - {$fullName}";
     }
 
-    protected function mapSpecificLeadFields(\Lead $lead, array $rawData): void {
+    /**
+     * Map specific fields onto the visp_Lead record
+     */
+    protected function mapSpecificLeadFields(\SugarBean $lead, array $rawData): void {
+        // Vinttro Website is the primary introducer
+        $lead->supplier_name_c = 'Vinttro Direct';
+        $lead->commercial_type_c = 'direct';
+
+        $notes = [];
         if (!empty($rawData['estimated-value'])) {
-            $lead->opportunity_amount = $rawData['estimated-value'];
+            $notes[] = "Estimated Value: £" . $rawData['estimated-value'];
+        }
+        if (!empty($rawData['cover-type'])) {
+            $notes[] = "Requested Cover: " . $rawData['cover-type'];
+        }
+        if (!empty($rawData['notes'])) {
+            $notes[] = "Payload Notes: " . $rawData['notes'];
         }
 
-        if (!empty($rawData['notes'])) {
-            $lead->description .= "\n\nPayload Notes: " . $rawData['notes'];
+        if (!empty($notes)) {
+            $lead->description = trim($lead->description . "\n\n" . implode("\n", $notes));
         }
     }
 

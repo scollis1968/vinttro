@@ -19,6 +19,10 @@ router.post('/clients', controller.saveClient);            // Accepts single obj
 router.get('/clients/lookup', controller.lookupClient);    // CLI lookup
 router.delete('/clients', controller.deleteClient);        // Remove cached client
 
+// --- NEW: Client Dashboard Summary Endpoints ---
+router.post('/clients/:id/summary', controller.saveClientSummary);
+router.get('/clients/:id/summary', controller.getClientSummary);
+
 // Call Webhooks & Events
 router.post('/call-event', controller.handleCallEvent);
 router.post('/inbound-call', controller.handleInboundCall);

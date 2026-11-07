@@ -22,6 +22,31 @@ require_once 'includes/call-controller-functions.php';
 require_once 'includes/visp-header-cti.php';
 require_once 'includes/visp-admin-functions.php';
 
+require_once 'includes/visp-header-cti.php';
+require_once 'includes/visp-admin-functions.php';
+require_once 'includes/visp-agent-phone.php';
+
+
+// ===================================================
+// 🚀 VINTTRO 2.0 AGENT DASHBOARD & REDIS INTEGRATION
+// ===================================================
+if (!defined('VINTTRO_PATH')) {
+    define('VINTTRO_PATH', plugin_dir_path(__FILE__));
+}
+if (!defined('VINTTRO_URL')) {
+    define('VINTTRO_URL', plugin_dir_url(__FILE__));
+}
+
+// Load the Agent Dashboard and Redis REST API
+require_once VINTTRO_PATH . 'includes/class-vinttro-dashboard.php';
+if (file_exists(VINTTRO_PATH . 'includes/class-vinttro-api.php')) {
+    require_once VINTTRO_PATH . 'includes/class-vinttro-api.php';
+    new Vinttro_API();
+}
+
+// Instantiate the dashboard (registers [vinttro_client_screen] shortcode)
+new Vinttro_Dashboard();
+// ===================================================
 
 function my_plugin_load_styles() {
     // 1. Enqueue your custom CSS

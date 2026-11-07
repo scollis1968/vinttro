@@ -1,0 +1,118 @@
+/* 1. Global UI Sharpening */
+body {
+    --p-input-border-color: #abb3bb; /* Darken input borders */
+}
+
+/* Tighten up cards and borders */
+.card, .panel {
+    border: 1px solid #d1d7dc !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+}
+
+/* 2. Target the Fleet Subpanel specifically */
+/* Note: You may need to inspect the element to get the exact ID/Class */
+app-subpanel-list-view {
+    border-top: 2px solid #3498db !important; /* Blue accent for subpanels */
+    background-color: #f8f9fa;
+}
+
+/* Make headers more 'sharp' */
+.subpanel-header h4 {
+    font-weight: 700 !important;
+    color: #2c3e50;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+/* Sharpen the buttons */
+.btn {
+    border-radius: 2px !important;
+    font-weight: 600 !important;
+}
+.dynamic-field,
+.dynamic-label {
+    font-weight: bold !important;
+    color: #916D1C;
+}
+.login-button {
+    background-color: #916D1C !important;
+    border: none !important;
+    color: white !important;
+    font-size: 1rem !important;
+    border-radius: 20px !important;
+}
+.navbar {
+    background-color: #916D1C !important;
+    border: 2px;
+    border-color : black;
+
+}
+/* Target the active tab link in SuiteCRM 8 */
+.nav-tabs .nav-item .nav-link.active, 
+.nav-tabs .nav-link.active:focus, 
+.nav-tabs .nav-link.active:hover {
+    background-color: #916D1C !important;
+    color: #FFFFFF !important;
+    border-color: #916D1C !important;
+}
+
+
+/* 1. The Global Rule (For Desktops > 1024px) */
+#dashboard ul.nav-dashboard li.active a {
+    background-color: #916D1C !important;
+    background: #916D1C !important;
+    color: #FFFFFF !important;
+}
+
+/* 2. The Mobile/Tablet Override (For screens <= 1024px) */
+@media (max-width: 1024px) {
+    #dashboard ul.nav-dashboard li.active a {
+        background-color: #916D1C !important;
+        background: #916D1C !important;
+        color: #FFFFFF !important;
+    }
+}
+/* Optional: Target the hover state so it doesn't flip back to pink when you mouse over it */
+#dashboard ul.nav-dashboard li.active a:hover,
+#dashboard ul.nav-dashboard li.active a:focus {
+    background-color: #7a5c18 !important; /* A slightly darker shade for feedback */
+    color: #FFFFFF !important;
+}
+
+
+
+/* VINNTRO Brand Colors Override */
+.sk-cube-primary {
+    background-color: #D4AF37 !important; /* VINNTRO Gold */
+}
+
+.sk-cube-secondary {
+    background-color: #4A4A4A !important; /* VINNTRO Grey */
+}
+
+/* Optional: Change the background of the whole loading screen */
+.app-loading {
+    background-color: #f5f5f5 !important; 
+}
+/* ==========================================================================
+   3. Hide Driver Link field completely, but ONLY when it enters Edit Mode
+   ========================================================================== */
+
+/* We look for the specific field container element. If it has an active 
+   input box inside it, it means the user clicked Edit. We hide the entire block.
+*/
+div[data-field-name="contacts_visp_driver_1_name"]:has(input),
+div[data-field-name="contacts_visp_driver_1_name"]:has(.form-control),
+.field-contacts_visp_driver_1_name:has(input) {
+    display: none !important;
+}
+/* ==========================================================================
+   4. Pure SuiteCRM 8 Angular Edit-Mode Hide Rule for Driver Relate Field
+   ========================================================================== */
+
+/* Targets the outer container cell (including the DRIVER text label), 
+   triggering ONLY when the child element enters an editable template state. */
+.field-layout-col:has(.field-name-contacts_visp_driver_1_name scrm-relate-edit) {
+    display: none !important;
+}

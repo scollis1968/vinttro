@@ -4,6 +4,7 @@ import {
   Phone, Mail, MapPin, Search, UserPlus, AlertCircle, RefreshCw 
 } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import OpportunityShell from './components/opportunities/OpportunityShell';
 
 // Helper to guarantee clean URL construction without double-slashes
 function getApiUrl(endpoint) {
@@ -20,6 +21,88 @@ const ICON_MAP = {
   business: Factory,
   storage: Warehouse,
 };
+
+// Master Opportunity Status Configuration
+const STATUS_CONFIG = {
+  // 1. Live / Revenue Generating (Green)
+  live: {
+    label: 'Live',
+    classes: 'vt-bg-emerald-100 vt-text-emerald-700 vt-border-emerald-200',
+  },
+  active: {
+    label: 'Active',
+    classes: 'vt-bg-emerald-100 vt-text-emerald-700 vt-border-emerald-200',
+  },
+  won: {
+    label: 'Won',
+    classes: 'vt-bg-emerald-100 vt-text-emerald-700 vt-border-emerald-200',
+  },
+
+  // 2. High Urgency / Renewal / Active Pipeline (Amber)
+  renewal: {
+    label: 'Renewal',
+    classes: 'vt-bg-amber-100 vt-text-amber-800 vt-border-amber-200',
+  },
+  renewal_due: {
+    label: 'Renewal',
+    classes: 'vt-bg-amber-100 vt-text-amber-800 vt-border-amber-200',
+  },
+  quoted: {
+    label: 'Quoted',
+    classes: 'vt-bg-amber-50 vt-text-amber-700 vt-border-amber-200',
+  },
+
+  // 3. In Progress / Underwriter (Blue)
+  in_progress: {
+    label: 'Working',
+    classes: 'vt-bg-blue-100 vt-text-blue-700 vt-border-blue-200',
+  },
+  pending: {
+    label: 'Pending',
+    classes: 'vt-bg-blue-100 vt-text-blue-700 vt-border-blue-200',
+  },
+
+  // 4. Critical / Needs Immediate Rescue (Red)
+  at_risk: {
+    label: 'At Risk',
+    classes: 'vt-bg-rose-100 vt-text-rose-700 vt-border-rose-200',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    classes: 'vt-bg-rose-100 vt-text-rose-700 vt-border-rose-200',
+  },
+
+  // 5. Inactive / Cold History (Muted Slate - avoids false alarms)
+  lost: {
+    label: 'Lost',
+    classes: 'vt-bg-slate-100 vt-text-slate-500 vt-border-slate-200',
+  },
+  ntu: {
+    label: 'NTU',
+    classes: 'vt-bg-slate-100 vt-text-slate-400 vt-border-slate-200',
+  },
+  archived: {
+    label: 'Archived',
+    classes: 'vt-bg-slate-100 vt-text-slate-400 vt-border-slate-200',
+  },
+};
+
+function StatusPill({ status }) {
+  if (!status) return null;
+  
+  // Normalizes status strings from CRM (e.g. "Renewal Due" -> "renewal_due")
+  const key = String(status).toLowerCase().trim().replace(/[\s-]+/g, '_');
+  const config = STATUS_CONFIG[key] || {
+    label: status,
+    classes: 'vt-bg-slate-100 vt-text-slate-600 vt-border-slate-200',
+  };
+
+  return (
+    <span className={`vt-inline-flex vt-items-center vt-px-1.5 vt-py-0.2 vt-text-[10px] vt-font-semibold vt-rounded-full vt-border vt-ml-1 ${config.classes}`}>
+      {config.label}
+    </span>
+  );
+}
 
 export default function AgentDashboard({ clientId, initialClientId }) {
   const safeInitialId = clientId || initialClientId || 'C-10492';
@@ -40,7 +123,6 @@ export default function AgentDashboard({ clientId, initialClientId }) {
     setErrorState(null);
 
     try {
-      const config = window.vinttroConfig || {};
       const url = getApiUrl(`communicator/clients/${encodeURIComponent(id)}/summary`);
       console.log('Fetching from:', url);
 
@@ -85,7 +167,7 @@ export default function AgentDashboard({ clientId, initialClientId }) {
   }, []);
 
   useEffect(() => {
-    function handlePopState(event) {
+    function handlePopState() {
       const params = new URLSearchParams(window.location.search);
       const idFromUrl = params.get('client_id');
       if (idFromUrl && idFromUrl !== currentClientId) {
@@ -99,14 +181,12 @@ export default function AgentDashboard({ clientId, initialClientId }) {
 
   // Action Dispatchers for Agent Workflow
   const handleOpenSearch = () => {
-    // Dispatches event to communicator or opens search modal
     window.dispatchEvent(new CustomEvent('vinttro:open-client-search', {
       detail: { attemptedId: currentClientId }
     }));
   };
 
   const handleCreateClient = () => {
-    // Triggers new account modal or redirects to SuiteCRM new record
     window.dispatchEvent(new CustomEvent('vinttro:create-client-prompt', {
       detail: { attemptedId: currentClientId }
     }));
@@ -115,7 +195,7 @@ export default function AgentDashboard({ clientId, initialClientId }) {
   // 1. Loading State
   if (loading) {
     return (
-      <div className="vt-p-12 vt-text-center vt-bg-white vt-rounded-lg vt-border vt-border-slate-200 vt-shadow-sm vt-my-4">
+      <div className="vt-p-12 vt-text-center vt-bg-white vt-rounded-b-lg vt-border vt-border-slate-200 vt-shadow-sm vt-my-4">
         <RefreshCw className="vt-w-6 vt-h-6 vt-animate-spin vt-mx-auto vt-text-blue-600 vt-mb-2" />
         <div className="vt-text-slate-600 vt-font-medium vt-text-sm">Fetching Client Details from Redis...</div>
       </div>
@@ -160,7 +240,7 @@ export default function AgentDashboard({ clientId, initialClientId }) {
   // 3. API Connection Error State
   if (errorState === 'SERVER_ERROR' || !clientData) {
     return (
-      <div className="vt-bg-white vt-rounded-lg vt-border vt-border-rose-200 vt-p-6 vt-my-4 vt-text-center">
+      <div className="vt-bg-white vt-rounded-b-lg vt-border vt-border-rose-200 vt-p-6 vt-my-4 vt-text-center">
         <div className="vt-text-rose-600 vt-font-semibold vt-text-sm">Unable to connect to Vinttro API Service</div>
         <p className="vt-text-slate-500 vt-text-xs vt-mt-1 vt-mb-3">Ensure Node.js and Redis are running.</p>
         <button 
@@ -175,7 +255,7 @@ export default function AgentDashboard({ clientId, initialClientId }) {
 
   // 4. Normal Populated Dashboard (Details, Tabs, Opportunities)
   return (
-    <div className="vt-bg-white vt-rounded-lg vt-shadow-sm vt-border vt-border-slate-200 vt-overflow-hidden vt-my-4">
+    <div className="vt-bg-white vt-rounded-b-lg vt-shadow-sm vt-border vt-border-slate-200 vt-overflow-hidden vt-my-4">
       {/* Sticky Header */}
       <div className="vt-bg-slate-800 vt-text-white vt-px-6 vt-py-4 vt-flex vt-justify-between vt-items-center">
         <div>
@@ -220,6 +300,9 @@ export default function AgentDashboard({ clientId, initialClientId }) {
                   >
                     <Icon className="vt-w-4 vt-h-4 vt-text-slate-500" />
                     <span>{opp.tab_label}</span>
+
+                    {/* RAG Status Pill */}
+                    <StatusPill status={opp.status} />
                   </button>
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
@@ -290,31 +373,12 @@ export default function AgentDashboard({ clientId, initialClientId }) {
           </div>
         )}
 
+        {/* Dynamic Opportunity View by Type */}
         {activeTab !== 'details' && activeTab !== 'retail' && (() => {
           const opp = clientData.opportunities?.find(o => o.id === activeTab);
           if (!opp) return null;
 
-          return (
-            <div>
-              <div className="vt-flex vt-justify-between vt-items-start vt-mb-4">
-                <div>
-                  <h2 className="vt-text-xl vt-font-bold vt-text-slate-800 vt-m-0">{opp.tab_tooltip}</h2>
-                  <span className="vt-inline-block vt-mt-1 vt-px-2 vt-py-0.5 vt-rounded-full vt-text-xs vt-font-semibold vt-bg-green-100 vt-text-green-800">
-                    {opp.status}
-                  </span>
-                </div>
-                <div className="vt-text-right">
-                  <div className="vt-text-xs vt-text-slate-500">Premium</div>
-                  <div className="vt-text-lg vt-font-bold vt-text-slate-900">
-                    £{typeof opp.premium === 'number' ? opp.premium.toFixed(2) : opp.premium}
-                  </div>
-                </div>
-              </div>
-              <pre className="vt-bg-slate-50 vt-p-4 vt-rounded-md vt-text-xs vt-text-slate-700 vt-overflow-x-auto vt-border vt-border-slate-200">
-                {JSON.stringify(opp.details, null, 2)}
-              </pre>
-            </div>
-          );
+          return <OpportunityShell opp={opp} StatusPill={StatusPill} />;
         })()}
       </div>
     </div>

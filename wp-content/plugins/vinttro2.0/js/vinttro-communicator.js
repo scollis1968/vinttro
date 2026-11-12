@@ -172,7 +172,7 @@
             );
             
             const popBtn = hasClient 
-                ? `<button type="button" class="vinttro-open-client-btn" title="Open Client in New Tab" style="background:transparent; border:none; cursor:pointer; font-size:16px; margin-left:8px; padding:0; vertical-align:middle; transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">🗂️</button>` 
+                ? `<button type="button" class="vinttro-open-client-btn" title="Open Client" style="background:transparent; border:none; cursor:pointer; font-size:16px; margin-left:8px; padding:0; vertical-align:middle; transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">🗂️</button>` 
                 : '';
 
             if (state === 'idle') {
@@ -310,7 +310,7 @@
                 || (activeCallPayload.client_matches && activeCallPayload.client_matches[0]?.client_id);
             
             if (clientId) {
-                window.open(`/visp/client-view?client_id=${encodeURIComponent(clientId)}`, '_blank');
+                window.location.href = `/visp/client-view?client_id=${encodeURIComponent(clientId)}`;
             }
         });
 

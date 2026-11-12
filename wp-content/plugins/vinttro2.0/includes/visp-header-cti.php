@@ -138,12 +138,15 @@ add_action( 'wp_enqueue_scripts', function() {
     }
 
     // 1. CTI Bar Styles
-    wp_enqueue_style(
-        'visp-header-cti-css',
-        plugins_url( '../css/visp-header-cti.css', __FILE__ ),
-        array(),
-        '2.0.0'
-    );
+
+    add_action( 'wp_enqueue_scripts', function() {
+        wp_enqueue_style(
+            'visp-header-cti',
+            plugins_url( 'css/visp-header-cti.css', __FILE__ ),
+            array( 'wp-block-library' ), // Ensures it waits for block library styles
+            '1.0.0'
+        );
+    }, 999 ); // Priority 999 ensures it loads after the theme and core block styles
 
     // 2. Socket.io Client
     wp_enqueue_script(

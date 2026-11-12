@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) exit;
 
 class Vinttro_Dashboard {
-
+        
     public function __construct() {
         add_shortcode('vinttro_client_screen', [$this, 'render_shortcode']);
         add_action('wp_enqueue_scripts', [$this, 'register_assets']);

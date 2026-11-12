@@ -278,3 +278,74 @@ body.page-template-vinttro-visp-template {
     background: #7f1d1d;
     color: #ffffff;
 }
+/* 1. Remove FSE block gap and margin between header and main */
+.visp-cti-header-bar + main,
+main#wp--skip-link--target {
+    margin-top: 0 !important;
+    margin-block-start: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* 2. Remove default top margins from post content and wrapping groups */
+main#wp--skip-link--target .wp-block-post-content,
+main#wp--skip-link--target .wp-block-group {
+    margin-top: 0 !important;
+    margin-block-start: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* 3. Pull the dashboard flush to the top (overriding vt-my-4) */
+#vinttro-client-dashboard > div.vt-my-4 {
+    margin-top: 0 !important;
+}   
+
+/* 1. Neutralize WordPress html margin bump */
+html:root,
+html[data-cmplz],
+html.wp-toolbar {
+    margin-top: 0 !important;
+}
+
+/* 2. Strip root block theme spacing */
+html body .wp-site-blocks {
+    padding-top: 0 !important;
+}
+
+/* 3. Flush the header bar */
+html body #vinttro-header-cti-container.visp-cti-header-bar {
+    margin-bottom: 0 !important;
+    padding-bottom: 6px !important;
+    height: auto !important;
+    min-height: unset !important;
+}
+
+/* 4. Kill the FSE sibling gap on <main> and override inline padding */
+html body .wp-site-blocks > main#wp--skip-link--target,
+html body main.wp-block-group {
+    margin-top: 0 !important;
+    margin-block-start: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* 5. Zero out nested Gutenberg layout wrappers */
+html body main#wp--skip-link--target .wp-block-group,
+html body main#wp--skip-link--target .entry-content,
+html body main#wp--skip-link--target .wp-block-post-content {
+    margin-top: 0 !important;
+    margin-block-start: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* 6. Dashboard: Neutralize flow gap and Tailwind mt */
+html body main#wp--skip-link--target #vinttro-client-dashboard,
+html body #vinttro-client-dashboard > div,
+html body #vinttro-client-dashboard .vt-my-4 {
+    margin-top: 0 !important;
+    margin-block-start: 0 !important;
+    padding-top: 0 !important;
+}
+/* Remove top rounding so the dashboard sits square against the header */
+html body #vinttro-client-dashboard > div {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+}

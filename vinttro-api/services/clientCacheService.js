@@ -68,16 +68,45 @@ async function getClientByCli(rawCli) {
  */
 async function syncClientsFromSuiteCRM() {
     const startTime = Date.now();
-    const contacts = await suitecrmService.getAllContacts();
+
+    // Fetch contacts (and bulk opportunities if available on suitecrmService)
+    const [contacts, opportunities] = await Promise.all([
+        suitecrmService.getAllContacts(),
+        typeof suitecrmService.getAllOpportunities === 'function'
+            ? suitecrmService.getAllOpportunities()
+            : Promise.resolve([])
+    ]);
 
     if (!contacts || contacts.length === 0) {
         return { success: false, message: 'No contacts retrieved from SuiteCRM' };
     }
 
     const newVersion = `v_${Date.now()}`;
-    const phoneMap = new Map(); // Normalized CLI -> Array of contact payloads
+    const phoneMap = new Map();   // Normalized CLI -> Array of contact payloads
+    const summaryMap = new Map(); // clientId -> Client Summary object
 
-    // 1. Group contacts by every non-empty phone field
+    // 1. Index Opportunities by account_id (if bulk-fetched)
+    const oppsByClientId = new Map();
+    for (const opp of opportunities) {
+        const oppAttr = opp.attributes || opp;
+        const accId = oppAttr.account_id;
+        if (!accId) continue;
+
+        if (!oppsByClientId.has(accId)) {
+            oppsByClientId.set(accId, []);
+        }
+        oppsByClientId.get(accId).push({
+            id: opp.id,
+            type: (oppAttr.policy_type_c || oppAttr.opportunity_type || 'business').toLowerCase(),
+            tab_label: oppAttr.name || 'Policy',
+            tab_tooltip: oppAttr.description || oppAttr.name || '',
+            status: oppAttr.sales_stage || 'active',
+            // Include any additional fields OpportunityShell expects here
+            raw: oppAttr
+        });
+    }
+
+    // 2. Group Contacts for both client_cli and client_summary
     for (const record of contacts) {
         const attr = record.attributes || {};
         const contactId = record.id;
@@ -93,31 +122,67 @@ async function syncClientsFromSuiteCRM() {
         };
 
         const phoneFields = [attr.phone_work, attr.phone_mobile, attr.phone_home, attr.phone_other, attr.phone_fax];
+        let primaryNormalizedPhone = null;
 
         for (const rawPhone of phoneFields) {
             const normalized = normalizeCli(rawPhone);
             if (!normalized) continue;
+
+            if (!primaryNormalizedPhone) primaryNormalizedPhone = normalized;
 
             if (!phoneMap.has(normalized)) {
                 phoneMap.set(normalized, []);
             }
 
             const existingList = phoneMap.get(normalized);
-            // Deduplicate if the same contact ID is mapped twice to the same number
             if (!existingList.some(item => item.contact_id === contactId)) {
                 existingList.push(payload);
             }
         }
+
+        // Build/merge base client_summary entry when linked to an Account/Client ID
+        if (clientId && !summaryMap.has(clientId)) {
+            const addressParts = [
+                attr.primary_address_street,
+                attr.primary_address_city,
+                attr.primary_address_postalcode
+            ].filter(Boolean);
+
+            summaryMap.set(clientId, {
+                client_id: clientId,
+                client_name: accountName || contactName,
+                details: {
+                    phone: primaryNormalizedPhone || attr.phone_work || attr.phone_mobile || '',
+                    email: attr.email1 || '',
+                    primary_address: addressParts.join(', ')
+                },
+                opportunities: oppsByClientId.get(clientId) || [],
+                retail: {
+                    active_offers_count: 0,
+                    offers: []
+                },
+                cached_at: new Date().toISOString()
+            });
+        }
     }
 
-    // 2. Pipeline-write dataset under the new version tag
+    // 3. Pipeline-write both client_cli and client_summary in batches
     let pipeline = redisClient.multi();
     let commandCount = 0;
     const BATCH_SIZE = 1000;
 
     for (const [cli, matches] of phoneMap.entries()) {
-        const key = `client_cli:${newVersion}:${cli}`;
-        pipeline.set(key, JSON.stringify(matches));
+        pipeline.set(`client_cli:${newVersion}:${cli}`, JSON.stringify(matches));
+        commandCount++;
+
+        if (commandCount % BATCH_SIZE === 0) {
+            await pipeline.exec();
+            pipeline = redisClient.multi();
+        }
+    }
+
+    for (const [clientId, summary] of summaryMap.entries()) {
+        pipeline.set(`client_summary:${clientId}`, JSON.stringify(summary));
         commandCount++;
 
         if (commandCount % BATCH_SIZE === 0) {
@@ -130,28 +195,29 @@ async function syncClientsFromSuiteCRM() {
         await pipeline.exec();
     }
 
-    // 3. Atomic Pointer Swap
+    // 4. Atomic Pointer Swap for CLI index
     const previousVersion = await redisClient.get('client_cli:active_version');
     await redisClient.set('client_cli:active_version', newVersion);
 
-    // 4. Async Cleanup of Old Version Keys
+    // 5. Async Cleanup of Old CLI Version Keys
     if (previousVersion) {
-        cleanupOldVersionKeys(`client_cli:${previousVersion}:*`).catch(err => 
+        cleanupOldVersionKeys(`client_cli:${previousVersion}:*`).catch(err =>
             console.error('[ClientCache Cleanup Warning]:', err.message)
         );
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(`✅ [ClientCache Sync Completed] ${commandCount} unique numbers indexed in ${duration}s (Version: ${newVersion})`);
+    console.log(`✅ [ClientCache Sync Completed] ${phoneMap.size} numbers & ${summaryMap.size} client summaries indexed in ${duration}s`);
 
     return {
         total_contacts: contacts.length,
-        indexed_phone_numbers: commandCount,
+        total_opportunities: opportunities.length,
+        indexed_phone_numbers: phoneMap.size,
+        indexed_client_summaries: summaryMap.size,
         active_version: newVersion,
         duration_seconds: parseFloat(duration)
     };
 }
-
 /**
  * Asynchronously unlinks previous version keys using Redis SCAN
  */

@@ -229,6 +229,56 @@ async function getAllContacts() {
     return allContacts;
 }
 
+
+/**
+ * Fetch a paginated batch of Opportunities from SuiteCRM V8 API
+ */
+async function fetchOpportunitiesBatch(pageNumber = 1, pageSize = 500) {
+    const token = await getAccessToken();
+    const apiUrl = `${SUITECRM_URL}/V8/module/Opportunities?page[size]=${pageSize}&page[number]=${pageNumber}`;
+
+    const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+        }
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`SuiteCRM Opportunities fetch failed (${response.status}): ${errText}`);
+    }
+
+    const data = await response.json();
+    return {
+        records: data.data || [],
+        totalPages: data.meta?.['total-pages'] || 1
+    };
+}
+
+/**
+ * Iterates through all pages to retrieve all opportunities from SuiteCRM
+ */
+async function getAllOpportunities() {
+    let currentPage = 1;
+    let totalPages = 1;
+    let allOpportunities = [];
+
+    console.log('[SuiteCRM Sync] Starting Opportunities extraction...');
+
+    do {
+        const { records, totalPages: pages } = await fetchOpportunitiesBatch(currentPage, 500);
+        totalPages = pages;
+        allOpportunities = allOpportunities.concat(records);
+        console.log(`[SuiteCRM Sync] Fetched opportunities page ${currentPage} of ${totalPages} (${records.length} records)`);
+        currentPage++;
+    } while (currentPage <= totalPages);
+
+    console.log(`✅ [SuiteCRM Sync] Total Opportunities retrieved: ${allOpportunities.length}`);
+    return allOpportunities;
+}
+
 async function createContact(attributes) {
     return await createRecord('Contacts', attributes);
 }
@@ -246,5 +296,7 @@ module.exports = {
     fetchContactsBatch,
     getAllContacts,
     createContact,
-    updateContact
+    updateContact,
+    fetchOpportunitiesBatch,
+    getAllOpportunities
 };      

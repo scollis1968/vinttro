@@ -152,29 +152,44 @@ async function findContactByEmail(email) {
  */
 async function saveCallRecord(callData) {
     const identifier = callData.call_id || callData.conference_sid || 'UNKNOWN_CALL';
-    const callerNumber = callData.from || callData.callerId || 'Unknown';
-    const durationSeconds = parseInt(callData.duration_seconds || 0, 10);
+    const direction = callData.direction || 'Inbound';
+    const partyNumber = direction === 'Outbound'
+        ? (callData.to || 'Unknown')
+        : (callData.from || callData.callerId || 'Unknown');
 
+    const durationSeconds = parseInt(callData.duration_seconds || 0, 10);
     const durationHours = Math.floor(durationSeconds / 3600);
     const durationMinutes = Math.floor((durationSeconds % 3600) / 60);
 
-    const startTime = callData.timestamp 
+    const startTime = callData.timestamp
         ? new Date(callData.timestamp).toISOString().replace('T', ' ').substring(0, 19)
         : new Date().toISOString().replace('T', ' ').substring(0, 19);
 
     const legsJson = JSON.stringify(callData.legs || [], null, 2);
 
     const attributes = {
-        name: `Inbound Call - ${callerNumber}`,
-        direction: 'Inbound',
+        name: `${direction} Call - ${partyNumber}`,
+        direction: direction,
         status: 'Held',
         date_start: startTime,
         duration_hours: durationHours,
         duration_minutes: durationMinutes,
-        description: `Call SID: ${identifier}\nCaller: ${callerNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}`
+        description: `Call SID: ${identifier}\nDirection: ${direction}\nNumber: ${partyNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}`
     };
 
-    console.log(`[SuiteCRM Sync] Pushing Call ${identifier} (First Agent: ${callData.first_agent || 'None'}) to SuiteCRM...`);
+    // Link the Call activity to the most specific CRM parent record
+    if (callData.opportunity_id) {
+        attributes.parent_type = 'Opportunities';
+        attributes.parent_id = callData.opportunity_id;
+    } else if (callData.task_id) {
+        attributes.parent_type = 'Tasks';
+        attributes.parent_id = callData.task_id;
+    } else if (callData.client_id) {
+        attributes.parent_type = 'Accounts';
+        attributes.parent_id = callData.client_id;
+    }
+
+    console.log(`[SuiteCRM Sync] Pushing ${direction} Call ${identifier} to SuiteCRM...`);
     const result = await createRecord('Calls', attributes);
     console.log(`✅ [SuiteCRM Sync Success] Call record created with ID: ${result?.data?.id || 'OK'}`);
     return result;
@@ -287,6 +302,143 @@ async function updateContact(id, attributes) {
     return await updateRecord('Contacts', id, attributes);
 }
 
+/**
+ * Fetch a paginated batch of Accounts from SuiteCRM V8 API
+ */
+async function fetchAccountsBatch(pageNumber = 1, pageSize = 500) {
+    const token = await getAccessToken();
+    const apiUrl = `${SUITECRM_URL}/V8/module/Accounts?page[size]=${pageSize}&page[number]=${pageNumber}`;
+
+    const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+        }
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`SuiteCRM Accounts fetch failed (${response.status}): ${errText}`);
+    }
+
+    const data = await response.json();
+    return {
+        records: data.data || [],
+        totalPages: data.meta?.['total-pages'] || 1
+    };
+}
+
+/**
+ * Iterates through all pages to retrieve all accounts from SuiteCRM
+ */
+async function getAllAccounts() {
+    let currentPage = 1;
+    let totalPages = 1;
+    let allAccounts = [];
+
+    console.log('[SuiteCRM Sync] Starting Accounts extraction...');
+
+    do {
+        const { records, totalPages: pages } = await fetchAccountsBatch(currentPage, 500);
+        totalPages = pages;
+        allAccounts = allAccounts.concat(records);
+        console.log(`[SuiteCRM Sync] Fetched accounts page ${currentPage} of ${totalPages} (${records.length} records)`);
+        currentPage++;
+    } while (currentPage <= totalPages);
+
+    console.log(`✅ [SuiteCRM Sync] Total Accounts retrieved: ${allAccounts.length}`);
+    return allAccounts;
+}
+
+/**
+ * Fetch related record IDs for a given module record (e.g. Accounts -> contacts)
+ */
+async function getRelatedRecordIds(moduleName, recordId, linkFieldName) {
+    const token = await getAccessToken();
+    const apiUrl = `${SUITECRM_URL}/V8/module/${moduleName}/${recordId}/relationships/${linkFieldName}`;
+
+    const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+        }
+    });
+
+    if (!response.ok) {
+        // 404 simply means no related records exist on some SuiteCRM versions
+        if (response.status === 404) return [];
+        console.warn(`[SuiteCRM Sync Warning] Failed loading ${linkFieldName} for ${moduleName}/${recordId} (${response.status})`);
+        return [];
+    }
+
+    const data = await response.json();
+    return (data.data || []).map(item => item.id).filter(Boolean);
+}
+
+/**
+ * Lightweight concurrency runner to avoid overwhelming SuiteCRM with simultaneous requests
+ */
+async function mapWithConcurrency(items, concurrency, workerFn) {
+    const results = new Array(items.length);
+    let index = 0;
+
+    async function worker() {
+        while (index < items.length) {
+            const currentIndex = index++;
+            results[currentIndex] = await workerFn(items[currentIndex], currentIndex);
+        }
+    }
+
+    const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker());
+    await Promise.all(workers);
+    return results;
+}
+
+/**
+ * Builds a Map<contactId, Set<accountId>> covering all many-to-many Account <-> Contact links.
+ * Automatically queries from whichever module has fewer records to minimize API calls.
+ */
+async function getContactAccountLinks(accounts, contacts) {
+    const contactToAccounts = new Map();
+
+    const addLink = (contactId, accountId) => {
+        if (!contactId || !accountId) return;
+        if (!contactToAccounts.has(contactId)) {
+            contactToAccounts.set(contactId, new Set());
+        }
+        contactToAccounts.get(contactId).add(accountId);
+    };
+
+    // 1. Seed from Contact's primary account_id field first
+    for (const contact of contacts) {
+        const primaryAccId = contact.attributes?.account_id;
+        if (primaryAccId) {
+            addLink(contact.id, primaryAccId);
+        }
+    }
+
+    // 2. Fetch many-to-many relationship links from the smaller collection (15 concurrent requests)
+    if (accounts.length <= contacts.length) {
+        await mapWithConcurrency(accounts, 15, async (account) => {
+            const relatedContactIds = await getRelatedRecordIds('Accounts', account.id, 'contacts');
+            for (const contactId of relatedContactIds) {
+                addLink(contactId, account.id);
+            }
+        });
+    } else {
+        await mapWithConcurrency(contacts, 15, async (contact) => {
+            const relatedAccountIds = await getRelatedRecordIds('Contacts', contact.id, 'accounts');
+            for (const accountId of relatedAccountIds) {
+                addLink(contact.id, accountId);
+            }
+        });
+    }
+
+    return contactToAccounts;
+}
+
 module.exports = {
     getAccessToken,
     createRecord,
@@ -298,5 +450,10 @@ module.exports = {
     createContact,
     updateContact,
     fetchOpportunitiesBatch,
-    getAllOpportunities
+    getAllOpportunities,
+    fetchAccountsBatch,
+    getAllAccounts,
+    getRelatedRecordIds,
+    mapWithConcurrency,
+    getContactAccountLinks
 };      

@@ -77,6 +77,45 @@ function vinttro_render_agent_phone() {
                 <span class="text-xs text-slate-500 font-mono" id="rtc-status-text">Authenticating...</span>
             </div>
 
+            <!-- Outbound / DTMF Dial Pad -->
+            <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200">
+                <div class="flex gap-1.5 mb-2">
+                    <input
+                        type="tel"
+                        id="dialpad-input"
+                        placeholder="Enter number (e.g. 07700 900000)"
+                        class="flex-1 px-2.5 py-1.5 text-sm font-mono border border-slate-300 rounded focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                        type="button"
+                        id="dialpad-clear"
+                        title="Backspace"
+                        class="px-2.5 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded border border-slate-300"
+                    >⌫</button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-1.5 mb-2">
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="1">1</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="2">2</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="3">3</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="4">4</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="5">5</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="6">6</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="7">7</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="8">8</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="9">9</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="*">*</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="0">0</button>
+                    <button type="button" class="dial-digit py-1.5 text-sm font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded" data-digit="#">#</button>
+                </div>
+
+                <button
+                    type="button"
+                    id="dialpad-call-btn"
+                    class="w-full py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded shadow-sm transition-colors"
+                >📞 Call Number</button>
+            </div>
+
             <!-- Active Call Status Card -->
             <div class="bg-slate-800 text-white p-4 rounded-md shadow-sm border border-slate-700 mt-3" id="call-card">
                 <div class="text-xs text-slate-400 font-semibold mb-1 uppercase tracking-wider" id="call-state">IDLE</div>
@@ -90,13 +129,14 @@ function vinttro_render_agent_phone() {
             <p class="text-xs text-slate-400 m-0">Audio engine active. You can minimize this window.</p>
         </div>
 
-        <!-- Audio Engine Script -->
+<!-- Audio Engine Script -->
         <script>
             const urlParams = new URLSearchParams(window.location.search);
             const AGENT_ID = urlParams.get('agent') || '<?php echo esc_js( strtolower( trim( $agent_email ) ) ); ?>';
             const NODE_URL = urlParams.get('node') || '<?php echo esc_js( untrailingslashit( esc_url_raw( $node_url ) ) ); ?>';
             
             let twilioDevice = null;
+            let activeCall = null;
             let socket = null;
             let callTimer = null;
             
@@ -107,6 +147,15 @@ function vinttro_render_agent_phone() {
             let isMuted = false;
 
             document.getElementById('agent-identity-label').innerText = AGENT_ID;
+
+            function normalizePhoneNumber(raw) {
+                if (!raw) return '';
+                let cleaned = String(raw).replace(/[^\d+]/g, '');
+                if (!cleaned) return '';
+                if (cleaned.startsWith('0')) cleaned = '+44' + cleaned.slice(1);
+                if (!cleaned.startsWith('+')) cleaned = '+' + cleaned;
+                return cleaned;
+            }
 
             // 1. BroadcastChannel Inter-tab Bus
             const ctiBus = new BroadcastChannel('vinttro_cti_bus');
@@ -132,18 +181,144 @@ function vinttro_render_agent_phone() {
                 });
             }
 
+            // Place Outbound PSTN Call (from Dial Pad or Click-to-Dial)
+            async function placeOutboundCall({ to, clientId = null, contactId = null, opportunityId = null, taskId = null, clientName = null } = {}) {
+                const formattedTo = normalizePhoneNumber(to);
+                console.log('[Softphone] Outbound dial requested:', { raw: to, formattedTo, clientId, opportunityId, taskId });
+
+                if (!formattedTo) {
+                    alert('Please enter a valid phone number.');
+                    return;
+                }
+
+                if (!twilioDevice || twilioDevice.state !== 'registered') {
+                    alert('Softphone is not registered with Twilio yet. Check WebRTC Audio status.');
+                    return;
+                }
+
+                if (currentCallState !== 'IDLE') {
+                    alert('You are already on an active call.');
+                    return;
+                }
+
+                try {
+                    const params = { To: formattedTo };
+                    if (clientId) params.clientId = String(clientId);
+                    if (contactId) params.contactId = String(contactId);
+                    if (opportunityId) params.opportunityId = String(opportunityId);
+                    if (taskId) params.taskId = String(taskId);
+                    if (clientName) params.clientName = String(clientName);
+
+                    activeCall = await twilioDevice.connect({ params });
+                    bindActiveCallEvents(activeCall);
+
+                    const displayLabel = clientName ? `${clientName} (${formattedTo})` : formattedTo;
+                    currentCallState = 'ACTIVE';
+                    callStartTime = Date.now();
+                    currentCallData = {
+                        direction: 'Outbound',
+                        to: formattedTo,
+                        client_id: clientId,
+                        contact_id: contactId,
+                        opportunity_id: opportunityId,
+                        task_id: taskId,
+                        client_name: clientName || formattedTo
+                    };
+
+                    updateCallUI('ACTIVE', displayLabel);
+
+                    ctiBus.postMessage({
+                        action: 'SYNC_CALL_ACTIVE',
+                        payload: {
+                            displayName: displayLabel,
+                            roomId: null,
+                            callStartTime: callStartTime,
+                            callData: currentCallData
+                        }
+                    });
+                } catch (err) {
+                    console.error('[Softphone] Outbound connect failed:', err);
+                    alert('Failed to start call: ' + err.message);
+                    resetCallState();
+                }
+            }
+
+            function bindActiveCallEvents(call) {
+                if (!call) return;
+                call.on('disconnect', () => {
+                    console.log('[Softphone] Call disconnected');
+                    activeCall = null;
+                    resetCallState();
+                    ctiBus.postMessage({ action: 'SYNC_CALL_ENDED' });
+                });
+                call.on('cancel', () => {
+                    console.log('[Softphone] Call canceled');
+                    activeCall = null;
+                    resetCallState();
+                    ctiBus.postMessage({ action: 'SYNC_CALL_ENDED' });
+                });
+                call.on('error', (err) => {
+                    console.error('[Softphone] Active call error:', err);
+                });
+            }
+
+            // Dial Pad UI Listeners
+            const dialInput = document.getElementById('dialpad-input');
+            const clearBtn = document.getElementById('dialpad-clear');
+            const callBtn = document.getElementById('dialpad-call-btn');
+
+            document.querySelectorAll('.dial-digit').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const digit = btn.getAttribute('data-digit');
+                    if (!digit) return;
+
+                    if (currentCallState === 'ACTIVE' && activeCall) {
+                        // Send DTMF tone during active call (e.g. external IVR menus)
+                        activeCall.sendDigits(digit);
+                        console.log('[Softphone] Sent DTMF:', digit);
+                    } else if (dialInput) {
+                        dialInput.value += digit;
+                        dialInput.focus();
+                    }
+                });
+            });
+
+            if (clearBtn && dialInput) {
+                clearBtn.addEventListener('click', () => {
+                    dialInput.value = dialInput.value.slice(0, -1);
+                    dialInput.focus();
+                });
+            }
+
+            if (callBtn && dialInput) {
+                callBtn.addEventListener('click', () => {
+                    placeOutboundCall({ to: dialInput.value });
+                });
+
+                dialInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        placeOutboundCall({ to: dialInput.value });
+                    }
+                });
+            }
+
             // Listen for control commands from WordPress tabs
-            ctiBus.onmessage = (event) => {
+            ctiBus.onmessage = async (event) => {
                 const { action, payload } = event.data;
                 console.log(`[CTI Bus] Received: ${action}`, payload);
 
-                // Initial hydration request from a newly opened or refreshed tab
                 if (action === 'REQUEST_STATE') {
                     broadcastFullState();
                 }
+                else if (action === 'OUTBOUND_DIAL') {
+                    if (dialInput && payload?.to) dialInput.value = payload.to;
+                    await placeOutboundCall(payload || {});
+                }
                 else if (action === 'ANSWER_CALL') {
                     if (twilioDevice) {
-                        twilioDevice.connect({ params: { To: payload.roomId } });
+                        activeCall = await twilioDevice.connect({ params: { To: payload.roomId } });
+                        bindActiveCallEvents(activeCall);
                         currentCallState = 'ACTIVE';
                         callStartTime = Date.now();
                         if (currentCallData) {
@@ -152,7 +327,6 @@ function vinttro_render_agent_phone() {
 
                         updateCallUI('ACTIVE', payload.displayName || 'Active Call');
 
-                        // Broadcast to ALL WordPress tabs to sync headers and timers
                         ctiBus.postMessage({
                             action: 'SYNC_CALL_ACTIVE',
                             payload: {
@@ -166,6 +340,7 @@ function vinttro_render_agent_phone() {
                 } 
                 else if (action === 'HANGUP_CALL') {
                     if (twilioDevice) twilioDevice.disconnectAll();
+                    activeCall = null;
                     resetCallState();
                     ctiBus.postMessage({ action: 'SYNC_CALL_ENDED' });
                 } 
@@ -174,13 +349,11 @@ function vinttro_render_agent_phone() {
                     ctiBus.postMessage({ action: 'SYNC_CALL_DISMISSED' });
                 }
                 else if (action === 'MUTE_TOGGLE') {
-                    if (twilioDevice) {
-                        const conn = twilioDevice.activeConnection();
-                        if (conn) {
-                            isMuted = payload.muted;
-                            conn.mute(isMuted);
-                            ctiBus.postMessage({ action: 'MUTE_STATE_CHANGED', muted: isMuted });
-                        }
+                    const callToMute = activeCall || (twilioDevice?.calls && twilioDevice.calls[0]);
+                    if (callToMute) {
+                        isMuted = payload.muted;
+                        callToMute.mute(isMuted);
+                        ctiBus.postMessage({ action: 'MUTE_STATE_CHANGED', muted: isMuted });
                     }
                 }
                 else if (action === 'UPDATE_CONTACT_SELECTION') {
@@ -191,7 +364,6 @@ function vinttro_render_agent_phone() {
                         currentCallData.client_name = payload.clientName;
                         currentCallData.account_name = payload.accountName;
                     }
-                    // Relay selection to all other open tabs
                     ctiBus.postMessage({ action: 'SYNC_CONTACT_SELECTION', payload: payload });
                 }
             };
@@ -227,6 +399,7 @@ function vinttro_render_agent_phone() {
 
             socket.on('call_updated', (data) => {
                 if (['completed', 'canceled', 'failed'].includes(data.status)) {
+                    activeCall = null;
                     resetCallState();
                     ctiBus.postMessage({ action: 'SYNC_CALL_ENDED', payload: data });
                 }
@@ -248,8 +421,22 @@ function vinttro_render_agent_phone() {
                     twilioDevice.register();
 
                     twilioDevice.on('registered', () => {
+                        console.log('[Softphone] Twilio Device registered');
                         updateStatus('rtc', 'online', 'Ready');
                         broadcastFullState();
+
+                        // Check if a Click-to-Dial action launched this window
+                        const pendingRaw = localStorage.getItem('vinttro_pending_dial');
+                        if (pendingRaw) {
+                            localStorage.removeItem('vinttro_pending_dial');
+                            try {
+                                const pending = JSON.parse(pendingRaw);
+                                if (pending.expiresAt && pending.expiresAt > Date.now()) {
+                                    if (dialInput && pending.to) dialInput.value = pending.to;
+                                    placeOutboundCall(pending);
+                                }
+                            } catch (e) {}
+                        }
                     });
 
                     twilioDevice.on('error', (err) => {
@@ -259,6 +446,7 @@ function vinttro_render_agent_phone() {
                     });
 
                     twilioDevice.on('disconnect', () => {
+                        activeCall = null;
                         resetCallState();
                         ctiBus.postMessage({ action: 'SYNC_CALL_ENDED' });
                     });

@@ -399,23 +399,101 @@ exports.handleInboundCall = async (req, res) => {
 };
 
 // -------------------------------------------------------------------------
-// WEBRTC VOICE CONNECT
+// WEBRTC VOICE CONNECT (Handles both Inbound Room Joins & Outbound Calls)
 // -------------------------------------------------------------------------
 exports.handleVoiceConnect = async (req, res) => {
     try {
-        const roomName = req.body.To || req.body.RoomName || req.query.To || 'default-room';
+        const io = req.app.get('io');
+        const target = (req.body.To || req.body.RoomName || req.query.To || '').trim();
+        const callSid = req.body.CallSid;
         const conferenceSid = req.body.ConferenceSid || req.body.conference_sid;
 
         const rawCaller = req.body.From || req.body.Caller || req.query.From || req.body.identity || '';
         const agentId = rawCaller.replace(/^client:/i, '') || 'Unknown Agent';
-        const callSid = roomName.startsWith('Room_') ? roomName.replace('Room_', '') : roomName;
 
-        if (callSid && callSid !== 'default-room') {
-            if (conferenceSid) {
-                await redisClient.setEx(`map:${conferenceSid}`, 43200, callSid);
+        const isPhoneNumber = /^\+?[0-9\s\-()]{7,20}$/.test(target);
+
+        // =================================================================
+        // BRANCH A: OUTBOUND PSTN CALL (From Dial Pad or Click-to-Dial)
+        // =================================================================
+        if (isPhoneNumber) {
+            let formattedTo = target.replace(/[^\d+]/g, '');
+            if (formattedTo.startsWith('0')) formattedTo = '+44' + formattedTo.slice(1);
+            if (!formattedTo.startsWith('+')) formattedTo = '+' + formattedTo;
+
+            // Custom CRM metadata passed from twilioDevice.connect({ params })
+            const clientId = req.body.clientId || null;
+            const contactId = req.body.contactId || null;
+            const opportunityId = req.body.opportunityId || null;
+            const taskId = req.body.taskId || null;
+            const clientName = req.body.clientName || null;
+
+            const baseUrl = process.env.PUBLIC_API_URL || `${req.protocol}://${req.get('host')}`;
+            const recordingCallbackUrl = `${baseUrl}/api/communicator/recording-event?call_id=${encodeURIComponent(callSid)}`;
+            const statusCallbackUrl = `${baseUrl}/api/communicator/status-callback?call_id=${encodeURIComponent(callSid)}`;
+            const outboundCallerId = process.env.TWILIO_CALLER_ID || process.env.TWILIO_PHONE_NUMBER;
+
+            if (callSid) {
+                const callPayload = {
+                    call_id: callSid,
+                    callSid: callSid,
+                    direction: 'Outbound',
+                    callerId: outboundCallerId || agentId,
+                    from: outboundCallerId || agentId,
+                    to: formattedTo,
+                    status: 'ringing',
+                    first_agent: agentId,
+                    last_agent: agentId,
+                    client_id: clientId,
+                    contact_id: contactId,
+                    opportunity_id: opportunityId,
+                    task_id: taskId,
+                    client_name: clientName,
+                    legs: [{
+                        leg_type: 'outbound_dial',
+                        agent_id: agentId,
+                        to: formattedTo,
+                        status: 'ringing',
+                        timestamp: new Date().toISOString()
+                    }],
+                    timestamp: new Date().toISOString(),
+                    last_updated: new Date().toISOString()
+                };
+
+                await redisClient.setEx(`call:${callSid}`, 43200, JSON.stringify(callPayload));
+                await redisClient.sAdd('active_calls', callSid);
+                if (io) io.emit('call_updated', callPayload);
             }
 
-            const redisKey = `call:${callSid}`;
+            const twiml = new twilio.twiml.VoiceResponse();
+            const dial = twiml.dial({
+                callerId: outboundCallerId,
+                record: 'record-from-answer-dual',
+                recordingStatusCallback: recordingCallbackUrl,
+                recordingStatusCallbackEvent: 'completed'
+            });
+
+            dial.number({
+                statusCallback: statusCallbackUrl,
+                statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed']
+            }, formattedTo);
+
+            res.type('text/xml');
+            return res.send(twiml.toString());
+        }
+
+        // =================================================================
+        // BRANCH B: INBOUND CONFERENCE BRIDGE (Existing Flow)
+        // =================================================================
+        const roomName = target || 'default-room';
+        const inboundCallSid = roomName.startsWith('Room_') ? roomName.replace('Room_', '') : roomName;
+
+        if (inboundCallSid && inboundCallSid !== 'default-room') {
+            if (conferenceSid) {
+                await redisClient.setEx(`map:${conferenceSid}`, 43200, inboundCallSid);
+            }
+
+            const redisKey = `call:${inboundCallSid}`;
             const currentCallDataRaw = await redisClient.get(redisKey);
 
             if (currentCallDataRaw) {
@@ -440,15 +518,12 @@ exports.handleVoiceConnect = async (req, res) => {
                 };
 
                 await redisClient.setEx(redisKey, 43200, JSON.stringify(updatedCallData));
-
-                const io = req.app.get('io');
                 if (io) io.emit('call_updated', updatedCallData);
             }
         }
 
-        const io = req.app.get('io');
-        if (io && callSid) {
-            io.emit('dismiss_incoming_call', { call_id: callSid, answered_by: agentId, reason: 'answered' });
+        if (io && inboundCallSid) {
+            io.emit('dismiss_incoming_call', { call_id: inboundCallSid, answered_by: agentId, reason: 'answered' });
         }
 
         const twiml = new twilio.twiml.VoiceResponse();
@@ -460,9 +535,7 @@ exports.handleVoiceConnect = async (req, res) => {
     } catch (error) {
         console.error('[Voice Connect Error]:', error);
         const twiml = new twilio.twiml.VoiceResponse();
-        const dial = twiml.dial();
-        dial.conference({ startConferenceOnEnter: true, endConferenceOnExit: true }, 'default-room');
-
+        twiml.say('Sorry, we could not connect your call.');
         res.type('text/xml');
         return res.send(twiml.toString());
     }

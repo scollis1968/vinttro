@@ -64,32 +64,40 @@ async function getClientByCli(rawCli) {
 }
 
 /**
- * Full Nightly/Daytime Sync: Pulls Contacts from SuiteCRM and atomically swaps Redis dataset
+ * Full Nightly/Daytime Sync: Pulls Accounts, Contacts, Relationships & Opportunities
+ * from SuiteCRM and atomically swaps the Redis dataset.
  */
 async function syncClientsFromSuiteCRM() {
     const startTime = Date.now();
 
-    // Fetch contacts (and bulk opportunities if available on suitecrmService)
-    const [contacts, opportunities] = await Promise.all([
+    // 1. Fetch Accounts, Contacts, and Opportunities in parallel
+    const [accounts, contacts, opportunities] = await Promise.all([
+        suitecrmService.getAllAccounts(),
         suitecrmService.getAllContacts(),
-        typeof suitecrmService.getAllOpportunities === 'function'
-            ? suitecrmService.getAllOpportunities()
-            : Promise.resolve([])
+        suitecrmService.getAllOpportunities()
     ]);
 
     if (!contacts || contacts.length === 0) {
         return { success: false, message: 'No contacts retrieved from SuiteCRM' };
     }
 
-    const newVersion = `v_${Date.now()}`;
-    const phoneMap = new Map();   // Normalized CLI -> Array of contact payloads
-    const summaryMap = new Map(); // clientId -> Client Summary object
+    // 2. Resolve many-to-many links: Map<contactId, Set<accountId>>
+    const contactToAccounts = await suitecrmService.getContactAccountLinks(accounts, contacts);
 
-    // 1. Index Opportunities by account_id (if bulk-fetched)
+    const newVersion = `v_${Date.now()}`;
+    const phoneMap = new Map();      // Normalized CLI -> Array of { contact_id, contact_name, client_id, account_name }
+    const summaryMap = new Map();    // accountId -> Client Summary object
+    const accountLookup = new Map(); // accountId -> Account record
+
+    for (const acc of accounts) {
+        accountLookup.set(acc.id, acc);
+    }
+
+    // 3. Index Opportunities by account_id
     const oppsByClientId = new Map();
     for (const opp of opportunities) {
         const oppAttr = opp.attributes || opp;
-        const accId = oppAttr.account_id;
+        const accId = oppAttr.account_id || opp.relationships?.accounts?.data?.id;
         if (!accId) continue;
 
         if (!oppsByClientId.has(accId)) {
@@ -101,72 +109,121 @@ async function syncClientsFromSuiteCRM() {
             tab_label: oppAttr.name || 'Policy',
             tab_tooltip: oppAttr.description || oppAttr.name || '',
             status: oppAttr.sales_stage || 'active',
-            // Include any additional fields OpportunityShell expects here
             raw: oppAttr
         });
     }
 
-    // 2. Group Contacts for both client_cli and client_summary
+    // 4. Seed client_summary for every Account using its own details + opportunities
+    for (const acc of accounts) {
+        const accAttr = acc.attributes || {};
+        const addressParts = [
+            accAttr.billing_address_street,
+            accAttr.billing_address_city,
+            accAttr.billing_address_postalcode
+        ].filter(Boolean);
+
+        summaryMap.set(acc.id, {
+            client_id: acc.id,
+            client_name: accAttr.name || 'Unnamed Account',
+            details: {
+                phone: normalizeCli(accAttr.phone_office) || accAttr.phone_office || '',
+                email: accAttr.email1 || '',
+                primary_address: addressParts.join(', ')
+            },
+            opportunities: oppsByClientId.get(acc.id) || [],
+            retail: {
+                active_offers_count: 0,
+                offers: []
+            },
+            cached_at: new Date().toISOString()
+        });
+    }
+
+    // 5. Map each Contact across ALL linked Accounts (Personal + Business)
     for (const record of contacts) {
         const attr = record.attributes || {};
         const contactId = record.id;
-        const clientId = attr.account_id || null;
-        const accountName = attr.account_name || null;
         const contactName = `${attr.first_name || ''} ${attr.last_name || ''}`.trim() || 'Unknown Contact';
 
-        const payload = {
-            contact_id: contactId,
-            contact_name: contactName,
-            client_id: clientId,
-            account_name: accountName
-        };
-
         const phoneFields = [attr.phone_work, attr.phone_mobile, attr.phone_home, attr.phone_other, attr.phone_fax];
-        let primaryNormalizedPhone = null;
-
+        const normalizedPhones = [];
         for (const rawPhone of phoneFields) {
             const normalized = normalizeCli(rawPhone);
-            if (!normalized) continue;
+            if (normalized && !normalizedPhones.includes(normalized)) {
+                normalizedPhones.push(normalized);
+            }
+        }
 
-            if (!primaryNormalizedPhone) primaryNormalizedPhone = normalized;
+        // Collect all Account IDs linked to this Contact
+        const linkedAccountIds = contactToAccounts.get(contactId) || new Set();
 
+        // Build match entries (one per linked Account, or a single unlinked entry if none)
+        const accountEntries = linkedAccountIds.size > 0
+            ? Array.from(linkedAccountIds).map(accId => {
+                const accRecord = accountLookup.get(accId);
+                return {
+                    client_id: accId,
+                    account_name: accRecord?.attributes?.name || attr.account_name || null
+                };
+            })
+            : [{ client_id: null, account_name: null }];
+
+        // Backfill missing Account contact details from linked Contact if Account record was sparse
+        for (const entry of accountEntries) {
+            if (!entry.client_id) continue;
+
+            if (!summaryMap.has(entry.client_id)) {
+                summaryMap.set(entry.client_id, {
+                    client_id: entry.client_id,
+                    client_name: entry.account_name || contactName,
+                    details: { phone: '', email: '', primary_address: '' },
+                    opportunities: oppsByClientId.get(entry.client_id) || [],
+                    retail: { active_offers_count: 0, offers: [] },
+                    cached_at: new Date().toISOString()
+                });
+            }
+
+            const summary = summaryMap.get(entry.client_id);
+            if (!summary.details.phone && normalizedPhones[0]) {
+                summary.details.phone = normalizedPhones[0];
+            }
+            if (!summary.details.email && attr.email1) {
+                summary.details.email = attr.email1;
+            }
+            if (!summary.details.primary_address) {
+                const contactAddr = [
+                    attr.primary_address_street,
+                    attr.primary_address_city,
+                    attr.primary_address_postalcode
+                ].filter(Boolean).join(', ');
+                if (contactAddr) summary.details.primary_address = contactAddr;
+            }
+        }
+
+        // Populate phoneMap deduplicated by BOTH contact_id AND client_id
+        for (const normalized of normalizedPhones) {
             if (!phoneMap.has(normalized)) {
                 phoneMap.set(normalized, []);
             }
-
             const existingList = phoneMap.get(normalized);
-            if (!existingList.some(item => item.contact_id === contactId)) {
-                existingList.push(payload);
+
+            for (const entry of accountEntries) {
+                const alreadyExists = existingList.some(
+                    item => item.contact_id === contactId && item.client_id === entry.client_id
+                );
+                if (!alreadyExists) {
+                    existingList.push({
+                        contact_id: contactId,
+                        contact_name: contactName,
+                        client_id: entry.client_id,
+                        account_name: entry.account_name
+                    });
+                }
             }
-        }
-
-        // Build/merge base client_summary entry when linked to an Account/Client ID
-        if (clientId && !summaryMap.has(clientId)) {
-            const addressParts = [
-                attr.primary_address_street,
-                attr.primary_address_city,
-                attr.primary_address_postalcode
-            ].filter(Boolean);
-
-            summaryMap.set(clientId, {
-                client_id: clientId,
-                client_name: accountName || contactName,
-                details: {
-                    phone: primaryNormalizedPhone || attr.phone_work || attr.phone_mobile || '',
-                    email: attr.email1 || '',
-                    primary_address: addressParts.join(', ')
-                },
-                opportunities: oppsByClientId.get(clientId) || [],
-                retail: {
-                    active_offers_count: 0,
-                    offers: []
-                },
-                cached_at: new Date().toISOString()
-            });
         }
     }
 
-    // 3. Pipeline-write both client_cli and client_summary in batches
+    // 6. Pipeline-write both client_cli and client_summary in batches
     let pipeline = redisClient.multi();
     let commandCount = 0;
     const BATCH_SIZE = 1000;
@@ -195,11 +252,11 @@ async function syncClientsFromSuiteCRM() {
         await pipeline.exec();
     }
 
-    // 4. Atomic Pointer Swap for CLI index
+    // 7. Atomic Pointer Swap for CLI index
     const previousVersion = await redisClient.get('client_cli:active_version');
     await redisClient.set('client_cli:active_version', newVersion);
 
-    // 5. Async Cleanup of Old CLI Version Keys
+    // 8. Async Cleanup of Old CLI Version Keys
     if (previousVersion) {
         cleanupOldVersionKeys(`client_cli:${previousVersion}:*`).catch(err =>
             console.error('[ClientCache Cleanup Warning]:', err.message)
@@ -210,6 +267,7 @@ async function syncClientsFromSuiteCRM() {
     console.log(`✅ [ClientCache Sync Completed] ${phoneMap.size} numbers & ${summaryMap.size} client summaries indexed in ${duration}s`);
 
     return {
+        total_accounts: accounts.length,
         total_contacts: contacts.length,
         total_opportunities: opportunities.length,
         indexed_phone_numbers: phoneMap.size,
@@ -261,7 +319,9 @@ async function saveClientRecord(data) {
         account_name: data.account_name || null
     };
 
-    existingMatches = existingMatches.filter(m => m.contact_id !== newMatch.contact_id);
+    existingMatches = existingMatches.filter(
+        m => !(m.contact_id === newMatch.contact_id && m.client_id === newMatch.client_id)
+    );
     existingMatches.push(newMatch);
 
     await redisClient.set(key, JSON.stringify(existingMatches));

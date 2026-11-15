@@ -43,7 +43,7 @@
                 } else if (data.callState === 'ACTIVE' && data.callData) {
                     activeCallPayload = data.callData;
                     setCallBarState('active', { 
-                        callerId: getCallDisplayName(data.callData),
+                        ...getCallerDisplayPayload(activeCallPayload),
                         roomId: data.callData.roomId 
                     });
                     startCallTimer(data.callStartTime);
@@ -67,7 +67,10 @@
                 // Another tab answered the call
                 stopRingtoneAudio();
                 activeCallPayload = payload.callData || activeCallPayload;
-                setCallBarState('active', { callerId: payload.displayName, roomId: payload.roomId });
+                setCallBarState('active', { 
+                    ...getCallerDisplayPayload(activeCallPayload),
+                    roomId: payload.roomId 
+                });
                 startCallTimer(payload.callStartTime);
                 $('#vinttro-incoming-call-card').slideUp(200);
             }
@@ -133,6 +136,35 @@
             launchSoftphone();
         });
 
+        // Global Click-to-Dial Handler (supports data-vinttro-dial & tel: links)
+        $(document).on('click', '[data-vinttro-dial], a[href^="tel:"]', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const $el = $(this);
+            const rawNumber = $el.attr('data-vinttro-dial') || ($el.attr('href') || '').replace(/^tel:/i, '');
+            const to = normalizeCli(rawNumber);
+            if (!to) return;
+
+            const dialPayload = {
+                to: to,
+                clientId: $el.attr('data-client-id') || null,
+                clientName: $el.attr('data-client-name') || to
+            };
+
+            const isPhoneOnline = $('#vinttro-health-dot').hasClass('health-online');
+            if (isPhoneOnline) {
+                ctiBus.postMessage({ action: 'OUTBOUND_DIAL', payload: dialPayload });
+            } else {
+                // Softphone isn't open yet: queue dial for 15s and launch softphone window
+                localStorage.setItem('vinttro_pending_dial', JSON.stringify({
+                    ...dialPayload,
+                    expiresAt: Date.now() + 15000
+                }));
+                launchSoftphone();
+            }
+        });
+
         // Multi-Match Dropdown Builder
         function buildMultiMatchSelectHtml(matches, selectedIdx = '') {
             const isAssigned = selectedIdx !== '' && selectedIdx !== null && selectedIdx !== undefined;
@@ -154,6 +186,63 @@
             `;
         }
 
+        function getCallerDisplayPayload(payload) {
+            if (!payload) return { callerId: 'Unknown Caller' };
+
+            const matches = payload.client_matches || [];
+            if (matches.length > 1) {
+                const selectedIdx = payload.selected_index !== undefined ? payload.selected_index : '';
+                return { callerHtml: buildMultiMatchSelectHtml(matches, selectedIdx) };
+            }
+
+            return { callerId: getCallDisplayName(payload) };
+        }
+
+        // Global Multi-Match Dropdown Change Handler (Works during ringing, active call & after page navigation)
+        $(document).on('change', '.vinttro-contact-selector', function() {
+            if (!activeCallPayload || !activeCallPayload.client_matches) return;
+
+            const idx = $(this).val();
+            const selected = activeCallPayload.client_matches[idx];
+            if (!selected) return;
+
+            activeCallPayload.selected_index = idx;
+            activeCallPayload.selected_contact_id = selected.contact_id;
+            activeCallPayload.selected_client_id = selected.client_id;
+            activeCallPayload.client_name = selected.contact_name;
+            activeCallPayload.account_name = selected.account_name;
+
+            $('.vinttro-contact-selector')
+                .val(idx)
+                .removeClass('unassigned')
+                .addClass('assigned');
+
+            // Broadcast contact change to all other tabs and phone window
+            ctiBus.postMessage({
+                action: 'UPDATE_CONTACT_SELECTION',
+                payload: {
+                    selectedIndex: idx,
+                    contactId: selected.contact_id,
+                    clientId: selected.client_id,
+                    clientName: selected.contact_name,
+                    accountName: selected.account_name
+                }
+            });
+
+            // If AgentDashboard is already open on this page, switch its client record live
+            if (selected.client_id) {
+                window.dispatchEvent(new CustomEvent('vinttro:switch-client', {
+                    detail: { clientId: selected.client_id }
+                }));
+
+                if (window.location.pathname.includes('/visp/client-view')) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('client_id', selected.client_id);
+                    window.history.replaceState({}, '', url.toString());
+                }
+            }
+        });
+
         // ==========================================================
         // 2. CTI HEADER STATE & TIMER HELPERS
         // ==========================================================
@@ -172,7 +261,7 @@
             );
             
             const popBtn = hasClient 
-                ? `<button type="button" class="vinttro-open-client-btn" title="Open Client" style="background:transparent; border:none; cursor:pointer; font-size:16px; margin-left:8px; padding:0; vertical-align:middle; transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">🗂️</button>` 
+                ? `<button type="button" class="vinttro-open-client-btn" title="Open Client" style="background:transparent; border:none; cursor:pointer; font-size:16px; padding:0; flex-shrink:0; line-height:1; transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">🗂️</button>` 
                 : '';
 
             if (state === 'idle') {
@@ -188,21 +277,19 @@
                 $active.hide();
                 $ringing.show();
                 
-                if (data.callerHtml) {
-                    $('#vinttro-hdr-caller-id').html(data.callerHtml + popBtn);
-                } else {
-                    $('#vinttro-hdr-caller-id').html((data.callerId || 'Unknown Caller') + popBtn);
-                }
+                const content = data.callerHtml || (data.callerId || 'Unknown Caller');
+                $('#vinttro-hdr-caller-id').html(
+                    `<span style="display:inline-flex; align-items:center; gap:6px; flex-wrap:nowrap;">${content}${popBtn}</span>`
+                );
             } else if (state === 'active') {
                 $idle.hide(); 
                 $ringing.hide();
                 $active.show();
                 
-                if (data.callerHtml) {
-                    $('#vinttro-hdr-active-party').html(data.callerHtml + popBtn);
-                } else {
-                    $('#vinttro-hdr-active-party').html((data.callerId || 'In Call') + popBtn);
-                }
+                const content = data.callerHtml || (data.callerId || 'In Call');
+                $('#vinttro-hdr-active-party').html(
+                    `<span style="display:inline-flex; align-items:center; gap:6px; flex-wrap:nowrap;">${content}${popBtn}</span>`
+                );
             }
         }
 
@@ -253,31 +340,6 @@
                 const selectHtml = buildMultiMatchSelectHtml(matches, selectedIdx);
                 setCallBarState('ringing', { callerHtml: selectHtml });
                 $('#incoming-caller-id').html(selectHtml);
-
-                $(document).off('change', '.vinttro-contact-selector').on('change', '.vinttro-contact-selector', async function() {
-                    const idx = $(this).val();
-                    const selected = matches[idx];
-                    if (selected) {
-                        activeCallPayload.selected_index = idx;
-                        activeCallPayload.selected_contact_id = selected.contact_id;
-                        activeCallPayload.selected_client_id = selected.client_id;
-                        activeCallPayload.client_name = selected.contact_name;
-                        activeCallPayload.account_name = selected.account_name;
-
-                        // Broadcast contact change to all other tabs and phone window
-                        ctiBus.postMessage({
-                            action: 'UPDATE_CONTACT_SELECTION',
-                            payload: {
-                                selectedIndex: idx,
-                                contactId: selected.contact_id,
-                                clientId: selected.client_id,
-                                clientName: selected.contact_name,
-                                accountName: selected.account_name
-                            }
-                        });
-                    }
-                });
-
                 $('#incoming-call-subtext').text(`⚠️ ${matches.length} Matches | Select Contact`);
             } else {
                 const displayName = getCallDisplayName(payload);
@@ -298,7 +360,7 @@
         // 3. CALL CONTROLS (REMOTE TO SOFTPHONE WINDOW)
         // ==========================================================
 
-        // Manual Screen-Pop Click (Opens client view in new tab)
+        // Manual Screen-Pop Click (Opens client view in same window)
         $(document).on('click', '.vinttro-open-client-btn', function(e) {
             e.preventDefault();
             e.stopPropagation();

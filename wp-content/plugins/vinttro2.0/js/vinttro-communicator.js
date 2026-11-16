@@ -136,6 +136,24 @@
             launchSoftphone();
         });
 
+        // Normalize phone numbers to E.164 format (+44...)
+        function normalizeCli(rawNumber) {
+            if (!rawNumber) return null;
+
+            let cleaned = String(rawNumber).replace(/[^\d+]/g, '');
+            if (!cleaned) return null;
+
+            if (cleaned.startsWith('0')) {
+                cleaned = '+44' + cleaned.slice(1);
+            }
+
+            if (!cleaned.startsWith('+')) {
+                cleaned = '+' + cleaned;
+            }
+
+            return cleaned;
+        }
+
         // Global Click-to-Dial Handler (supports data-vinttro-dial & tel: links)
         $(document).on('click', '[data-vinttro-dial], a[href^="tel:"]', function(e) {
             e.preventDefault();

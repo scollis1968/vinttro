@@ -345,7 +345,19 @@ export default function AgentDashboard({ clientId, initialClientId }) {
             <div className="vt-space-y-2 vt-text-slate-600 vt-text-sm">
               <div className="vt-flex vt-items-center vt-gap-2">
                 <Phone className="vt-w-4 vt-h-4 vt-text-slate-400" />
-                <span>{clientData.details?.phone}</span>
+                {clientData.details?.phone ? (
+                  <a
+                    href={`tel:${clientData.details.phone}`}
+                    data-client-id={clientData.client_id}
+                    data-client-name={clientData.client_name}
+                    title="Call client via Vinttro Softphone"
+                    className="vt-text-blue-600 hover:vt-underline vt-font-medium vt-cursor-pointer"
+                  >
+                    {clientData.details.phone}
+                  </a>
+                ) : (
+                  <span className="vt-text-slate-400">No phone number</span>
+                )}
               </div>
               <div className="vt-flex vt-items-center vt-gap-2">
                 <Mail className="vt-w-4 vt-h-4 vt-text-slate-400" />

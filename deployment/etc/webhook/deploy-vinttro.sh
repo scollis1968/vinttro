@@ -60,27 +60,65 @@ if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "prod" ]; then
     BACKUP_DIR="/var/backups/suitecrm"
     mkdir -p "$BACKUP_DIR"
     log "Creating pre-deployment SuiteCRM database snapshot..."
-    sudo -u www-data /usr/bin/env -i /usr/bin/php << 'EOF' >> "$LOG_FILE" 2>&1
+    /usr/bin/php << 'EOF' >> "$LOG_FILE" 2>&1
 <?php
-define("sugarEntry", true);
-chdir("/var/www/suitecrm/public/legacy");
-require_once("config.php");
-$db = $sugar_config['dbconfig'];
+$envFile = "/var/www/suitecrm/.env.local";
+$dbUrl = null;
+
+if (file_exists($envFile)) {
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        if (preg_match('/^DATABASE_URL=(.+)$/', trim($line), $m)) {
+            $dbUrl = trim($m[1], "\"'");
+            break;
+        }
+    }
+}
+
+if ($dbUrl) {
+    $parts = parse_url($dbUrl);
+    $host = $parts['host'] ?? '127.0.0.1';
+    $port = $parts['port'] ?? 3306;
+    $user = rawurldecode($parts['user'] ?? '');
+    $pass = rawurldecode($parts['pass'] ?? '');
+    $name = ltrim($parts['path'] ?? '', '/');
+} else {
+    define("sugarEntry", true);
+    chdir("/var/www/suitecrm/public/legacy");
+    require_once("include/entryPoint.php");
+    $opts = DBManagerFactory::getInstance()->connectOptions;
+    $host = $opts['db_host_name'];
+    $port = 3306;
+    $user = $opts['db_user_name'];
+    $pass = $opts['db_password'];
+    $name = $opts['db_name'];
+}
+
 $file = "/var/backups/suitecrm/pre_deploy_" . date("Ymd_His") . ".sql.gz";
+putenv("MYSQL_PWD=" . $pass);
+
 $cmd = sprintf(
-    "mysqldump -h %s -u %s -p%s %s | gzip > %s",
-    escapeshellarg($db['db_host_name']),
-    escapeshellarg($db['db_user_name']),
-    escapeshellarg($db['db_password']),
-    escapeshellarg($db['db_name']),
+    "mysqldump --single-transaction -h %s -P %d -u %s %s | gzip > %s",
+    escapeshellarg($host),
+    (int)$port,
+    escapeshellarg($user),
+    escapeshellarg($name),
     escapeshellarg($file)
 );
 system($cmd, $ret);
-if ($ret === 0) echo "   -> Backup saved: $file\n";
+putenv("MYSQL_PWD");
+
+if ($ret === 0 && file_exists($file) && filesize($file) > 1024) {
+    echo "   -> Backup saved: $file (" . round(filesize($file) / 1024, 1) . " KB)\n";
+} else {
+    @unlink($file);
+    echo "   -> WARNING: Database backup failed (exit code $ret).\n";
+}
 EOF
     # Keep only the 7 most recent pre-deploy backups
     ls -t "$BACKUP_DIR"/pre_deploy_*.sql.gz 2>/dev/null | tail -n +8 | xargs -r rm -f
 fi
+
 
 # --- 3. Extract and Deploy Custom WordPress Files ---
 log "Deploying Vinttro Plugin..."

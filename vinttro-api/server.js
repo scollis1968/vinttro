@@ -70,7 +70,7 @@ const cors = require('cors');
 
 // Allow requests from your local WordPress instance
 app.use(cors({
-    origin: ['http://localhost:8083', 'https://uat.vinttro.co.uk'],
+    origin: ['http://localhost:8083', 'https://uat.vinttro.co.uk', 'https://prod.vinttro.co.uk', 'https://vinttro.co.uk'],
     methods: ['GET', 'POST'],
     credentials: true
 }));

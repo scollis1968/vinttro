@@ -1,0 +1,195 @@
+It is great that you are documenting this as you go—having a reliable, repeatable run-sheet for production deployments is a lifesaver. Since SuiteCRM handles updates differently depending on whether you are on version 7 or 8, the template below covers the crucial pre-prod safeguards and provides the step-by-step commands for both versions.
+
+Feel free to copy, paste, and chop this up into your internal documentation!
+
+---
+
+# Standard Operating Procedure: SuiteCRM Production Upgrade
+
+**Target Date:** [Insert Date]
+
+**Executed By:** [Insert Name]
+
+**Target Version:** [e.g., SuiteCRM 8.10.1]
+
+---
+
+## Phase 1: Pre-Upgrade & Safeguards
+
+Before running any update on production, ensure the infrastructure is entirely locked down and backed up.
+
+1. #### Enable the Maintenace warning
+   Edit the nginx conf to display a banner to current users. This will display when they refresh any page and should be implimented 15 mins befor the next step that will block all users :-
+   ```
+   sudo nano /etc/nginx/sites-available/suitecrm.conf
+   ```
+   Look for the section "--- Maintenance Warning and uncomment the last 2 lines.
+   ```
+    # --- Maintenace Warning ---
+    # This inject a global warning banner at the top of the body,
+    # To activate Maintenace warning, uncomment the next 2 lines.
+    # sub_filter '<body>' '<body><div style="background-color: #e74c3c; color: white; text-align: center; padding: 12px; font-weight: bold; font-size: 16px; position: fixed; top: 0; left: 0; width: 100%; z-index: 99999; box-shadow: 0 4px 6px>
+    # sub_filter_once on;
+   ```
+   Test and restart nginx
+   ```
+   sudo nginx -t
+
+   sudo systemctl reload nginx
+   ```
+
+
+
+1. #### Enable Maintenance Mode
+   Edit the nginx conf prevent users from accessing the system, execept for a single permitted IP address.
+   ```
+   sudo nano /etc/nginx/sites-available/suitecrm.conf
+   ```
+   Look for the section "--- Maintenance Mode and uncomment the last 2 lines.
+   ```
+    # --- MAINTENANCE MODE CONFIGURATION ---
+    # To activate maintenace mode uncomment the following 2 lines 
+    #set $maintenance on;
+    set $permited_addr "90.219.190.144";
+   ```
+   n.b. leave "set $permited_addr uncommented or nging will not reload
+   
+   Test and restart nginx
+   ```
+   sudo nginx -t
+   
+   sudo systemctl reload nginx
+   ```
+
+1. #### Backup database.
+   As the database sits on a common sql cloud instance with wordpress and uat, we need to export the individual database not backup the entire sqlinstance.
+
+   - Log into Google Cloud Console and navigate to SQL.
+   - Click on your shared Cloud SQL instance name "vinttro-sql".
+   - Click the Export button at the top of the Overview page.
+   - Configure the Export settings:
+     ```
+     File format: Select SQL.
+
+     Data to export: Toggle this to Specific databases (do NOT leave it on "All databases").
+
+     Database dropdown: Select only your production SuiteCRM database (e.g., prod_suitecrm).
+
+     Destination: Click Browse and select a Google Cloud Storage (GCS) bucket to store the file. Append a clear filename to the bucket path, like:
+
+     gs://vinttro-temp-storage/prod_suitecrm_2026-06-02 (16:37:25).sql
+   
+
+     Click Export. Wait for the Cloud SQL operations log to show that the export completed successfully.
+
+1. #### Backup file system.
+   Although we have a VM snapshot, this is a last resort. Having a backup of the suitecrm file sructure is sensible as this could be used to compare or just restore individual files.
+
+   ```
+   cd /tmp
+   tar -czf suitecrm_files_backup_$(date +%F).tar.gz /var/www/suitecrm/
+   ```
+
+1. #### Verify PHP Compatibility  
+   Ensure your production PHP version matches the requirements for the target SuiteCRM version (SuiteCRM 8.7+ generally requires PHP 8.1 or 8.2).
+   ```
+   php -v
+
+   PHP 8.2.31 (cli) (built: May  8 2026 07:20:38) (NTS)
+   Copyright (c) The PHP Group
+   Zend Engine v4.2.31, Copyright (c) Zend Technologies
+       with Zend OPcache v8.2.31, Copyright (c), by Zend Technologies
+   ```
+
+1. #### Increase PHP Limits:
+   Temporarily ensure your `php.ini` values are generous enough to handle large package uploads:
+    - `memory_limit = 512M` (or higher)
+    - `max_execution_time = 300`
+    - `upload_max_filesize = 100M`
+    - `post_max_size = 100M`
+
+
+
+---
+
+## Phase 2: Execution Path
+
+### Upgrading from SuiteCRM 8.x
+
+SuiteCRM 8 upgrades are executed entirely via the Command Line Interface (CLI).
+
+1. #### Download the target version package:
+   Grab the production-ready installable `.zip` file from the official SuiteCRM release page. https://suitecrm.com/releases/
+   ```
+   cd /var/www/suitecrm/tmp/package/upgrade
+   sudo -u www-data wget https://suitecrm.com/download/168/suite810/568626/suitecrm-8-10-1.zip
+   ```
+
+1. #### Set permission
+   Execute the migration script using the exact name of the downloaded package.
+   ```
+   # 1. Navigate to the root directory (just to be certain)
+   cd /var/www/suitecrm
+
+   # 2. Change ownership of EVERYTHING to the web server user
+   sudo chown -R www-data:www-data .
+
+   # 3. Set standard directories to 755 (Directories need executable rights to be traversed)
+   sudo find . -type d -exec chmod 755 {} \;
+
+   # 4. Set standard files to 644 (Read/Write for owner, Read for others)
+   sudo find . -type f -exec chmod 644 {} \;
+
+   # 5. Set higher permissions on writable directories required by SuiteCRM
+   # (This includes the legacy core folders inside the SuiteCRM 8 structure)
+   sudo chmod -R 775 cache custom modules themes upload public/legacy/cache public/legacy/custom public/legacy/modules public/legacy/themes public/legacy/upload
+
+   # 6. Set higher permissions on the config files so the installer can update them
+   sudo chmod 664 config.php public/legacy/config.php public/legacy/config_override.php 2>/dev/null || true
+
+   chmod 775 ./bin/console 
+   ```
+
+
+1. #### Run the Core Upgrade command:
+   Execute the migration script using the exact name of the downloaded package.
+   ```
+   cd /var/www/suitecrm
+   sudo -u www-data ./bin/console suitecrm:app:upgrade -t "suitecrm-8-10-1"
+   ```
+
+1. #### Run the Finalize command:
+   Once the core update finishes, finalize the asset generation and database schema changes.
+   ```bash
+    sudo -u www-data ./bin/console suitecrm:app:upgrade-finalize -t "SuiteCRM-8.10.1"
+   ```
+
+
+
+
+
+
+
+
+---
+
+
+## Phase 3: Post-Upgrade Cleanup & Verification
+
+  1. #### Reset Permissions
+      ** Crucial step to prevent white-screen-of-death errors): **
+    
+      ``` bash
+      find . -type d -not -perm 2755 -exec chmod 2755 {} \;
+      find . -type f -not -perm 0644 -exec chmod 0644 {} \;
+      chown -R www-data:www-data .
+      ```
+
+  1. ### restart nginx
+     Restart your web server or PHP-FPM service to clear memory buffers.
+     ```bash
+     sudo systemctl restart nginx
+
+
+## Phase 4: Reinstate the VINTTRO themes and CSS!
+TODO

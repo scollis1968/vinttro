@@ -25,11 +25,31 @@ sudo chmod 600 private.key public.key
 sudo chown www-data:www-data p*.key
 ```
 
+### Image storage
+Google cloud storage buckets  n
+
+```
+mv /var/www/suitecrm/media /var/www/suitecrm/media.bak
+mkdir /var/www/suitecrm/media
+chown www-data:www-data /var/www/suitecrm/media
+gcsfuse --uid=33 --gid=33 --dir-mode 777 --file-mode 777 -o allow_other visp-uat-private-media /var/www/suitecrm/media
+sudo -u www-data rsync -rvP --no-perms --no-owner --no-group /var/www/suitecrm/media.bak/ /var/www/suitecrm/media/
+
+mv /var/www/suitecrm/public/media /var/www/suitecrm/public/media.bak
+mkdir /var/www/suitecrm/public/media
+chown www-data:www-data /var/www/suitecrm/public/media
+sudo gcsfuse --uid=33 --gid=33 --dir-mode 777 --file-mode 777 -o allow_other visp-uat-public-media /var/www/suitecrm/public/media
+sudo -u www-data rsync -rvP --no-perms --no-owner --no-group /var/www/suitecrm/public/media.bak/ /var/www/suitecrm/public/media/
+
+```
+
 
 ### Email setup.
 After a fresh installation of SuiteCRM you will see a warning message indicationg that you need to setup the system email.
 
 *N.B.* You will need to go to https://myaccount.google.com/apppasswords to generate an app password.
 
-## webhooks.
+### webhooks.
 the web hooks 
+
+

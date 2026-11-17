@@ -52,13 +52,17 @@ htmlcov/
 # Jupyter Notebooks
 .ipynb_checkpoints
 
+# Dependencies
+**/vendor/
+**/node_modules/
+
 # Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-package-lock.json      # You might want to commit this, but it's a common ignore
+#package-lock.json      # You might want to commit this, but it's a common ignore
 
 # Ruby
 *.gem
@@ -79,4 +83,4 @@ docker-compose.override.yml
 *.orig
 *.swp
 *~
-*.log
+*.logwp-config.php

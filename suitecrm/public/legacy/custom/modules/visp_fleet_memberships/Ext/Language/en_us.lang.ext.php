@@ -1,0 +1,9 @@
+<?php
+// WARNING: The contents of this file are auto-generated
+
+
+//THIS FILE IS AUTO GENERATED, DO NOT MODIFY
+$mod_strings['LBL_VISP_FLEET_VISP_FLEET_MEMBERSHIPS_FROM_VISP_FLEET_TITLE'] = 'Fleet';
+$mod_strings['LBL_VISP_DRIVER_VISP_FLEET_MEMBERSHIPS_FROM_VISP_DRIVER_TITLE'] = 'Driver';
+$mod_strings['LBL_VISP_FLEET_MEMBERSHIPS_CONTACTS_FROM_CONTACTS_TITLE'] = 'Contacts';
+

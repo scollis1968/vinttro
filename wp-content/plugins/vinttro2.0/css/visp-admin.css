@@ -1,0 +1,91 @@
+/* Acturis Upload UI Component */
+.acturis-upload-card {
+    background: #ffffff;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 800px;
+    margin-top: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.drop-zone {
+    border: 2px dashed #a7f3d0;
+    background-color: #f0fdf4;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.drop-zone:hover, .drop-zone.dragover {
+    border-color: #10b981;
+    background-color: #dcfce7;
+}
+
+.drop-zone input[type="file"] {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.drop-zone .dashicons {
+    font-size: 48px;
+    width: 48px; height: 48px;
+    color: #10b981;
+}
+
+.upload-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* Progress Bar */
+.progress-bar-wrapper {
+    background-color: #e2e8f0;
+    border-radius: 12px;
+    height: 16px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.progress-bar-fill {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    width: 0%;
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.progress-metrics {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #475569;
+    margin-top: 6px;
+    font-weight: 600;
+}
+
+/* Execution Log Console */
+.import-console-log {
+    background-color: #0f172a;
+    color: #38bdf8;
+    font-family: monospace;
+    font-size: 0.82rem;
+    padding: 14px;
+    border-radius: 6px;
+    height: 160px;
+    overflow-y: auto;
+    margin-top: 20px;
+}
+
+.console-line { margin-bottom: 4px; }
+.console-line.success { color: #4ade80; }
+.console-line.error { color: #f87171; }
+.console-line.info { color: #94a3b8; }

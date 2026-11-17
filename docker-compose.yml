@@ -1,0 +1,118 @@
+services:
+  # --- Shared Infrastructure ---
+  db:
+    image: mariadb:10.6
+    container_name: vinttro_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: suitecrm
+      MYSQL_USER: vinttro_user
+      MYSQL_PASSWORD: vinttro_password
+    ports:
+      - "13306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  redis:
+    image: redis:7-alpine
+    container_name: vinttro_redis
+    restart: unless-stopped
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_data:/data
+
+  # --- Vinttro API (Node.js Microservice) ---
+  vinttro-api:
+    build:
+      context: ./vinttro-api
+      dockerfile: Dockerfile
+    container_name: vinttro_api
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    env_file:
+      - ./vinttro-api/.env.local
+    environment:
+      - PORT=3005
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=development
+    volumes:
+      - ./vinttro-api:/app
+      - api_node_modules:/app/node_modules
+    depends_on:
+      - redis
+
+  # --- Acturis Import Watcher Worker ---
+  acturis-watcher:
+    build:
+      context: ./vinttro-api
+      dockerfile: Dockerfile
+    container_name: acturis_inbox_watcher
+    restart: unless-stopped
+    command: ["node", "workers/gcsInboxWatcher.js"]
+    working_dir: /app
+    env_file:
+      - ./vinttro-api/.env.local
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ACTURIS_MOUNT_PATH=/data/acturis
+      - POLL_INTERVAL_MS=3000
+    volumes:
+      - ./vinttro-api:/app
+      - api_node_modules:/app/node_modules
+      - /mnt/d/data/vinttro/acturisImports:/data/acturis
+    depends_on:
+      - redis
+      - vinttro-api
+
+  # --- SuiteCRM 8 ---
+  suitecrm:
+    image: chialab/php-dev:8.1-apache
+    container_name: suitecrm_web
+    restart: unless-stopped
+    ports:
+      - "8084:80"
+    environment:
+      - APACHE_DOCUMENT_ROOT=/var/www/html/public
+    volumes:
+      - suitecrm_data:/var/www/html
+      - ./suitecrm/public/legacy/custom/include:/var/www/html/public/legacy/custom/include
+      - ./docker-config/php/suitecrm.ini:/usr/local/etc/php/conf.d/zz-suitecrm.ini:ro
+      - ./docker-config/apache/suitecrm.conf:/etc/apache2/sites-available/000-default.conf:ro
+    depends_on:
+      - db
+      - vinttro-api
+
+  # --- WordPress ---
+  wordpress:
+    image: wordpress:6-apache
+    container_name: wordpress_web
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: vinttro_user
+      WORDPRESS_DB_PASSWORD: vinttro_password
+      WORDPRESS_DB_NAME: wordpress
+      VINTTRO_API_PUBLIC_URL: ${VINTTRO_API_PUBLIC_URL:-http://localhost:3005}
+    volumes:
+      - wp_data:/var/www/html
+      - ./wp-config.php:/var/www/html/wp-config.php
+      - ./wp-content/plugins/vinttro2.0:/var/www/html/wp-content/plugins/vinttro2.0
+      - ./wp-content/themes/vinttro_child_theme:/var/www/html/wp-content/themes/vinttro_child_theme
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+  redis_data:
+  api_node_modules:
+  suitecrm_data:
+  wp_data:

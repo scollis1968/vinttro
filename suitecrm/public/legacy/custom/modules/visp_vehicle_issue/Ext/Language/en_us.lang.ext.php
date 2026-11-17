@@ -1,0 +1,9 @@
+<?php
+// WARNING: The contents of this file are auto-generated
+
+
+//THIS FILE IS AUTO GENERATED, DO NOT MODIFY
+$mod_strings['LBL_VISP_VEHICLE_VISP_VEHICLE_ISSUE_FROM_VISP_VEHICLE_TITLE'] = 'Vehicle';
+$mod_strings['LBL_VISP_VEHICLE_CHECK_VISP_VEHICLE_ISSUE_FROM_VISP_VEHICLE_CHECK_TITLE'] = 'Vehicle Check';
+$mod_strings['LBL_VISP_VEHICLE_ISSUE_NOTES_FROM_NOTES_TITLE'] = 'Notes';
+

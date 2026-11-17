@@ -1,0 +1,279 @@
+.vinttro-dashboard {
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: sans-serif;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.dashboard-panel {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.dashboard-panel h3 {
+    margin-top: 0;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.reminder-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dashed #eee;
+}
+
+.reminder-item:last-child { border-bottom: none; }
+
+.dashboard-panel.placeholder {
+    background: #eee;
+    border-style: dashed;
+    color: #888;
+}
+/* Fleet Table Styling */
+.fleet-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: #fff;
+}
+
+.fleet-table th, 
+.fleet-table td {
+    text-align: left;
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.fleet-table th {
+    background-color: #f4f4f4;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #666;
+    letter-spacing: 0.05em;
+}
+
+/* Status Pills */
+.status-pill {
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Status Color Logic */
+.status-past { 
+    background-color: #8b0000; 
+} /* Dark Red */
+
+.status-urgent { 
+    background-color: #e74c3c; 
+} /* Bright Red */
+
+.status-soon { 
+    background-color: #f39c12; 
+} /* Amber/Orange */
+
+.status-ok { 
+    background-color: #27ae60; 
+} /* Green */
+
+.status-none { 
+    background-color: #bdc3c7; 
+    color: #333; 
+} /* Grey for N/A */
+
+/* Layout Helper for Top Row (Reminders + Garage) */
+.top-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+/* Issue List Styling */
+.issue-item {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    border-left: 3px solid #ccc;
+    background: #fdfdfd;
+}
+.severity-high { border-left-color: #e74c3c; background: #fff5f5; color: #c0392b; }
+.severity-medium { border-left-color: #f39c12; background: #fffcf5; color: #d35400; }
+.severity-low { border-left-color: #3498db; background: #f5faff; color: #2980b9; }
+/* Vehicle Column Layout */
+.vehicle-cell {
+    vertical-align: top;
+    min-width: 200px;
+}
+
+.vehicle-reg {
+    font-weight: 800;
+    font-size: 1.1rem;
+    cursor: help;
+    border-bottom: 1px dotted #ccc;
+    display: inline-block;
+    color: #333;
+}
+
+/* Status Labels below Reg */
+.vehicle-status {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+.status-safe { color: #27ae60; }     /* Green */
+.status-info { color: #3498db; }     /* Blue (Low) */
+.status-warning { color: #f39c12; }  /* Orange (Medium) */
+.status-critical { color: #e74c3c; } /* Red (High) */
+
+/* Detailed Issue List under Status */
+.vehicle-issue-details {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #666;
+}
+
+.vehicle-issue-details li {
+    padding: 4px 0;
+    border-top: 1px solid #f0f0f0;
+}
+
+.vehicle-issue-details li strong {
+    color: #444;
+}
+
+.vehicle-issue-details li small {
+    display: block;
+    color: #999;
+}
+
+/* Table Layout Tweaks */
+.fleet-table tr.vehicle-main-row td {
+    border-bottom: none; /* Hide bottom border to merge with issues row */
+    padding-top: 15px;
+    padding-bottom: 15px;
+    vertical-align: middle;
+}
+
+/* Status Dot next to Reg */
+.vehicle-status-dot {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 8px;
+}
+
+/* The Spanning Issues Row */
+.vehicle-issues-row td {
+    padding: 0 15px 15px 15px; /* No top padding to keep it tight to the vehicle row */
+    border-bottom: 1px solid #eee;
+}
+
+.issues-expanded-box {
+    background: #f9f9f9; /* Faint grey background */
+    border-left: 4px solid #ddd; /* Left margin indicator */
+    padding: 12px 20px;
+    border-radius: 0 4px 4px 0;
+    margin-left: 10px; /* Indent it from the Reg column slightly */
+}
+
+/* Change background if high severity */
+.vehicle-main-row.has-issues + .vehicle-issues-row .issues-expanded-box {
+    background: #fffafa; /* Very faint red tint */
+    border-left-color: #e74c3c;
+}
+
+/* Issue List */
+.issue-detailed-list {
+    margin: 8px 0 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.issue-detailed-list li {
+    font-size: 0.85rem;
+    padding: 5px 0;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #efefef;
+}
+
+.issue-detailed-list li:last-child { border-bottom: none; }
+
+.issue-severity-tag {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.sev-high { background: #e74c3c; }
+.sev-medium { background: #f39c12; }
+.sev-low { background: #3498db; }
+
+.issue-date {
+    margin-left: auto;
+    color: #999;
+    font-size: 0.75rem;
+}/* ==========================================================================
+   VINTTRO Dashboard spacing & layout management
+   ========================================================================== */
+
+/* 1. Eliminate Top Dead Space Injected by Gutenberg Preset Blocks */
+body.page-template-vinttro-visp-template main#wp--skip-link--target {
+    margin-top: 1.5rem !important; /* Overrides the massive native --wp--preset--spacing--60 margin */
+}
+
+body.page-template-vinttro-visp-template .wp-site-blocks > .wp-block-group:first-child {
+    padding-top: 1rem !important; /* Compresses top gap around the black header logo element */
+}
+
+/* 2. Contain the Fleet Table Spillage */
+.vinttro-admin-dashboard-view .fleet-container {
+    width: 100%;
+    overflow-x: auto;              /* Creates an elegant interior swipe scroll wrapper on small viewports */
+    -webkit-overflow-scrolling: touch; /* Ensures smooth touch responsiveness on iOS screens */
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #eef2f5;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+/* 3. Keep Table Text Crisp and Readable */
+.vinttro-admin-dashboard-view .fleet-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 750px; /* Prevents columns from smashing into tiny unreadable vertical strips on phone viewports */
+}
+
+.vinttro-admin-dashboard-view .fleet-table th,
+.vinttro-admin-dashboard-view .fleet-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    white-space: nowrap; /* Prevents long vehicle names or dates from wrapping awkwardly */
+}

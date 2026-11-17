@@ -15,7 +15,7 @@ $suitecrm_url = $_ENV['SUITECRM_URL'];
 $username = $_ENV['USERNAME'];
 $password = $_ENV['PASSWORD'];
 $client_id = $_ENV['CLIENT_ID'];
-$client_secret = $_ENV['CLIENT_SECRET'];
+$client_secret = $_ENV['CLIENT_SECRET'];    
 
 
 // ---- AUTHENTICATION ----
@@ -175,6 +175,32 @@ function insertUpdateContact($api_url,$access_token,$contact_data){
         $method = 'PATCH';
     };
 
+    $r = callApi($api_url, $access_token, $method, $payload);
+    
+    return $r;
+}
+
+function insertRawData($api_url, $access_token, $source_system, $data_type, $raw_data) {
+    
+    // 1. Convert the array into a JSON string so SuiteCRM can store it in a text field
+    $json_raw_data = json_encode($raw_data);
+
+    // 2. Prepare the payload
+    $payload = [
+        'data' => [
+            'type' => 'visp_data_staging',
+            'attributes' => [
+                'source_system' => $source_system,
+                'data_type'     => $data_type,  
+                'raw_data'     => $json_raw_data, // Now a string, not an array
+                'status'       => 'pending',
+            ]   
+        ]
+    ];
+
+    $method = 'POST';
+
+    // 3. Send to API
     $r = callApi($api_url, $access_token, $method, $payload);
     
     return $r;

@@ -1,0 +1,10 @@
+field-manager:
+  field-definitions:
+    # Fix for the standard Contact Photo
+    photo:
+      component: 'image-type'
+      module: 'Contacts'
+    # Fix for your custom Vehicle Image
+    image1_c:
+      component: 'image-type'
+      module: 'FNOI_Vehicle'

@@ -13,6 +13,16 @@ const TWIML_APP_SID = process.env.TWILIO_TWIML_APP_SID || process.env.TWIML_APP_
 
 const twilioClient = twilio(API_KEY_SID, API_KEY_SECRET, { accountSid: ACCOUNT_SID });
 
+// Add right after: const twilioClient = twilio(API_KEY_SID, API_KEY_SECRET, { accountSid: ACCOUNT_SID });
+function getBaseUrl(req) {
+    if (process.env.PUBLIC_API_URL) {
+        return process.env.PUBLIC_API_URL.replace(/\/+$/, '');
+    }
+    const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+    const host = req.get('host');
+    return `${proto}://${host}`;
+}
+
 async function saveCallToSuiteCRM(callData) {
     try {
         await suitecrmService.saveCallRecord(callData);
@@ -227,8 +237,10 @@ exports.handleInboundCall_Old = async (req, res) => {
     const ddi = req.body.To || req.body.Called || '';
     const roomName = `Room_${callSid}`;
 
-    const recordingCallbackUrl = `https://services.uat.vinttro.co.uk/api/communicator/recording-event?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
-    const statusCallbackUrl = `https://services.uat.vinttro.co.uk/api/communicator/status-callback?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
+// --- Inside exports.handleInboundCall_Old ---
+    const baseUrl = getBaseUrl(req);
+    const recordingCallbackUrl = `${baseUrl}/api/communicator/recording-event?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
+    const statusCallbackUrl = `${baseUrl}/api/communicator/status-callback?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
 
     // Parallel lookup for Client details and Route rules
     const [clientData, routeRecord] = await Promise.all([
@@ -311,8 +323,10 @@ exports.handleInboundCall = async (req, res) => {
         const ddi = req.body.To || req.body.Called || '';
         const roomName = `Room_${callSid}`;
 
-        const recordingCallbackUrl = `https://services.uat.vinttro.co.uk/api/communicator/recording-event?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
-        const statusCallbackUrl = `https://services.uat.vinttro.co.uk/api/communicator/status-callback?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
+        const baseUrl = getBaseUrl(req);
+        const recordingCallbackUrl = `${baseUrl}/api/communicator/recording-event?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
+        const statusCallbackUrl = `${baseUrl}/api/communicator/status-callback?call_id=${encodeURIComponent(callSid)}&room=${encodeURIComponent(roomName)}`;
+
 
         // Parallel lookup for Client details and Route rules
         const [clientData, routeRecord] = await Promise.all([
@@ -428,7 +442,7 @@ exports.handleVoiceConnect = async (req, res) => {
             const taskId = req.body.taskId || null;
             const clientName = req.body.clientName || null;
 
-            const baseUrl = process.env.PUBLIC_API_URL || `${req.protocol}://${req.get('host')}`;
+            const baseUrl = getBaseUrl(req);
             const recordingCallbackUrl = `${baseUrl}/api/communicator/recording-event?call_id=${encodeURIComponent(callSid)}`;
             const statusCallbackUrl = `${baseUrl}/api/communicator/status-callback?call_id=${encodeURIComponent(callSid)}`;
             const outboundCallerId = process.env.TWILIO_CALLER_ID || process.env.TWILIO_PHONE_NUMBER;

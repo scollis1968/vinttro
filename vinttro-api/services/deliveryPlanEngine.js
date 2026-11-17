@@ -9,6 +9,15 @@ async function getOuState(ouName) {
     return 'open'; // Stubbed for now
 }
 
+function getBaseUrl(req) {
+    if (process.env.PUBLIC_API_URL) {
+        return process.env.PUBLIC_API_URL.replace(/\/+$/, '');
+    }
+    const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+    const host = req.get('host');
+    return `${proto}://${host}`;
+}
+
 /**
  * Strategy Registry: Handlers for each step action type
  */
@@ -90,7 +99,8 @@ const actionHandlers = {
 
                     if (twilioClient && twilioFromNumber) {
                         try {
-                            const callbackUrl = `${process.env.PUBLIC_API_URL || 'https://services.uat.vinttro.co.uk'}/api/communicator/accept-probe?roomId=${encodeURIComponent(callPayload.roomId)}&callId=${encodeURIComponent(callPayload.call_id)}&agentName=${encodeURIComponent(member.name)}`;
+                            const baseUrl = getBaseUrl(req);
+                            const callbackUrl = `${baseUrl}/api/communicator/accept-probe?roomId=${encodeURIComponent(callPayload.roomId)}&callId=${encodeURIComponent(callPayload.call_id)}&agentName=${encodeURIComponent(member.name)}`;
 
                             const twiml = new twilio.twiml.VoiceResponse();
                             const gather = twiml.gather({

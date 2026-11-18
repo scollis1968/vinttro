@@ -167,6 +167,7 @@ exports.getActiveCalls = async (req, res) => {
 // CALL EVENTS
 // -------------------------------------------------------------------------
 exports.handleCallEvent = async (req, res) => {
+    console.log('📥 [DEBUG Webhook]', req.path, JSON.stringify(req.body));
     try {
         const io = req.app.get('io');
         const callId = req.body.CallSid || req.body.call_id;
@@ -340,13 +341,14 @@ exports.handleInboundCall = async (req, res) => {
         dial.conference({
             startConferenceOnEnter: false,
             endConferenceOnExit: true,
-            record: 'record-from-start',
+            record: 'do-not-record',
             recordingStatusCallback: recordingCallbackUrl,
             recordingStatusCallbackEvent: 'completed',
             statusCallback: statusCallbackUrl,
             statusCallbackEvent: 'end'
         }, roomName);
 
+        console.log('📤 [DEBUG Inbound TwiML]:', twiml.toString());
         res.type('text/xml');
         res.send(twiml.toString());
 
@@ -482,7 +484,7 @@ exports.handleVoiceConnect = async (req, res) => {
             const twiml = new twilio.twiml.VoiceResponse();
             const dial = twiml.dial({
                 callerId: outboundCallerId,
-                record: 'record-from-answer-dual',
+                record: 'do-not-record',
                 recordingStatusCallback: recordingCallbackUrl,
                 recordingStatusCallbackEvent: 'completed'
             });
@@ -492,6 +494,7 @@ exports.handleVoiceConnect = async (req, res) => {
                 statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed']
             }, formattedTo);
 
+            console.log('📤 [DEBUG Outbound TwiML]:', twiml.toString());
             res.type('text/xml');
             return res.send(twiml.toString());
         }
@@ -619,6 +622,7 @@ exports.handleRecordingEvent = async (req, res) => {
 // STATUS CALLBACK
 // -------------------------------------------------------------------------
 exports.handleStatusCallback = async (req, res) => {
+    console.log('📥 [DEBUG Webhook]', req.path, JSON.stringify(req.body));
     try {
         const friendlyName = req.body.FriendlyName || req.body.RoomName || req.query.room || '';
         let targetCallSid = req.body.CallSid || req.body.callSid || req.body.call_id || req.query.call_id;

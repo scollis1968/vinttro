@@ -9,13 +9,8 @@ async function getOuState(ouName) {
     return 'open'; // Stubbed for now
 }
 
-function getBaseUrl(req) {
-    if (process.env.PUBLIC_API_URL) {
-        return process.env.PUBLIC_API_URL.replace(/\/+$/, '');
-    }
-    const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
-    const host = req.get('host');
-    return `${proto}://${host}`;
+function getBaseUrl() {
+    return (process.env.PUBLIC_API_URL || 'https://services.prod.vinttro.co.uk').replace(/\/+$/, '');
 }
 
 /**
@@ -99,7 +94,8 @@ const actionHandlers = {
 
                     if (twilioClient && twilioFromNumber) {
                         try {
-                            const baseUrl = getBaseUrl(req);
+                            const baseUrl = getBaseUrl();
+                            const fromNumber = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_CALLER_ID;
                             const callbackUrl = `${baseUrl}/api/communicator/accept-probe?roomId=${encodeURIComponent(callPayload.roomId)}&callId=${encodeURIComponent(callPayload.call_id)}&agentName=${encodeURIComponent(member.name)}`;
 
                             const twiml = new twilio.twiml.VoiceResponse();
@@ -115,7 +111,7 @@ const actionHandlers = {
                             const probeCall = await twilioClient.calls.create({
                                 twiml: twiml.toString(),
                                 to: formattedTarget,
-                                from: twilioFromNumber
+                                from: fromNumber
                             });
 
                             // Store the Probe Call SID in Redis set for cleanup later

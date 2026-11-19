@@ -166,6 +166,7 @@ async function saveCallRecord(callData) {
         : new Date().toISOString().replace('T', ' ').substring(0, 19);
 
     const legsJson = JSON.stringify(callData.legs || [], null, 2);
+    const selectedClientsJson = JSON.stringify(callData.selected_clients || [], null, 2);
 
     const attributes = {
         name: `${direction} Call - ${partyNumber}`,
@@ -174,7 +175,7 @@ async function saveCallRecord(callData) {
         date_start: startTime,
         duration_hours: durationHours,
         duration_minutes: durationMinutes,
-        description: `Call SID: ${identifier}\nDirection: ${direction}\nNumber: ${partyNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}`
+        description: `Call SID: ${identifier}\nDirection: ${direction}\nNumber: ${partyNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}\n\n--- Selected Clients ---\n${selectedClientsJson}`
     };
 
     // Link the Call activity to the most specific CRM parent record

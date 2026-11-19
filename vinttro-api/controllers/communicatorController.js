@@ -395,6 +395,7 @@ exports.handleInboundCall = async (req, res) => {
 
         // 1. Save Call State to Redis
         await redisClient.setEx(`call:${callSid}`, 43200, JSON.stringify(callPayload));
+        await redisClient.sAdd('active_calls', callSid);
 
         // 2. Broadcast general incoming call event
         // if (io) {
@@ -756,19 +757,33 @@ exports.syncSuiteCRMClients = async (req, res) => {
 // Add to exports in communicatorController.js
 exports.updateCallContact = async (req, res) => {
     try {
-        let { callId, agentId, contactId, clientId, contactName, accountName } = req.body;
+        let {
+            callId,
+            agentId,
+            contactId,
+            clientId,
+            clientRef,
+            contactName,
+            accountName,
+            selectedAt
+        } = req.body;
 
-        // Fallback: if the dashboard doesn't have callId, find the active call for this agent
-        if (!callId && agentId) {
+        // Resolve callId from active_calls if not explicitly provided
+        if (!callId) {
             const activeSids = await redisClient.sMembers('active_calls');
-            for (const sid of activeSids) {
-                const raw = await redisClient.get(`call:${sid}`);
-                if (!raw) continue;
-                const parsed = JSON.parse(raw);
-                if (parsed.last_agent === agentId || parsed.first_agent === agentId) {
-                    callId = sid;
-                    break;
+            if (agentId) {
+                for (const sid of activeSids) {
+                    const raw = await redisClient.get(`call:${sid}`);
+                    if (!raw) continue;
+                    const parsed = JSON.parse(raw);
+                    if (parsed.last_agent === agentId || parsed.first_agent === agentId) {
+                        callId = sid;
+                        break;
+                    }
                 }
+            } else if (activeSids.length === 1) {
+                // Single active call fallback when WordPress doesn't know agentId/callId
+                callId = activeSids[0];
             }
         }
 
@@ -784,46 +799,58 @@ exports.updateCallContact = async (req, res) => {
         }
 
         const currentCall = JSON.parse(currentCallDataRaw);
-        const previousClientId = currentCall.client_id || null;
+        const resolvedAccountId = clientId || currentCall.client_id || null;
 
         currentCall.contact_id = contactId || null;
-        currentCall.client_id = clientId || null;
+        if (clientId) {
+            currentCall.client_id = clientId;
+            currentCall.opportunity_id = null;
+            currentCall.task_id = null;
+        }
+        currentCall.client_ref = clientRef || currentCall.client_ref || null;
         currentCall.client_name = contactName || accountName || currentCall.client_name;
         currentCall.account_name = accountName || currentCall.account_name;
 
-        // Clear stale parent overrides so saveCallRecord links to the newly selected Account
-        if (clientId && clientId !== previousClientId) {
-            currentCall.opportunity_id = null;
-            currentCall.task_id = null;
+        // Append to selected_clients history (avoid duplicate consecutive entries for same client)
+        const selectedClients = Array.isArray(currentCall.selected_clients)
+            ? currentCall.selected_clients
+            : [];
+        const lastEntry = selectedClients[selectedClients.length - 1];
+        const isSameAsLast =
+            lastEntry &&
+            lastEntry.client_id === resolvedAccountId &&
+            lastEntry.client_ref === (clientRef || null);
 
-            const legs = Array.isArray(currentCall.legs) ? currentCall.legs : [];
-            legs.push({
-                leg_type: 'client_switch',
-                agent_id: agentId || currentCall.last_agent || null,
-                client_id: clientId,
+        if (!isSameAsLast) {
+            selectedClients.push({
+                client_id: resolvedAccountId,
+                client_ref: clientRef || null,
+                contact_id: contactId || null,
                 account_name: accountName || contactName || '',
-                timestamp: new Date().toISOString()
+                agent_id: agentId || currentCall.last_agent || null,
+                selected_at: selectedAt || new Date().toISOString()
             });
-            currentCall.legs = legs;
+            currentCall.selected_clients = selectedClients;
         }
 
         await redisClient.setEx(redisKey, 43200, JSON.stringify(currentCall));
 
-        // If the agent switched client during post-call wrap-up after SuiteCRM was already written, update it
-        if (currentCall.suitecrm_call_id && clientId) {
-            await suitecrmService.updateRecord('Calls', currentCall.suitecrm_call_id, {
-                parent_type: 'Accounts',
-                parent_id: clientId
-            });
+        // If SuiteCRM Call already exists (e.g. wrap-up switch), update parent_id & description
+        if (currentCall.suitecrm_call_id) {
+            await suitecrmService.saveCallRecord(currentCall);
         }
 
-        return res.status(200).json({ success: true, callId, clientId });
+        return res.status(200).json({
+            success: true,
+            callId,
+            clientId: currentCall.client_id,
+            selectedCount: selectedClients.length
+        });
     } catch (error) {
         console.error('[Update Call Contact Error]:', error);
         return res.status(500).json({ error: 'Failed to update call contact' });
     }
 };
-
 // Add to vinttro-api/controllers/communicatorController.js
 
 /**

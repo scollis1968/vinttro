@@ -190,8 +190,32 @@ async function saveCallRecord(callData) {
     }
 
     console.log(`[SuiteCRM Sync] Pushing ${direction} Call ${identifier} to SuiteCRM...`);
-    const result = await createRecord('Calls', attributes);
-    console.log(`✅ [SuiteCRM Sync Success] Call record created with ID: ${result?.data?.id || 'OK'}`);
+    const callId = callData.call_id;
+    let result;
+
+    if (callData.suitecrm_call_id) {
+        console.log(`[SuiteCRM Sync] Updating ${direction} Call ${identifier} (${callData.suitecrm_call_id}) in SuiteCRM...`);
+        result = await updateRecord('Calls', callData.suitecrm_call_id, attributes);
+    } else {
+        console.log(`[SuiteCRM Sync] Pushing ${direction} Call ${identifier} to SuiteCRM...`);
+        result = await createRecord('Calls', attributes);
+        const createdId = result?.data?.id;
+        if (createdId && callId) {
+            callData.suitecrm_call_id = createdId;
+            try {
+                const existingRaw = await redisClient.get(`call:${callId}`);
+                if (existingRaw) {
+                    const existing = JSON.parse(existingRaw);
+                    existing.suitecrm_call_id = createdId;
+                    await redisClient.setEx(`call:${callId}`, 43200, JSON.stringify(existing));
+                }
+            } catch (redisErr) {
+                console.warn('[SuiteCRM Sync Warning] Could not cache suitecrm_call_id:', redisErr.message);
+            }
+        }
+    }
+
+    console.log(`✅ [SuiteCRM Sync Success] Call record synced: ${callData.suitecrm_call_id || 'OK'}`);
     return result;
 }
 

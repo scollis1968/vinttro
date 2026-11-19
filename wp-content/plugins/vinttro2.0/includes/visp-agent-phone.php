@@ -366,17 +366,19 @@ function vinttro_render_agent_phone() {
                         currentCallData.client_name = payload.clientName;
                         currentCallData.account_name = payload.accountName;
 
-                        const activeCallId = currentCallData.call_id || currentCallData.callSid;
-                        if (activeCallId && payload.clientId) {
-                            // Use the same API base URL helper/constant as your other fetch calls in agent-phone
-                            const apiBase = (window.vinttroConfig?.apiBase || '/api').replace(/\/+$/, '');
+                        const activeCallId =
+                            currentCallData.call_id ||
+                            currentCallData.callSid ||
+                            activeCall?.parameters?.CallSid ||
+                            null;
 
-                            fetch(`${apiBase}/communicator/update-call-contact`, {
+                        if ((activeCallId || AGENT_ID) && payload.clientId) {
+                            fetch(`${NODE_URL}/api/communicator/update-call-contact`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     callId: activeCallId,
-                                    agentId: typeof agentIdentity !== 'undefined' ? agentIdentity : null,
+                                    agentId: AGENT_ID,
                                     contactId: payload.contactId || null,
                                     clientId: payload.clientId,
                                     contactName: payload.clientName || '',
@@ -388,7 +390,7 @@ function vinttro_render_agent_phone() {
                     }
                     ctiBus.postMessage({ action: 'SYNC_CONTACT_SELECTION', payload: payload });
                 }
-            };
+           };
 
             function resetCallState() {
                 currentCallState = 'IDLE';

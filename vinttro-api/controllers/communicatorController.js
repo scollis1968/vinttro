@@ -396,6 +396,7 @@ exports.handleInboundCall = async (req, res) => {
         // 1. Save Call State to Redis
         await redisClient.setEx(`call:${callSid}`, 43200, JSON.stringify(callPayload));
         await redisClient.sAdd('active_calls', callSid);
+        await redisClient.setEx('latest_call_id', 3600, callSid);
 
         // 2. Broadcast general incoming call event
         // if (io) {
@@ -480,6 +481,8 @@ exports.handleVoiceConnect = async (req, res) => {
 
                 await redisClient.setEx(`call:${callSid}`, 43200, JSON.stringify(callPayload));
                 await redisClient.sAdd('active_calls', callSid);
+                await redisClient.setEx('latest_call_id', 3600, callSid);
+                if (agentId) await redisClient.setEx(`agent:${agentId}:latest_call`, 3600, callSid);
                 if (io) io.emit('call_updated', callPayload);
             }
 
@@ -537,6 +540,8 @@ exports.handleVoiceConnect = async (req, res) => {
                 };
 
                 await redisClient.setEx(redisKey, 43200, JSON.stringify(updatedCallData));
+                await redisClient.setEx('latest_call_id', 3600, inboundCallSid);
+                if (agentId) await redisClient.setEx(`agent:${agentId}:latest_call`, 3600, inboundCallSid);
                 if (io) io.emit('call_updated', updatedCallData);
             }
         }
@@ -754,7 +759,7 @@ exports.syncSuiteCRMClients = async (req, res) => {
         return res.status(500).json({ error: 'Failed to sync clients from SuiteCRM', details: error.message });
     }
 };
-// Add to exports in communicatorController.js
+
 exports.updateCallContact = async (req, res) => {
     try {
         let {
@@ -768,26 +773,16 @@ exports.updateCallContact = async (req, res) => {
             selectedAt
         } = req.body;
 
-        // Resolve callId from active_calls if not explicitly provided
+        // 1. Resolve callId from agent's latest call, or global latest_call_id
+        if (!callId && agentId) {
+            callId = await redisClient.get(`agent:${agentId}:latest_call`);
+        }
         if (!callId) {
-            const activeSids = await redisClient.sMembers('active_calls');
-            if (agentId) {
-                for (const sid of activeSids) {
-                    const raw = await redisClient.get(`call:${sid}`);
-                    if (!raw) continue;
-                    const parsed = JSON.parse(raw);
-                    if (parsed.last_agent === agentId || parsed.first_agent === agentId) {
-                        callId = sid;
-                        break;
-                    }
-                }
-            } else if (activeSids.length === 1) {
-                // Single active call fallback when WordPress doesn't know agentId/callId
-                callId = activeSids[0];
-            }
+            callId = await redisClient.get('latest_call_id');
         }
 
         if (!callId) {
+            console.log('⚠️ [Update Call Contact] Skipped — no latest_call_id in Redis');
             return res.status(200).json({ success: false, skipped: true, reason: 'No active call' });
         }
 
@@ -799,6 +794,14 @@ exports.updateCallContact = async (req, res) => {
         }
 
         const currentCall = JSON.parse(currentCallDataRaw);
+
+        // Ignore calls older than 15 minutes when matched via latest_call_id fallback
+        const callAgeMs = Date.now() - new Date(currentCall.last_updated || currentCall.timestamp || 0).getTime();
+        if (!req.body.callId && callAgeMs > 15 * 60 * 1000) {
+            console.log(`⚠️ [Update Call Contact] Skipped — ${callId} is older than 15m`);
+            return res.status(200).json({ success: false, skipped: true, reason: 'Latest call expired' });
+        }
+
         const resolvedAccountId = clientId || currentCall.client_id || null;
 
         currentCall.contact_id = contactId || null;
@@ -811,7 +814,7 @@ exports.updateCallContact = async (req, res) => {
         currentCall.client_name = contactName || accountName || currentCall.client_name;
         currentCall.account_name = accountName || currentCall.account_name;
 
-        // Append to selected_clients history (avoid duplicate consecutive entries for same client)
+        // Append to selected_clients history (deduplicating consecutive identical clicks)
         const selectedClients = Array.isArray(currentCall.selected_clients)
             ? currentCall.selected_clients
             : [];
@@ -834,8 +837,9 @@ exports.updateCallContact = async (req, res) => {
         }
 
         await redisClient.setEx(redisKey, 43200, JSON.stringify(currentCall));
+        console.log(`✅ [Update Call Contact] Stamped ${callId} -> ${accountName || clientRef} (${selectedClients.length} selected)`);
 
-        // If SuiteCRM Call already exists (e.g. wrap-up switch), update parent_id & description
+        // If SuiteCRM Call already exists (e.g. wrap-up switch), sync updated parent_id & description
         if (currentCall.suitecrm_call_id) {
             await suitecrmService.saveCallRecord(currentCall);
         }
@@ -844,7 +848,7 @@ exports.updateCallContact = async (req, res) => {
             success: true,
             callId,
             clientId: currentCall.client_id,
-            selectedCount: selectedClients.length
+            selectedClients
         });
     } catch (error) {
         console.error('[Update Call Contact Error]:', error);

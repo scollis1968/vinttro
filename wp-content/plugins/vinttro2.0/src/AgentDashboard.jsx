@@ -1,10 +1,12 @@
+// wp-content/plugins/vinttro2.0/src/AgentDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { 
-  User, Car, Home, Factory, Warehouse, ShoppingBag, 
+  User, Car, Home, Factory, Warehouse, ShoppingBag, Clock,
   Phone, Mail, MapPin, Search, UserPlus, AlertCircle, RefreshCw 
 } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import OpportunityShell from './components/opportunities/OpportunityShell';
+import EventsTimeline from './components/EventsTimeline';
 
 // Helper to guarantee clean URL construction without double-slashes
 function getApiUrl(endpoint) {
@@ -253,7 +255,11 @@ export default function AgentDashboard({ clientId, initialClientId }) {
     );
   }
 
-  // 4. Normal Populated Dashboard (Details, Tabs, Opportunities)
+  // Resolve SuiteCRM Account ID for the Events timeline filter
+  const eventsAccountId =
+    clientData.suitecrm_id || clientData.account_id || clientData.client_id;
+
+  // 4. Normal Populated Dashboard (Details, Tabs, Opportunities, Retail, Events)
   return (
     <div className="vt-bg-white vt-rounded-b-lg vt-shadow-sm vt-border vt-border-slate-200 vt-overflow-hidden vt-my-4">
       {/* Sticky Header */}
@@ -335,6 +341,17 @@ export default function AgentDashboard({ clientId, initialClientId }) {
             </span>
           )}
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('events')}
+          className={`vt-flex vt-items-center vt-gap-1.5 vt-px-3 vt-py-1.5 vt-rounded-md vt-text-sm vt-font-medium vt-whitespace-nowrap vt-cursor-pointer vt-border-0 ${
+            activeTab === 'events' ? 'vt-bg-white vt-shadow-sm vt-text-blue-600' : 'vt-bg-transparent vt-text-slate-600 hover:vt-text-slate-900'
+          }`}
+        >
+          <Clock className="vt-w-4 vt-h-4" />
+          <span>Events</span>
+        </button>
       </div>
 
       {/* Pane Content */}
@@ -385,8 +402,15 @@ export default function AgentDashboard({ clientId, initialClientId }) {
           </div>
         )}
 
+        {activeTab === 'events' && (
+          <EventsTimeline
+            apiBase={getApiUrl('communicator')}
+            accountId={eventsAccountId}
+          />
+        )}
+
         {/* Dynamic Opportunity View by Type */}
-        {activeTab !== 'details' && activeTab !== 'retail' && (() => {
+        {activeTab !== 'details' && activeTab !== 'retail' && activeTab !== 'events' && (() => {
           const opp = clientData.opportunities?.find(o => o.id === activeTab);
           if (!opp) return null;
 

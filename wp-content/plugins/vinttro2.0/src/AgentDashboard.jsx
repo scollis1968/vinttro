@@ -151,7 +151,37 @@ export default function AgentDashboard({ clientId, initialClientId }) {
       setLoading(false);
     }
   }
+  // Stamp active call with the latest selected client whenever clientData changes
+  useEffect(() => {
+    if (!clientData) return;
 
+    const suiteCrmAccountId =
+      clientData.suitecrm_id || clientData.account_id || clientData.client_id;
+    const activeCallId = window.vinttroActiveCallId || null;
+    const agentId =
+      window.vinttroAgentId ||
+      window.vinttroDashboardConfig?.agentId ||
+      window.vinttroConfig?.agentId ||
+      null;
+
+    if (!suiteCrmAccountId || (!activeCallId && !agentId)) return;
+
+    fetch(getApiUrl('communicator/update-call-contact'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        callId: activeCallId,
+        agentId,
+        clientId: suiteCrmAccountId,
+        contactId: clientData.contact_id || null,
+        contactName: clientData.client_name || '',
+        accountName: clientData.account_name || clientData.client_name || '',
+      }),
+    }).catch((err) =>
+      console.warn('Could not sync active call client:', err.message)
+    );
+  }, [clientData]);
+  
   useEffect(() => {
     loadClient(currentClientId);
   }, [currentClientId]);

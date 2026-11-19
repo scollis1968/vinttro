@@ -754,26 +754,70 @@ exports.syncSuiteCRMClients = async (req, res) => {
     }
 };
 // Add to exports in communicatorController.js
-
 exports.updateCallContact = async (req, res) => {
     try {
-        const { callId, contactId, clientId, contactName, accountName } = req.body;
-        if (!callId) return res.status(400).json({ error: 'Missing callId' });
+        let { callId, agentId, contactId, clientId, contactName, accountName } = req.body;
+
+        // Fallback: if the dashboard doesn't have callId, find the active call for this agent
+        if (!callId && agentId) {
+            const activeSids = await redisClient.sMembers('active_calls');
+            for (const sid of activeSids) {
+                const raw = await redisClient.get(`call:${sid}`);
+                if (!raw) continue;
+                const parsed = JSON.parse(raw);
+                if (parsed.last_agent === agentId || parsed.first_agent === agentId) {
+                    callId = sid;
+                    break;
+                }
+            }
+        }
+
+        if (!callId) {
+            return res.status(200).json({ success: false, skipped: true, reason: 'No active call' });
+        }
 
         const redisKey = `call:${callId}`;
         const currentCallDataRaw = await redisClient.get(redisKey);
 
-        if (currentCallDataRaw) {
-            let currentCall = JSON.parse(currentCallDataRaw);
-            currentCall.contact_id = contactId || null;
-            currentCall.client_id = clientId || null;
-            currentCall.client_name = contactName || currentCall.client_name;
-            currentCall.account_name = accountName || currentCall.account_name;
-
-            await redisClient.setEx(redisKey, 43200, JSON.stringify(currentCall));
+        if (!currentCallDataRaw) {
+            return res.status(404).json({ error: 'Call record not found in Redis' });
         }
 
-        return res.status(200).json({ success: true });
+        const currentCall = JSON.parse(currentCallDataRaw);
+        const previousClientId = currentCall.client_id || null;
+
+        currentCall.contact_id = contactId || null;
+        currentCall.client_id = clientId || null;
+        currentCall.client_name = contactName || accountName || currentCall.client_name;
+        currentCall.account_name = accountName || currentCall.account_name;
+
+        // Clear stale parent overrides so saveCallRecord links to the newly selected Account
+        if (clientId && clientId !== previousClientId) {
+            currentCall.opportunity_id = null;
+            currentCall.task_id = null;
+
+            const legs = Array.isArray(currentCall.legs) ? currentCall.legs : [];
+            legs.push({
+                leg_type: 'client_switch',
+                agent_id: agentId || currentCall.last_agent || null,
+                client_id: clientId,
+                account_name: accountName || contactName || '',
+                timestamp: new Date().toISOString()
+            });
+            currentCall.legs = legs;
+        }
+
+        await redisClient.setEx(redisKey, 43200, JSON.stringify(currentCall));
+
+        // If the agent switched client during post-call wrap-up after SuiteCRM was already written, update it
+        if (currentCall.suitecrm_call_id && clientId) {
+            await suitecrmService.updateRecord('Calls', currentCall.suitecrm_call_id, {
+                parent_type: 'Accounts',
+                parent_id: clientId
+            });
+        }
+
+        return res.status(200).json({ success: true, callId, clientId });
     } catch (error) {
         console.error('[Update Call Contact Error]:', error);
         return res.status(500).json({ error: 'Failed to update call contact' });

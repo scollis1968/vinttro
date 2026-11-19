@@ -151,20 +151,40 @@ export default function AgentDashboard({ clientId, initialClientId }) {
       setLoading(false);
     }
   }
+
+  // Track call/agent context passed via CTI events or global config
+  const callContextRef = React.useRef({ callId: null, agentId: null });
+
   // Stamp active call with the latest selected client whenever clientData changes
   useEffect(() => {
     if (!clientData) return;
 
     const suiteCrmAccountId =
-      clientData.suitecrm_id || clientData.account_id || clientData.client_id;
-    const activeCallId = window.vinttroActiveCallId || null;
+      clientData.suitecrm_id || clientData.account_id || null;
+    const clientRef = clientData.client_id || null;
+
+    const config = window.vinttroDashboardConfig || window.vinttroConfig || {};
+    const activeCallId =
+      callContextRef.current.callId ||
+      window.vinttroActiveCallId ||
+      config.activeCallId ||
+      null;
     const agentId =
+      callContextRef.current.agentId ||
       window.vinttroAgentId ||
-      window.vinttroDashboardConfig?.agentId ||
-      window.vinttroConfig?.agentId ||
+      config.agentId ||
+      config.userEmail ||
       null;
 
-    if (!suiteCrmAccountId || (!activeCallId && !agentId)) return;
+    if (!suiteCrmAccountId && !clientRef) return;
+
+    console.log('📞 Syncing selected client to active call:', {
+      activeCallId,
+      agentId,
+      suiteCrmAccountId,
+      clientRef,
+      clientName: clientData.client_name,
+    });
 
     fetch(getApiUrl('communicator/update-call-contact'), {
       method: 'POST',
@@ -172,16 +192,40 @@ export default function AgentDashboard({ clientId, initialClientId }) {
       body: JSON.stringify({
         callId: activeCallId,
         agentId,
-        clientId: suiteCrmAccountId,
+        clientId: suiteCrmAccountId, // SuiteCRM Account UUID (for parent_id)
+        clientRef,                   // e.g. C-10492 (for debugging / mapping)
         contactId: clientData.contact_id || null,
         contactName: clientData.client_name || '',
         accountName: clientData.account_name || clientData.client_name || '',
+        selectedAt: new Date().toISOString(),
       }),
     }).catch((err) =>
       console.warn('Could not sync active call client:', err.message)
     );
   }, [clientData]);
-  
+
+  useEffect(() => {
+    loadClient(currentClientId);
+  }, [currentClientId]);
+
+  // Communicator CTI switch listener
+  useEffect(() => {
+    function handleClientSwitch(event) {
+      if (event.detail?.callId) {
+        callContextRef.current.callId = event.detail.callId;
+      }
+      if (event.detail?.agentId) {
+        callContextRef.current.agentId = event.detail.agentId;
+      }
+      if (event.detail?.clientId) {
+        console.log('Switching client view to:', event.detail.clientId);
+        setCurrentClientId(event.detail.clientId);
+      }
+    }
+    window.addEventListener('vinttro:switch-client', handleClientSwitch);
+    return () => window.removeEventListener('vinttro:switch-client', handleClientSwitch);
+  }, []);
+
   useEffect(() => {
     loadClient(currentClientId);
   }, [currentClientId]);

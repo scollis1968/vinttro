@@ -113,7 +113,8 @@ class SuitecrmEventMapper {
   }
 
   parseCallDescription(description) {
-    const [headerBlock = '', legsBlock = ''] = description.split('--- Call Legs ---');
+    const [headerBlock = '', afterLegsHeader = ''] = description.split('--- Call Legs ---');
+    const [legsBlock = '', selectedClientsBlock = ''] = afterLegsHeader.split('--- Selected Clients ---');
     const meta = {};
 
     headerBlock.split('\n').forEach((line) => {
@@ -132,6 +133,15 @@ class SuitecrmEventMapper {
       }
     }
 
+    let selectedClients = [];
+    if (selectedClientsBlock.trim()) {
+      try {
+        selectedClients = JSON.parse(selectedClientsBlock.trim());
+      } catch (_) {
+        selectedClients = [];
+      }
+    }
+
     return {
       callSid: meta['Call SID'] || null,
       direction: meta['Direction'] || null,
@@ -140,7 +150,8 @@ class SuitecrmEventMapper {
       lastAgent: meta['Last Agent'] || null,
       recordingUrl: meta['Recording URL'] || null,
       legs,
-      rawNotes: !legsBlock ? description : '',
+      selectedClients,
+      rawNotes: !afterLegsHeader ? description : '',
     };
   }
 }

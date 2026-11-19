@@ -1,10 +1,12 @@
+// wp-content/plugins/vinttro2.0/src/AgentDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { 
-  User, Car, Home, Factory, Warehouse, ShoppingBag, 
+  User, Car, Home, Factory, Warehouse, ShoppingBag, Clock,
   Phone, Mail, MapPin, Search, UserPlus, AlertCircle, RefreshCw 
 } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import OpportunityShell from './components/opportunities/OpportunityShell';
+import EventsTimeline from './components/EventsTimeline';
 
 // Helper to guarantee clean URL construction without double-slashes
 function getApiUrl(endpoint) {
@@ -150,6 +152,80 @@ export default function AgentDashboard({ clientId, initialClientId }) {
     }
   }
 
+  // Track call/agent context passed via CTI events or global config
+  const callContextRef = React.useRef({ callId: null, agentId: null });
+
+  // Stamp active call with the latest selected client whenever clientData changes
+  useEffect(() => {
+    if (!clientData) return;
+
+    const suiteCrmAccountId =
+      clientData.suitecrm_id || clientData.account_id || null;
+    const clientRef = clientData.client_id || null;
+
+    const config = window.vinttroDashboardConfig || window.vinttroConfig || {};
+    const activeCallId =
+      callContextRef.current.callId ||
+      window.vinttroActiveCallId ||
+      config.activeCallId ||
+      null;
+    const agentId =
+      callContextRef.current.agentId ||
+      window.vinttroAgentId ||
+      config.agentId ||
+      config.userEmail ||
+      null;
+
+    if (!suiteCrmAccountId && !clientRef) return;
+
+    console.log('📞 Syncing selected client to active call:', {
+      activeCallId,
+      agentId,
+      suiteCrmAccountId,
+      clientRef,
+      clientName: clientData.client_name,
+    });
+
+    fetch(getApiUrl('communicator/update-call-contact'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        callId: activeCallId,
+        agentId,
+        clientId: suiteCrmAccountId, // SuiteCRM Account UUID (for parent_id)
+        clientRef,                   // e.g. C-10492 (for debugging / mapping)
+        contactId: clientData.contact_id || null,
+        contactName: clientData.client_name || '',
+        accountName: clientData.account_name || clientData.client_name || '',
+        selectedAt: new Date().toISOString(),
+      }),
+    }).catch((err) =>
+      console.warn('Could not sync active call client:', err.message)
+    );
+  }, [clientData]);
+
+  useEffect(() => {
+    loadClient(currentClientId);
+  }, [currentClientId]);
+
+  // Communicator CTI switch listener
+  useEffect(() => {
+    function handleClientSwitch(event) {
+      if (event.detail?.callId) {
+        callContextRef.current.callId = event.detail.callId;
+      }
+      if (event.detail?.agentId) {
+        callContextRef.current.agentId = event.detail.agentId;
+      }
+      if (event.detail?.clientId) {
+        console.log('Switching client view to:', event.detail.clientId);
+        setCurrentClientId(event.detail.clientId);
+      }
+    }
+    window.addEventListener('vinttro:switch-client', handleClientSwitch);
+    return () => window.removeEventListener('vinttro:switch-client', handleClientSwitch);
+  }, []);
+
   useEffect(() => {
     loadClient(currentClientId);
   }, [currentClientId]);
@@ -253,7 +329,11 @@ export default function AgentDashboard({ clientId, initialClientId }) {
     );
   }
 
-  // 4. Normal Populated Dashboard (Details, Tabs, Opportunities)
+  // Resolve SuiteCRM Account ID for the Events timeline filter
+  const eventsAccountId =
+    clientData.suitecrm_id || clientData.account_id || clientData.client_id;
+
+  // 4. Normal Populated Dashboard (Details, Tabs, Opportunities, Retail, Events)
   return (
     <div className="vt-bg-white vt-rounded-b-lg vt-shadow-sm vt-border vt-border-slate-200 vt-overflow-hidden vt-my-4">
       {/* Sticky Header */}
@@ -335,6 +415,17 @@ export default function AgentDashboard({ clientId, initialClientId }) {
             </span>
           )}
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('events')}
+          className={`vt-flex vt-items-center vt-gap-1.5 vt-px-3 vt-py-1.5 vt-rounded-md vt-text-sm vt-font-medium vt-whitespace-nowrap vt-cursor-pointer vt-border-0 ${
+            activeTab === 'events' ? 'vt-bg-white vt-shadow-sm vt-text-blue-600' : 'vt-bg-transparent vt-text-slate-600 hover:vt-text-slate-900'
+          }`}
+        >
+          <Clock className="vt-w-4 vt-h-4" />
+          <span>Events</span>
+        </button>
       </div>
 
       {/* Pane Content */}
@@ -385,8 +476,15 @@ export default function AgentDashboard({ clientId, initialClientId }) {
           </div>
         )}
 
+        {activeTab === 'events' && (
+          <EventsTimeline
+            apiBase={getApiUrl('communicator')}
+            accountId={eventsAccountId}
+          />
+        )}
+
         {/* Dynamic Opportunity View by Type */}
-        {activeTab !== 'details' && activeTab !== 'retail' && (() => {
+        {activeTab !== 'details' && activeTab !== 'retail' && activeTab !== 'events' && (() => {
           const opp = clientData.opportunities?.find(o => o.id === activeTab);
           if (!opp) return null;
 

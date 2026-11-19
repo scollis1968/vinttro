@@ -5,6 +5,7 @@ const suitecrmService = require('../services/suitecrm');
 const communicatorRouting = require('../services/communicatorRouting');
 const clientCacheService = require('../services/clientCacheService');
 const deliveryPlanEngine = require('../services/deliveryPlanEngine');
+const MapperFactory = require('../mappers/mapperFactory');
 
 const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const API_KEY_SID = process.env.TWILIO_API_KEY_SID;
@@ -394,6 +395,7 @@ exports.handleInboundCall = async (req, res) => {
 
         // 1. Save Call State to Redis
         await redisClient.setEx(`call:${callSid}`, 43200, JSON.stringify(callPayload));
+        await redisClient.sAdd('active_calls', callSid);
 
         // 2. Broadcast general incoming call event
         // if (io) {
@@ -753,35 +755,103 @@ exports.syncSuiteCRMClients = async (req, res) => {
     }
 };
 // Add to exports in communicatorController.js
-
 exports.updateCallContact = async (req, res) => {
     try {
-        const { callId, contactId, clientId, contactName, accountName } = req.body;
-        if (!callId) return res.status(400).json({ error: 'Missing callId' });
+        let {
+            callId,
+            agentId,
+            contactId,
+            clientId,
+            clientRef,
+            contactName,
+            accountName,
+            selectedAt
+        } = req.body;
+
+        // Resolve callId from active_calls if not explicitly provided
+        if (!callId) {
+            const activeSids = await redisClient.sMembers('active_calls');
+            if (agentId) {
+                for (const sid of activeSids) {
+                    const raw = await redisClient.get(`call:${sid}`);
+                    if (!raw) continue;
+                    const parsed = JSON.parse(raw);
+                    if (parsed.last_agent === agentId || parsed.first_agent === agentId) {
+                        callId = sid;
+                        break;
+                    }
+                }
+            } else if (activeSids.length === 1) {
+                // Single active call fallback when WordPress doesn't know agentId/callId
+                callId = activeSids[0];
+            }
+        }
+
+        if (!callId) {
+            return res.status(200).json({ success: false, skipped: true, reason: 'No active call' });
+        }
 
         const redisKey = `call:${callId}`;
         const currentCallDataRaw = await redisClient.get(redisKey);
 
-        if (currentCallDataRaw) {
-            let currentCall = JSON.parse(currentCallDataRaw);
-            currentCall.contact_id = contactId || null;
-            currentCall.client_id = clientId || null;
-            currentCall.client_name = contactName || currentCall.client_name;
-            currentCall.account_name = accountName || currentCall.account_name;
-
-            await redisClient.setEx(redisKey, 43200, JSON.stringify(currentCall));
+        if (!currentCallDataRaw) {
+            return res.status(404).json({ error: 'Call record not found in Redis' });
         }
 
-        return res.status(200).json({ success: true });
+        const currentCall = JSON.parse(currentCallDataRaw);
+        const resolvedAccountId = clientId || currentCall.client_id || null;
+
+        currentCall.contact_id = contactId || null;
+        if (clientId) {
+            currentCall.client_id = clientId;
+            currentCall.opportunity_id = null;
+            currentCall.task_id = null;
+        }
+        currentCall.client_ref = clientRef || currentCall.client_ref || null;
+        currentCall.client_name = contactName || accountName || currentCall.client_name;
+        currentCall.account_name = accountName || currentCall.account_name;
+
+        // Append to selected_clients history (avoid duplicate consecutive entries for same client)
+        const selectedClients = Array.isArray(currentCall.selected_clients)
+            ? currentCall.selected_clients
+            : [];
+        const lastEntry = selectedClients[selectedClients.length - 1];
+        const isSameAsLast =
+            lastEntry &&
+            lastEntry.client_id === resolvedAccountId &&
+            lastEntry.client_ref === (clientRef || null);
+
+        if (!isSameAsLast) {
+            selectedClients.push({
+                client_id: resolvedAccountId,
+                client_ref: clientRef || null,
+                contact_id: contactId || null,
+                account_name: accountName || contactName || '',
+                agent_id: agentId || currentCall.last_agent || null,
+                selected_at: selectedAt || new Date().toISOString()
+            });
+            currentCall.selected_clients = selectedClients;
+        }
+
+        await redisClient.setEx(redisKey, 43200, JSON.stringify(currentCall));
+
+        // If SuiteCRM Call already exists (e.g. wrap-up switch), update parent_id & description
+        if (currentCall.suitecrm_call_id) {
+            await suitecrmService.saveCallRecord(currentCall);
+        }
+
+        return res.status(200).json({
+            success: true,
+            callId,
+            clientId: currentCall.client_id,
+            selectedCount: selectedClients.length
+        });
     } catch (error) {
         console.error('[Update Call Contact Error]:', error);
         return res.status(500).json({ error: 'Failed to update call contact' });
     }
 };
-
 // Add to vinttro-api/controllers/communicatorController.js
-//const clientCacheService = require('../services/clientCacheService');
-const MapperFactory = require('../mappers/mapperFactory');
 
 /**
  * POST /communicator/clients/:id/summary
@@ -836,4 +906,122 @@ exports.getClientSummary = async (req, res) => {
         console.error('[getClientSummary Error]:', err.message);
         return res.status(500).json({ success: false, error: err.message });
     }
+};
+
+
+
+const CHANNEL_TO_MODULE = {
+  call: 'Calls',
+  email: 'Emails',
+  whatsapp: 'Notes',
+  sms: 'Notes',
+  note: 'Notes',
+};
+
+// GET /api/communicator/events?accountId=...&channel=call,email&limit=25
+exports.getEvents = async (req, res) => {
+  try {
+    const { accountId, channel, limit = 25 } = req.query;
+    const maxItems = Math.min(parseInt(limit, 10) || 25, 100);
+    const mapper = MapperFactory.getMapper('suitecrm', 'event');
+
+    const requestedChannels = channel
+      ? channel.split(',').map((c) => c.trim().toLowerCase())
+      : ['call', 'email'];
+
+    const modules = [...new Set(
+      requestedChannels.map((c) => CHANNEL_TO_MODULE[c]).filter(Boolean)
+    )];
+
+    const results = await Promise.all(
+      modules.map(async (moduleName) => {
+        const params = {
+          'page[number]': '1',
+          'page[size]': String(maxItems),
+          sort: '-date_entered',
+        };
+
+        if (accountId) {
+          params['filter[parent_id][eq]'] = accountId;
+        }
+
+        const response = await suitecrmService.getModuleRecords(moduleName, params);
+        const rows = response?.data || [];
+
+        return rows.map((row) => mapper.mapRecord(moduleName, row, { includeDetails: false }));
+      })
+    );
+
+    const merged = results
+      .flat()
+      .filter((item) => !channel || requestedChannels.includes(item.channel))
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, maxItems);
+
+    return res.json({ events: merged });
+  } catch (err) {
+    console.error('Error fetching unified events:', err);
+    return res.status(500).json({ error: 'Failed to load communication events', details: err.message });
+  }
+};
+
+// GET /api/communicator/events/:module/:id
+exports.getEventDetails = async (req, res) => {
+  try {
+    const { module: moduleName, id } = req.params;
+    if (!['Calls', 'Emails', 'Notes'].includes(moduleName)) {
+      return res.status(400).json({ error: 'Invalid event module' });
+    }
+
+    const mapper = MapperFactory.getMapper('suitecrm', 'event');
+    const response = await suitecrmService.getRecordById(moduleName, id);
+
+    if (!response?.data) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    const event = mapper.mapRecord(moduleName, response.data, { includeDetails: true });
+    return res.json({ event });
+  } catch (err) {
+    console.error('Error fetching event detail:', err);
+    return res.status(500).json({ error: 'Failed to load event details', details: err.message });
+  }
+};
+
+// GET /api/communicator/recordings/:recordingSid
+exports.streamRecording = async (req, res) => {
+  try {
+    const { recordingSid } = req.params;
+    if (!/^RE[a-f0-9]{32}$/i.test(recordingSid)) {
+      return res.status(400).json({ error: 'Invalid recording SID' });
+    }
+
+    const authUser = process.env.TWILIO_AUTH_TOKEN ? ACCOUNT_SID : API_KEY_SID;
+    const authPass = process.env.TWILIO_AUTH_TOKEN || API_KEY_SECRET;
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${ACCOUNT_SID}/Recordings/${recordingSid}.mp3`;
+
+    const headers = {
+      Authorization: `Basic ${Buffer.from(`${authUser}:${authPass}`).toString('base64')}`,
+    };
+    if (req.headers.range) {
+      headers.Range = req.headers.range;
+    }
+
+    const upstream = await fetch(twilioUrl, { headers });
+    if (!upstream.ok && upstream.status !== 206) {
+      return res.status(upstream.status).end();
+    }
+
+    res.status(upstream.status);
+    ['content-type', 'content-length', 'content-range', 'accept-ranges'].forEach((h) => {
+      const val = upstream.headers.get(h);
+      if (val) res.setHeader(h, val);
+    });
+
+    const { Readable } = require('stream');
+    return Readable.fromWeb(upstream.body).pipe(res);
+  } catch (err) {
+    console.error('Error streaming Twilio recording:', err);
+    return res.status(500).end();
+  }
 };

@@ -166,6 +166,7 @@ async function saveCallRecord(callData) {
         : new Date().toISOString().replace('T', ' ').substring(0, 19);
 
     const legsJson = JSON.stringify(callData.legs || [], null, 2);
+    const selectedClientsJson = JSON.stringify(callData.selected_clients || [], null, 2);
 
     const attributes = {
         name: `${direction} Call - ${partyNumber}`,
@@ -174,7 +175,7 @@ async function saveCallRecord(callData) {
         date_start: startTime,
         duration_hours: durationHours,
         duration_minutes: durationMinutes,
-        description: `Call SID: ${identifier}\nDirection: ${direction}\nNumber: ${partyNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}`
+        description: `Call SID: ${identifier}\nDirection: ${direction}\nNumber: ${partyNumber}\nFirst Agent: ${callData.first_agent || 'N/A'}\nLast Agent: ${callData.last_agent || 'N/A'}\nRecording URL: ${callData.recording_url || 'N/A'}\n\n--- Call Legs ---\n${legsJson}\n\n--- Selected Clients ---\n${selectedClientsJson}`
     };
 
     // Link the Call activity to the most specific CRM parent record
@@ -190,8 +191,32 @@ async function saveCallRecord(callData) {
     }
 
     console.log(`[SuiteCRM Sync] Pushing ${direction} Call ${identifier} to SuiteCRM...`);
-    const result = await createRecord('Calls', attributes);
-    console.log(`✅ [SuiteCRM Sync Success] Call record created with ID: ${result?.data?.id || 'OK'}`);
+    const callId = callData.call_id;
+    let result;
+
+    if (callData.suitecrm_call_id) {
+        console.log(`[SuiteCRM Sync] Updating ${direction} Call ${identifier} (${callData.suitecrm_call_id}) in SuiteCRM...`);
+        result = await updateRecord('Calls', callData.suitecrm_call_id, attributes);
+    } else {
+        console.log(`[SuiteCRM Sync] Pushing ${direction} Call ${identifier} to SuiteCRM...`);
+        result = await createRecord('Calls', attributes);
+        const createdId = result?.data?.id;
+        if (createdId && callId) {
+            callData.suitecrm_call_id = createdId;
+            try {
+                const existingRaw = await redisClient.get(`call:${callId}`);
+                if (existingRaw) {
+                    const existing = JSON.parse(existingRaw);
+                    existing.suitecrm_call_id = createdId;
+                    await redisClient.setEx(`call:${callId}`, 43200, JSON.stringify(existing));
+                }
+            } catch (redisErr) {
+                console.warn('[SuiteCRM Sync Warning] Could not cache suitecrm_call_id:', redisErr.message);
+            }
+        }
+    }
+
+    console.log(`✅ [SuiteCRM Sync Success] Call record synced: ${callData.suitecrm_call_id || 'OK'}`);
     return result;
 }
 
@@ -439,6 +464,54 @@ async function getContactAccountLinks(accounts, contacts) {
     return contactToAccounts;
 }
 
+/**
+- Generic JSON API Module List Query for SuiteCRM V8
+ */
+async function getModuleRecords(moduleName, params = {}) {
+    const token = await getAccessToken();
+    const query = new URLSearchParams(params).toString();
+    const apiUrl = `${SUITECRM_URL}/V8/module/${moduleName}${query ? `?${query}` : ''}`;
+
+    const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+        }
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`SuiteCRM ${moduleName} list failed (${response.status}): ${errText}`);
+    }
+
+    return await response.json();
+}
+
+/**
+- Generic JSON API Single Record Fetch for SuiteCRM V8
+ */
+async function getRecordById(moduleName, id) {
+    const token = await getAccessToken();
+    const apiUrl = `${SUITECRM_URL}/V8/module/${moduleName}/${id}`;
+
+    const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+        }
+    });
+
+    if (!response.ok) {
+        if (response.status === 404) return null;
+        const errText = await response.text();
+        throw new Error(`SuiteCRM ${moduleName}/${id} fetch failed (${response.status}): ${errText}`);
+    }
+
+    return await response.json();
+}
+
 module.exports = {
     getAccessToken,
     createRecord,
@@ -455,5 +528,7 @@ module.exports = {
     getAllAccounts,
     getRelatedRecordIds,
     mapWithConcurrency,
-    getContactAccountLinks
+    getContactAccountLinks,
+    getModuleRecords,
+    getRecordById
 };      

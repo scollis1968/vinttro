@@ -152,57 +152,6 @@ export default function AgentDashboard({ clientId, initialClientId }) {
     }
   }
 
-  // Track call/agent context passed via CTI events or global config
-  const callContextRef = React.useRef({ callId: null, agentId: null });
-
-  // Stamp active call with the latest selected client whenever clientData changes
-  useEffect(() => {
-    if (!clientData) return;
-
-    const suiteCrmAccountId =
-      clientData.suitecrm_id || clientData.account_id || null;
-    const clientRef = clientData.client_id || null;
-
-    const config = window.vinttroDashboardConfig || window.vinttroConfig || {};
-    const activeCallId =
-      callContextRef.current.callId ||
-      window.vinttroActiveCallId ||
-      config.activeCallId ||
-      null;
-    const agentId =
-      callContextRef.current.agentId ||
-      window.vinttroAgentId ||
-      config.agentId ||
-      config.userEmail ||
-      null;
-
-    if (!suiteCrmAccountId && !clientRef) return;
-
-    console.log('📞 Syncing selected client to active call:', {
-      activeCallId,
-      agentId,
-      suiteCrmAccountId,
-      clientRef,
-      clientName: clientData.client_name,
-    });
-
-    fetch(getApiUrl('communicator/update-call-contact'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        callId: activeCallId,
-        agentId,
-        clientId: suiteCrmAccountId, // SuiteCRM Account UUID (for parent_id)
-        clientRef,                   // e.g. C-10492 (for debugging / mapping)
-        contactId: clientData.contact_id || null,
-        contactName: clientData.client_name || '',
-        accountName: clientData.account_name || clientData.client_name || '',
-        selectedAt: new Date().toISOString(),
-      }),
-    }).catch((err) =>
-      console.warn('Could not sync active call client:', err.message)
-    );
-  }, [clientData]);
 
   useEffect(() => {
     loadClient(currentClientId);

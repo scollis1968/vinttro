@@ -365,6 +365,26 @@ function vinttro_render_agent_phone() {
                         currentCallData.selected_client_id = payload.clientId;
                         currentCallData.client_name = payload.clientName;
                         currentCallData.account_name = payload.accountName;
+
+                        const activeCallId = currentCallData.call_id || currentCallData.callSid;
+                        if (activeCallId && payload.clientId) {
+                            // Use the same API base URL helper/constant as your other fetch calls in agent-phone
+                            const apiBase = (window.vinttroConfig?.apiBase || '/api').replace(/\/+$/, '');
+
+                            fetch(`${apiBase}/communicator/update-call-contact`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    callId: activeCallId,
+                                    agentId: typeof agentIdentity !== 'undefined' ? agentIdentity : null,
+                                    contactId: payload.contactId || null,
+                                    clientId: payload.clientId,
+                                    contactName: payload.clientName || '',
+                                    accountName: payload.accountName || '',
+                                    selectedAt: new Date().toISOString()
+                                })
+                            }).catch(err => console.warn('[CTI Bus] Failed to sync contact selection:', err));
+                        }
                     }
                     ctiBus.postMessage({ action: 'SYNC_CONTACT_SELECTION', payload: payload });
                 }

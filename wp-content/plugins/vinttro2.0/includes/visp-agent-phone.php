@@ -8,11 +8,13 @@ add_action( 'template_redirect', function() {
         if ( ! is_user_logged_in() ) {
             wp_die( 'Access denied. Please log in to Vinttro.', 'Unauthorized', array( 'response' => 403 ) );
         }
+        global $wp_query;
+        $wp_query->is_404 = false;
+        status_header( 200 );
         vinttro_render_agent_phone();
         exit;
     }
 } );
-
 function vinttro_render_agent_phone() {
     $current_user = wp_get_current_user();
     $agent_email  = ! empty( $current_user->user_email ) ? sanitize_email( $current_user->user_email ) : 'agent_dev_1';

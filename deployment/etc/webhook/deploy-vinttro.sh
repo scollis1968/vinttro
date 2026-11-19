@@ -5,79 +5,159 @@ REPO_URL="https://github.com/scollis1968/vinttro.git"
 STAGING_DIR="/tmp/vinttro-repo"
 LIVE_DIR="/var/www/wordpress"
 LOG_FILE="/var/log/vinttro-deploy.log"
-TARGET_BRANCH="refs/heads/uat"
-BRANCH="uat"
+LOCK_FILE="/var/lock/vinttro-deploy.lock"
+
+# Optional local server override file (e.g., echo 'BRANCH="main"' > /etc/vinttro-deploy.conf)
+[ -f /etc/vinttro-deploy.conf ] && source /etc/vinttro-deploy.conf
+
+# Allow CLI argument to override config, defaulting to 'uat'
+BRANCH="${1:-${BRANCH:-uat}}"
 
 # --- Logging Function ---
 log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [$BRANCH] - $1" >> "$LOG_FILE"
 }
-
-log "--- Deployment triggered for Vinttro - /etc/webhook/deploy-vinttro.sh ---"
 
 # --- Force Root Elevation via Sudoers rule ---
 if [ "$EUID" -ne 0 ]; then
-    log "Script running as restricted user. Elevating execution to root..."
     exec sudo "$0" "$@"
 fi
 
+# --- Prevent Overlapping Deployments ---
+exec 200>"$LOCK_FILE"
+if ! flock -n 200; then
+    log "WARNING: Another deployment is already in progress. Exiting."
+    exit 1
+fi
+
+log "================================================================="
+log "🚀 Deployment triggered for Vinttro (Branch: $BRANCH)"
+log "================================================================="
+
 # --- 1. Clone or Pull the Repository ---
 if [ ! -d "$STAGING_DIR/.git" ]; then
-    log "Cloning repository...."
-    git clone -b "$BRANCH" "$REPO_URL" "$STAGING_DIR"
+    log "Cloning repository (branch: $BRANCH)..."
+    git clone -b "$BRANCH" "$REPO_URL" "$STAGING_DIR" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
         log "ERROR: Git clone failed."
         exit 1
     fi
 else
-    log "Pulling latest changes..."
+    log "Pulling latest changes from origin/$BRANCH..."
     cd "$STAGING_DIR" || exit 1
-    git fetch origin
-    git reset --hard origin/$BRANCH
+    git fetch origin >> "$LOG_FILE" 2>&1
+    git checkout "$BRANCH" >> "$LOG_FILE" 2>&1
+    git reset --hard "origin/$BRANCH" >> "$LOG_FILE" 2>&1
+    git clean -fd >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
         log "ERROR: Git pull/reset failed."
         exit 1
     fi
 fi
 
-# --- 2. Extract and Deploy Custom WordPress Files (rsync) ---
+# --- 2. Pre-Deployment DB Snapshot (Production Safety Net) ---
+if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "prod" ]; then
+    BACKUP_DIR="/var/backups/suitecrm"
+    mkdir -p "$BACKUP_DIR"
+    log "Creating pre-deployment SuiteCRM database snapshot..."
+    /usr/bin/php << 'EOF' >> "$LOG_FILE" 2>&1
+<?php
+$envFile = "/var/www/suitecrm/.env.local";
+$dbUrl = null;
+
+if (file_exists($envFile)) {
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        if (preg_match('/^DATABASE_URL=(.+)$/', trim($line), $m)) {
+            $dbUrl = trim($m[1], "\"'");
+            break;
+        }
+    }
+}
+
+if ($dbUrl) {
+    $parts = parse_url($dbUrl);
+    $host = $parts['host'] ?? '127.0.0.1';
+    $port = $parts['port'] ?? 3306;
+    $user = rawurldecode($parts['user'] ?? '');
+    $pass = rawurldecode($parts['pass'] ?? '');
+    $name = ltrim($parts['path'] ?? '', '/');
+} else {
+    define("sugarEntry", true);
+    chdir("/var/www/suitecrm/public/legacy");
+    require_once("include/entryPoint.php");
+    $opts = DBManagerFactory::getInstance()->connectOptions;
+    $host = $opts['db_host_name'];
+    $port = 3306;
+    $user = $opts['db_user_name'];
+    $pass = $opts['db_password'];
+    $name = $opts['db_name'];
+}
+
+$file = "/var/backups/suitecrm/pre_deploy_" . date("Ymd_His") . ".sql.gz";
+putenv("MYSQL_PWD=" . $pass);
+
+$cmd = sprintf(
+    "mysqldump --single-transaction -h %s -P %d -u %s %s | gzip > %s",
+    escapeshellarg($host),
+    (int)$port,
+    escapeshellarg($user),
+    escapeshellarg($name),
+    escapeshellarg($file)
+);
+system($cmd, $ret);
+putenv("MYSQL_PWD");
+
+if ($ret === 0 && file_exists($file) && filesize($file) > 1024) {
+    echo "   -> Backup saved: $file (" . round(filesize($file) / 1024, 1) . " KB)\n";
+} else {
+    @unlink($file);
+    echo "   -> WARNING: Database backup failed (exit code $ret).\n";
+}
+EOF
+    # Keep only the 7 most recent pre-deploy backups
+    ls -t "$BACKUP_DIR"/pre_deploy_*.sql.gz 2>/dev/null | tail -n +8 | xargs -r rm -f
+fi
+
+
+# --- 3. Extract and Deploy Custom WordPress Files ---
 log "Deploying Vinttro Plugin..."
 rsync -a "$STAGING_DIR/wp-content/plugins/vinttro2.0/" "$LIVE_DIR/wp-content/plugins/vinttro2.0/"
 if [ $? -ne 0 ]; then
     log "ERROR: Plugin rsync failed."
     exit 1
 fi
+chown -R www-data:www-data "$LIVE_DIR/wp-content/plugins/vinttro2.0/"
 
 log "Deploying Vinttro Theme..."
 THEME_NAME="vinttro_child_theme"
 SOURCE_DIR="$STAGING_DIR/wp-content/themes/$THEME_NAME"
-DEST_DIR="/var/www/wordpress/wp-content/themes/$THEME_NAME"
+DEST_DIR="$LIVE_DIR/wp-content/themes/$THEME_NAME"
 
 if [ -d "$SOURCE_DIR" ]; then
-    rsync -av "$SOURCE_DIR/" "$DEST_DIR/" >> "$LOG_FILE" 2>&1
+    rsync -a "$SOURCE_DIR/" "$DEST_DIR/" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
         log "ERROR: Deploying VINTTRO theme failed."
         exit 1
-    fi    
+    fi
     chown -R www-data:www-data "$DEST_DIR/"
 else
     log "ERROR: Source theme directory $SOURCE_DIR not found!"
     exit 1
 fi
 
-log "Deploying SuiteCrm/VINTTRO customisation ..."
+log "Deploying SuiteCRM/VINTTRO customisation scripts..."
 SOURCE_DIR="$STAGING_DIR/suitecrm/vinttro2.0/"
 DESTINATION_DIR="/var/www/suitecrm/vinttro2.0/"
 if [ -d "$SOURCE_DIR" ]; then
     rsync -a "$SOURCE_DIR" "$DESTINATION_DIR"
-    chown -R www-data:www-data /var/www/suitecrm/vinttro2.0
+    chown -R www-data:www-data "$DESTINATION_DIR"
 fi
 
-##-------------------------------------------------------------------------
-# VINTTRO vinttro-api 
+# --- 4. Deploy vinttro-api Microservice ---
 SOURCE_DIR="$STAGING_DIR/vinttro-api/"
 DESTINATION_DIR="/var/www/vinttro-api/"
-APP_USER="vinttro" 
+APP_USER="vinttro"
 
 if [ -d "$SOURCE_DIR" ]; then
     log "Executing vinttro-api asset synchronization..."
@@ -107,11 +187,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-log "⏳ Waiting for network socket initialization..."
 sleep 2
 
-##-------------------------------------------------------------------------
-# VINTTRO SuiteCRM Core & UI Assets Sync
+# --- 5. Deploy SuiteCRM Core & UI Assets ---
 log "Deploying SuiteCRM frontend extensions..."
 if [ -d "$STAGING_DIR/suitecrm/extensions/" ]; then
     rsync -a "$STAGING_DIR/suitecrm/extensions/" "/var/www/suitecrm/extensions/" >> "$LOG_FILE" 2>&1
@@ -132,6 +210,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Set ownership before running CLI PHP / Symfony tools
+chown -R www-data:www-data /var/www/suitecrm/public/ /var/www/suitecrm/extensions/
+
+# --- 6. Studio Metadata Sync & Automated SuiteCRM Rebuilds ---
 log "Checking for Studio custom field metadata updates from Git..."
 cd /var/www/suitecrm/public/legacy/ || exit 1
 
@@ -166,16 +248,7 @@ if (file_exists($jsonFile)) {
 }
 EOF
 
-
-# Ensure full permissions across public and extensions before running Symfony / PHP CLI
-chown -R www-data:www-data /var/www/suitecrm/public/ /var/www/suitecrm/extensions/
-
-##-------------------------------------------------------------------------
-# --- 3. Automated Post-Deployment Automation & Framework Rebuilds ---
-
 log "Cleaning module caches and rebuilding SuiteCRM extensions..."
-cd /var/www/suitecrm/public/legacy/ || exit 1
-
 sudo -u www-data /usr/bin/env -i /usr/bin/php << 'EOF' >> "$LOG_FILE" 2>&1
 <?php
 $_GET = array(); $_POST = array(); $_REQUEST = array(); $_COOKIE = array();
@@ -190,14 +263,12 @@ $current_user = new User();
 $current_user->is_admin = 1;
 $current_user->id = "1";
 
-# 1. Discover all target modules
 $target_modules = array("Contacts", "Accounts", "Leads", "Opportunities", "Cases", "Tasks", "Calls", "Meetings");
 foreach (glob("modules/visp_*", GLOB_ONLYDIR) as $dir) {
     $target_modules[] = basename($dir);
 }
 $target_modules = array_unique($target_modules);
 
-# 2. Clear stale cache for detected modules
 foreach ($target_modules as $mod) {
     $cache_path = "cache/modules/" . $mod;
     if (file_exists($cache_path)) {
@@ -270,7 +341,6 @@ $current_user->is_admin = 1;
 $current_user->id = "1";
 
 $repair = new RepairAndClear();
-// Setting 3rd arg to true forces execution of ALTER/CREATE TABLE queries automatically
 $repair->repairAndClearAll(array("clearAll"), $moduleList, true, false);
 EOF
 
@@ -292,5 +362,5 @@ find /var/www/suitecrm/public/ /var/www/suitecrm/extensions/ -type f -exec chmod
 log "Flushing SuiteCRM 8 Production Container Cache..."
 sudo -u www-data php bin/console cache:clear --env=prod >> "$LOG_FILE" 2>&1
 
-log "Deployment successful for custom files."
+log "✅ Deployment successful for branch: $BRANCH"
 exit 0

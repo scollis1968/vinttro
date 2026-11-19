@@ -439,6 +439,54 @@ async function getContactAccountLinks(accounts, contacts) {
     return contactToAccounts;
 }
 
+/**
+- Generic JSON API Module List Query for SuiteCRM V8
+ */
+async function getModuleRecords(moduleName, params = {}) {
+    const token = await getAccessToken();
+    const query = new URLSearchParams(params).toString();
+    const apiUrl = `${SUITECRM_URL}/V8/module/${moduleName}${query ? `?${query}` : ''}`;
+
+    const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+        }
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`SuiteCRM ${moduleName} list failed (${response.status}): ${errText}`);
+    }
+
+    return await response.json();
+}
+
+/**
+- Generic JSON API Single Record Fetch for SuiteCRM V8
+ */
+async function getRecordById(moduleName, id) {
+    const token = await getAccessToken();
+    const apiUrl = `${SUITECRM_URL}/V8/module/${moduleName}/${id}`;
+
+    const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+        }
+    });
+
+    if (!response.ok) {
+        if (response.status === 404) return null;
+        const errText = await response.text();
+        throw new Error(`SuiteCRM ${moduleName}/${id} fetch failed (${response.status}): ${errText}`);
+    }
+
+    return await response.json();
+}
+
 module.exports = {
     getAccessToken,
     createRecord,
@@ -455,5 +503,7 @@ module.exports = {
     getAllAccounts,
     getRelatedRecordIds,
     mapWithConcurrency,
-    getContactAccountLinks
+    getContactAccountLinks,
+    getModuleRecords,
+    getRecordById
 };      

@@ -9,6 +9,10 @@ async function getOuState(ouName) {
     return 'open'; // Stubbed for now
 }
 
+function getBaseUrl() {
+    return (process.env.PUBLIC_API_URL || 'https://services.prod.vinttro.co.uk').replace(/\/+$/, '');
+}
+
 /**
  * Strategy Registry: Handlers for each step action type
  */
@@ -90,7 +94,9 @@ const actionHandlers = {
 
                     if (twilioClient && twilioFromNumber) {
                         try {
-                            const callbackUrl = `${process.env.PUBLIC_API_URL || 'https://services.uat.vinttro.co.uk'}/api/communicator/accept-probe?roomId=${encodeURIComponent(callPayload.roomId)}&callId=${encodeURIComponent(callPayload.call_id)}&agentName=${encodeURIComponent(member.name)}`;
+                            const baseUrl = getBaseUrl();
+                            const fromNumber = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_CALLER_ID;
+                            const callbackUrl = `${baseUrl}/api/communicator/accept-probe?roomId=${encodeURIComponent(callPayload.roomId)}&callId=${encodeURIComponent(callPayload.call_id)}&agentName=${encodeURIComponent(member.name)}`;
 
                             const twiml = new twilio.twiml.VoiceResponse();
                             const gather = twiml.gather({
@@ -105,7 +111,7 @@ const actionHandlers = {
                             const probeCall = await twilioClient.calls.create({
                                 twiml: twiml.toString(),
                                 to: formattedTarget,
-                                from: twilioFromNumber
+                                from: fromNumber
                             });
 
                             // Store the Probe Call SID in Redis set for cleanup later

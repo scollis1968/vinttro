@@ -341,7 +341,7 @@ exports.handleInboundCall = async (req, res) => {
         dial.conference({
             startConferenceOnEnter: false,
             endConferenceOnExit: true,
-            record: 'do-not-record',
+            record: 'record-from-start',
             recordingStatusCallback: recordingCallbackUrl,
             recordingStatusCallbackEvent: 'completed',
             statusCallback: statusCallbackUrl,
@@ -484,7 +484,7 @@ exports.handleVoiceConnect = async (req, res) => {
             const twiml = new twilio.twiml.VoiceResponse();
             const dial = twiml.dial({
                 callerId: outboundCallerId,
-                record: 'do-not-record',
+                record: 'record-from-answer-dual',
                 recordingStatusCallback: recordingCallbackUrl,
                 recordingStatusCallbackEvent: 'completed'
             });

@@ -142,7 +142,7 @@ add_action( 'wp_enqueue_scripts', function() {
     add_action( 'wp_enqueue_scripts', function() {
         wp_enqueue_style(
             'visp-header-cti',
-            plugins_url( 'css/visp-header-cti.css', __FILE__ ),
+            plugins_url( '../css/visp-header-cti.css', __FILE__ ),
             array( 'wp-block-library' ), // Ensures it waits for block library styles
             '1.0.0'
         );

@@ -7,15 +7,9 @@ import {
 import * as Tooltip from '@radix-ui/react-tooltip';
 import OpportunityShell from './components/opportunities/OpportunityShell';
 import EventsTimeline from './components/EventsTimeline';
+import { getApiUrl } from './utils/api';
 
-// Helper to guarantee clean URL construction without double-slashes
-function getApiUrl(endpoint) {
-  const config = window.vinttroDashboardConfig || window.vinttroConfig || {};
-  const rawBase = config.apiBase || 'http://localhost:3005/api';
-  const cleanBase = rawBase.replace(/\/+$/, '');
-  const cleanEndpoint = endpoint.replace(/^\/+/, '');
-  return `${cleanBase}/${cleanEndpoint}`;
-}
+
 
 const ICON_MAP = {
   car: Car,
@@ -175,9 +169,6 @@ export default function AgentDashboard({ clientId, initialClientId }) {
     return () => window.removeEventListener('vinttro:switch-client', handleClientSwitch);
   }, []);
 
-  useEffect(() => {
-    loadClient(currentClientId);
-  }, [currentClientId]);
 
   // Communicator CTI switch listener
   useEffect(() => {

@@ -38,6 +38,7 @@ io.on('connection', (socket) => {
 const communicatorRoutes = require('./routes/communicator');
 const taskRoutes = require('./routes/tasks');
 const importRoutes = require('./routes/import');
+const clientRoutes = require('./routes/clients');
 
 // 1. GLOBAL CORS HANDLER FIRST (Ensures all errors return valid CORS headers)
 app.use((req, res, next) => {
@@ -79,6 +80,7 @@ app.use(cors({
 app.use('/api/communicator', communicatorRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/clients', clientRoutes);
 
 const PORT = process.env.PORT || 3000;
 

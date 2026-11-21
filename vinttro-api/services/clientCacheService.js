@@ -1,6 +1,11 @@
 // vinttro-api/services/clientCacheService.js
 const redisClient = require('./redis');
 const suitecrmService = require('./suitecrm');
+const {
+    buildSearchIndexData,
+    writeVersionedSearchIndex,
+    indexClientInActiveSearch
+} = require('./clientSearchService');
 
 /**
  * Normalizes phone numbers to standard E.164 international format.
@@ -121,10 +126,12 @@ async function syncClientsFromSuiteCRM() {
             accAttr.billing_address_city,
             accAttr.billing_address_postalcode
         ].filter(Boolean);
+        const isPrivate = String(accAttr.industry || '').trim().toLowerCase() === 'private';
 
         summaryMap.set(acc.id, {
             client_id: acc.id,
             client_name: accAttr.name || 'Unnamed Account',
+            is_private: isPrivate,
             details: {
                 phone: normalizeCli(accAttr.phone_office) || accAttr.phone_office || '',
                 email: accAttr.email1 || '',
@@ -251,15 +258,26 @@ async function syncClientsFromSuiteCRM() {
     if (commandCount % BATCH_SIZE !== 0) {
         await pipeline.exec();
     }
+// 6b. Build and write versioned search index (ZSET + Trigrams) before swapping active_version
+    const searchIndexData = buildSearchIndexData({
+        accounts,
+        contacts,
+        contactToAccounts,
+        oppsByClientId
+    });
+    await writeVersionedSearchIndex(newVersion, searchIndexData);
 
-    // 7. Atomic Pointer Swap for CLI index
+    // 7. Atomic Pointer Swap for CLI & Search indexes
     const previousVersion = await redisClient.get('client_cli:active_version');
     await redisClient.set('client_cli:active_version', newVersion);
 
-    // 8. Async Cleanup of Old CLI Version Keys
+    // 8. Async Cleanup of Old CLI & Search Version Keys
     if (previousVersion) {
         cleanupOldVersionKeys(`client_cli:${previousVersion}:*`).catch(err =>
             console.error('[ClientCache Cleanup Warning]:', err.message)
+        );
+        cleanupOldVersionKeys(`client_search:${previousVersion}:*`).catch(err =>
+            console.error('[ClientSearch Cleanup Warning]:', err.message)
         );
     }
 
@@ -318,7 +336,14 @@ async function saveClientRecord(data) {
         client_id: data.client_id || data.account_id || null,
         account_name: data.account_name || null
     };
-
+    if (newMatch.client_id) {
+        await indexClientInActiveSearch({
+            clientId: newMatch.client_id,
+            contactName: newMatch.contact_name,
+            companyName: newMatch.account_name,
+            postcode: data.postcode || data.primary_address_postalcode || ''
+        });
+    }
     existingMatches = existingMatches.filter(
         m => !(m.contact_id === newMatch.contact_id && m.client_id === newMatch.client_id)
     );

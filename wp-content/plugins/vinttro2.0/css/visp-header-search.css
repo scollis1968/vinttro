@@ -1,0 +1,254 @@
+.visp-search {
+  position: relative;
+  width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  z-index: 9999;
+}
+
+.visp-search__input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  height: 36px;
+  padding: 0 10px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.visp-search__input-wrap:focus-within {
+  background: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.visp-search__icon {
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.visp-search__input-wrap:focus-within .visp-search__icon {
+  color: #64748b;
+}
+
+.visp-search__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  outline: none;
+}
+
+.visp-search__input::placeholder {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.visp-search__input-wrap:focus-within .visp-search__input {
+  color: #0f172a;
+}
+
+.visp-search__input-wrap:focus-within .visp-search__input::placeholder {
+  color: #94a3b8;
+}
+
+.visp-search__kbd {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  pointer-events: none;
+}
+
+.visp-search__input-wrap:focus-within .visp-search__kbd {
+  display: none;
+}
+
+.visp-search__clear {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.visp-search__clear:hover {
+  color: #0f172a;
+}
+
+.visp-search__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: visp-spin 0.6s linear infinite;
+  margin-right: 4px;
+}
+
+@keyframes visp-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Floating Results Popover */
+.visp-search__popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+  width: 480px;
+  max-height: 460px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+}
+
+.visp-search__group-header {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  z-index: 1;
+}
+
+.visp-search__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.visp-search__row:last-child {
+  border-bottom: none;
+}
+
+.visp-search__row.is-active,
+.visp-search__row:hover {
+  background: #eff6ff;
+}
+
+.visp-search__row-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.visp-search__row-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.visp-search__row-company {
+  font-weight: 400;
+  color: #475569;
+}
+
+.visp-search__row-meta {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.visp-search__badge {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+
+.visp-search__badge--opp {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.visp-search mark {
+  background: #fef08a;
+  color: #0f172a;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+
+/* Telephony Action Buttons */
+.visp-search__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.visp-search__btn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.visp-search__btn--dial:hover {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+.visp-search__btn--link {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.visp-search__btn--link:hover {
+  background: #1d4ed8;
+}
+
+.visp-search__empty {
+  padding: 20px 14px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.visp-search__footer {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+}

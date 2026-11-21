@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { getApiUrl } from '../utils/api';
 
 const CHANNEL_META = {
   call: { label: 'Call', icon: '📞', color: '#2563eb', bg: '#eff6ff' },
@@ -32,7 +33,7 @@ function formatTimeOnly(isoString) {
   });
 }
 
-export default function EventsTimeline({ apiBase = '/api/communicator', accountId = null }) {
+export default function EventsTimeline({ apiBase = getApiUrl('communicator'), accountId = null }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

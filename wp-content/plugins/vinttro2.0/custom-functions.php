@@ -22,7 +22,6 @@ require_once 'includes/call-controller-functions.php';
 require_once 'includes/visp-header-cti.php';
 require_once 'includes/visp-admin-functions.php';
 
-require_once 'includes/visp-header-cti.php';
 require_once 'includes/visp-admin-functions.php';
 require_once 'includes/visp-agent-phone.php';
 
@@ -38,14 +37,14 @@ if (!defined('VINTTRO_URL')) {
 }
 
 // Load the Agent Dashboard and Redis REST API
-require_once VINTTRO_PATH . 'includes/class-vinttro-dashboard.php';
+require_once VINTTRO_PATH . 'includes/class-vinttro-shortcodes.php';
 if (file_exists(VINTTRO_PATH . 'includes/class-vinttro-api.php')) {
     require_once VINTTRO_PATH . 'includes/class-vinttro-api.php';
     new Vinttro_API();
 }
 
 // Instantiate the dashboard (registers [vinttro_client_screen] shortcode)
-new Vinttro_Dashboard();
+new Vinttro_Shortcodes();
 // ===================================================
 
 function my_plugin_load_styles() {

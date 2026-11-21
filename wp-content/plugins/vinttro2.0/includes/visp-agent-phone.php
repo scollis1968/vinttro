@@ -365,10 +365,32 @@ function vinttro_render_agent_phone() {
                         currentCallData.selected_client_id = payload.clientId;
                         currentCallData.client_name = payload.clientName;
                         currentCallData.account_name = payload.accountName;
+
+                        const activeCallId =
+                            currentCallData.call_id ||
+                            currentCallData.callSid ||
+                            activeCall?.parameters?.CallSid ||
+                            null;
+
+                        if ((activeCallId || AGENT_ID) && payload.clientId) {
+                            fetch(`${NODE_URL}/api/communicator/update-call-contact`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    callId: activeCallId,
+                                    agentId: AGENT_ID,
+                                    contactId: payload.contactId || null,
+                                    clientId: payload.clientId,
+                                    contactName: payload.clientName || '',
+                                    accountName: payload.accountName || '',
+                                    selectedAt: new Date().toISOString()
+                                })
+                            }).catch(err => console.warn('[CTI Bus] Failed to sync contact selection:', err));
+                        }
                     }
                     ctiBus.postMessage({ action: 'SYNC_CONTACT_SELECTION', payload: payload });
                 }
-            };
+           };
 
             function resetCallState() {
                 currentCallState = 'IDLE';

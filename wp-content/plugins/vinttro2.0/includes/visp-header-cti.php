@@ -85,6 +85,34 @@ function visp_render_cti_header() {
 
         <!-- 3. Right: Presence & Account -->
         <div class="vinttro-hdr-right-actions">
+            <div id="visp-header-search" class="visp-search">
+            <div class="visp-search__input-wrap">
+                <svg class="visp-search__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="8.5" cy="8.5" r="5.75" />
+                <path d="M13 13l4.25 4.25" stroke-linecap="round" />
+                </svg>
+
+                <input
+                type="text"
+                id="visp-search-input"
+                class="visp-search__input"
+                placeholder="Search client, company, postcode or reg..."
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="Search clients"
+                aria-expanded="false"
+                aria-controls="visp-search-popover"
+                />
+
+                <span id="visp-search-spinner" class="visp-search__spinner" hidden></span>
+                <button type="button" id="visp-search-clear" class="visp-search__clear" title="Clear search" hidden>&times;</button>
+                <kbd class="visp-search__kbd">/</kbd>
+            </div>
+
+            <!-- Floating Grouped Results Popover -->
+            <div id="visp-search-popover" class="visp-search__popover" role="listbox" hidden></div>
+            </div>
+
             <div class="vinttro-presence-pill" id="vinttro-presence-toggle" title="Click to change state or view profile options">
                 <div class="vinttro-avatar-wrap">
                     <img src="<?php echo esc_url( $avatar_url ); ?>" class="vinttro-agent-avatar" alt="Avatar" />
@@ -137,16 +165,22 @@ add_action( 'wp_enqueue_scripts', function() {
         return;
     }
 
-    // 1. CTI Bar Styles
-
+    // 1. CTI Bar & Search Styles
     add_action( 'wp_enqueue_scripts', function() {
         wp_enqueue_style(
             'visp-header-cti',
-            plugins_url( 'css/visp-header-cti.css', __FILE__ ),
-            array( 'wp-block-library' ), // Ensures it waits for block library styles
+            plugins_url( '../css/visp-header-cti.css', __FILE__ ),
+            array( 'wp-block-library' ),
             '1.0.0'
         );
-    }, 999 ); // Priority 999 ensures it loads after the theme and core block styles
+
+        wp_enqueue_style(
+            'visp-header-search',
+            plugins_url( '../css/visp-header-search.css', __FILE__ ),
+            array( 'visp-header-cti' ),
+            time()
+        );
+    }, 999 );
 
     // 2. Socket.io Client
     wp_enqueue_script(
@@ -163,12 +197,12 @@ add_action( 'wp_enqueue_scripts', function() {
         'after'
     );
 
-    // 3. Communicator Controller Script (No twilio dependency needed in main tab!)
+    // 3. Communicator Controller Script
     wp_enqueue_script(
         'vinttro-communicator',
         plugins_url( '../js/vinttro-communicator.js', __FILE__ ),
         array( 'jquery', 'socket-io-cdn' ),
-        time(), // Dev cache-busting
+        time(),
         true
     );
 
@@ -189,4 +223,13 @@ add_action( 'wp_enqueue_scripts', function() {
         'agentPhoneUrl' => home_url( '/visp/agent-phone' ),
         'nonce'         => wp_create_nonce( 'wp_rest' ),
     ) );
+
+    // 5. Header Client Search Script (runs after vinttroConfig is localized)
+    wp_enqueue_script(
+        'visp-header-search',
+        plugins_url( '../js/visp-header-search.js', __FILE__ ),
+        array( 'vinttro-communicator' ),
+        time(),
+        true
+    );
 } );

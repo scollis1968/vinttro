@@ -216,13 +216,19 @@ add_action( 'wp_enqueue_scripts', function() {
 
     $node_url = defined('VINTTRO_NODE_URL') ? VINTTRO_NODE_URL : $default_node;
 
-    wp_localize_script( 'vinttro-communicator', 'vinttroConfig', array(
+    $cti_config = wp_json_encode( array(
         'nodeApiUrl'    => untrailingslashit( esc_url_raw( $node_url ) ),
         'apiBase'       => untrailingslashit( esc_url_raw( $node_url ) ) . '/api',
         'agentId'       => strtolower( trim( $agent_email ) ),
         'agentPhoneUrl' => home_url( '/visp/agent-phone' ),
         'nonce'         => wp_create_nonce( 'wp_rest' ),
     ) );
+
+    wp_add_inline_script(
+        'vinttro-communicator',
+        "window.vinttroConfig = Object.assign({}, window.vinttroConfig, {$cti_config});",
+        'before'
+    );
 
     // 5. Header Client Search Script (runs after vinttroConfig is localized)
     wp_enqueue_script(

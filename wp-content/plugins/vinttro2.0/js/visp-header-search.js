@@ -2,10 +2,7 @@
 (function () {
   class VispHeaderSearch {
     constructor(options = {}) {
-      this.apiBaseUrl =
-        options.apiBaseUrl ||
-        (window.vinttroConfig && window.vinttroConfig.nodeApiUrl) ||
-        'http://localhost:3005';
+      this.explicitApiBaseUrl = options.apiBaseUrl || null;
       this.minChars = options.minChars || 3;
       this.debounceMs = options.debounceMs || 150;
       this.onOpenClient = options.onOpenClient || ((hit) => console.log('[VIsP Search] Open client:', hit));
@@ -28,6 +25,24 @@
       if (this.root && this.input && this.popover) {
         this.bindEvents();
       }
+    }
+
+    getApiBaseUrl() {
+      if (this.explicitApiBaseUrl) return this.explicitApiBaseUrl;
+
+      const cfg = window.vinttroConfig || {};
+      if (cfg.nodeApiUrl) {
+        return cfg.nodeApiUrl.replace(/\/+$/, '');
+      }
+      if (cfg.apiBase) {
+        return cfg.apiBase.replace(/\/api\/?$/, '');
+      }
+
+      const host = window.location.hostname;
+      if (host.includes('uat.')) return 'https://services.uat.vinttro.co.uk';
+      if (host.includes('vinttro.co.uk')) return 'https://services.prod.vinttro.co.uk';
+
+      return 'http://localhost:3005';
     }
 
     /** Automatically detects if #vinttro-header-call-bar is currently in an active call */
@@ -109,7 +124,7 @@
       if (this.spinner) this.spinner.hidden = false;
 
       try {
-        const url = `${this.apiBaseUrl}/api/clients/search?q=${encodeURIComponent(query)}&limit=15`;
+        const url = `${this.getApiBaseUrl()}/api/clients/search?q=${encodeURIComponent(query)}&limit=15`;
         const res = await fetch(url, { signal: this.abortController.signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 

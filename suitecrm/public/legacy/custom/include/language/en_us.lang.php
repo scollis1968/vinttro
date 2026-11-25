@@ -34,3 +34,24 @@ $app_list_strings['industry_dom']=array (
   'Other' => 'Other',
   'Private' => 'Private',
 );
+$app_list_strings['sync_status_list']=array (
+  'unlinked_prospect' => 'unlinked_prospect',
+  'pending_cleanup' => 'pending_cleanup',
+  'synced' => 'synced',
+  'sync_error' => 'sync_error',
+);
+$app_list_strings['product_list']=array (
+  'ins_motor' => 'Insurance Motor',
+  'ins_home' => 'Insurance Home',
+  'service_storage' => 'Storage',
+  'service_detailing' => 'Detailing',
+  'service_transport' => 'Collection & Delivery',
+);
+$app_list_strings['caller_triage_outcome_list']=array (
+  'new_lead_created' => 'new_lead_created',
+  'existing_number_added' => 'existing_number_added',
+  'known_not_synced' => 'known_not_synced',
+  'dismissed_wrong_number' => 'dismissed_wrong_number',
+  'dismissed_spam' => 'dismissed_spam',
+  'dismissed_other' => 'dismissed_other',
+);

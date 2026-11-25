@@ -199,6 +199,13 @@ add_action( 'wp_enqueue_scripts', function() {
 
     // 3. Communicator Controller Script
     wp_enqueue_script(
+        'visp-header-unknown-caller',
+        plugins_url( '../js/visp-header-unknown-caller.js', __FILE__ ),
+        array( 'jquery', 'socket-io-cdn' ),
+        time(),
+        true
+    );
+    wp_enqueue_script(
         'vinttro-communicator',
         plugins_url( '../js/vinttro-communicator.js', __FILE__ ),
         array( 'jquery', 'socket-io-cdn' ),

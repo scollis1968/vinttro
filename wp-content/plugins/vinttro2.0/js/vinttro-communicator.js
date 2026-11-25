@@ -73,11 +73,13 @@
                 });
                 startCallTimer(payload.callStartTime);
                 $('#vinttro-incoming-call-card').slideUp(200);
+                launchUnknownCallerDrawer(activeCallPayload); // <-- ADD HERE                
             }
             else if (action === 'SYNC_CALL_ENDED' || action === 'SYNC_CALL_DISMISSED') {
                 stopRingtoneAudio();
                 setCallBarState('idle');
                 $('#vinttro-incoming-call-card').slideUp(200);
+                if (window.VispUnknownCallerBar) window.VispUnknownCallerBar.onCallEnded(); // <-- ADD HERE
             }
             else if (action === 'MUTE_STATE_CHANGED') {
                 applyMuteUI(muted);
@@ -440,6 +442,7 @@
 
             startCallTimer(Date.now());
             $('#vinttro-incoming-call-card').slideUp(200);
+            launchUnknownCallerDrawer(activeCallPayload); // <-- ADD HERE (~line 433)
         });
 
         // DISMISS / REJECT CALL
@@ -454,6 +457,7 @@
         $(document).on('click', '#vinttro-hdr-end, #vinttro-rtc-disconnect', function() {
             ctiBus.postMessage({ action: 'HANGUP_CALL' });
             setCallBarState('idle');
+            if (window.VispUnknownCallerBar) window.VispUnknownCallerBar.onCallEnded(); // <-- ADD HERE
         });
 
         // MUTE / UNMUTE MICROPHONE
@@ -498,6 +502,24 @@
                     window.vinttroOsc = null;
                 }
             } catch (e) {}
+        }
+
+        function launchUnknownCallerDrawer(payload) {
+            if (!payload || typeof window.VispUnknownCallerBar === 'undefined') return;
+
+            const hasClient = Boolean(
+                payload.selected_client_id ||
+                payload.client_id ||
+                (payload.client_matches && payload.client_matches.length > 0)
+            );
+
+            if (hasClient) return;
+
+            window.VispUnknownCallerBar.onCallAnswered({
+                cli: payload.fromNumber || payload.from || payload.callerId || '',
+                callId: payload.call_id || payload.callSid || `vinttro-${Date.now()}`,
+                isKnownCrmMatch: false
+            });
         }
     });
 })(jQuery);
